@@ -1,0 +1,241 @@
+---
+import "../styles/global.css";
+
+interface Props {
+	title: string;
+	description?: string;
+	homepage?: boolean;
+}
+
+const {
+	title,
+	description = ">merulox's terminal",
+	homepage = false,
+} = Astro.props;
+
+const pathname = Astro.url.pathname;
+const canonicalUrl = new URL(pathname, Astro.site ?? Astro.url.origin);
+
+const navItems = [
+	{ href: "/work", label: "projects" },
+	{ href: "/thinking", label: "writing" },
+	{ href: "/music", label: "music" },
+	{ href: "/now", label: "now" },
+];
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content={description} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=VT323&display=swap"
+			rel="stylesheet"
+		/>
+	</head>
+	<body>
+		{
+			homepage ? (
+				<slot />
+			) : (
+				<div class="site-shell">
+					<header class="site-header">
+						<a class="site-name kbd-item" href="/">
+							MERULOX
+						</a>
+						<nav class="site-nav" aria-label="Primary navigation">
+							{navItems.map((item) => {
+								const itemPath = item.href.replace(/\/$/, "");
+								const currentPath = pathname.replace(/\/$/, "");
+								const isActive = currentPath === itemPath;
+								return (
+									<a
+										href={item.href}
+										class="kbd-item"
+										aria-current={isActive ? "page" : undefined}
+									>
+										<span class="sel-arrow" aria-hidden="true">&gt;</span>
+										{item.label}
+									</a>
+								);
+							})}
+						</nav>
+					</header>
+					<main>
+						<slot />
+					</main>
+				</div>
+			)
+		}
+		<script>
+			(function () {
+				const navEls = Array.from(
+					document.querySelectorAll<HTMLElement>(".site-name, .site-nav a"),
+				);
+				if (!navEls.length) return;
+
+				const listEls = Array.from(
+					document.querySelectorAll<HTMLElement>(".list-item"),
+				);
+				const rowGroups = Array.from(
+					document.querySelectorAll<HTMLElement>(".kbd-row"),
+				);
+
+				const CUR = "kbd-cursor";
+				const paint = (els: HTMLElement[], idx: number) =>
+					els.forEach((el, i) => el.classList.toggle(CUR, i === idx));
+				const clear = (els: HTMLElement[]) =>
+					els.forEach((el) => el.classList.remove(CUR));
+
+				const navStart = Math.max(
+					0,
+					navEls.findIndex((el) => el.getAttribute("aria-current") === "page"),
+				);
+				const skipTarget = (e: KeyboardEvent) => {
+					const tag = (e.target as HTMLElement).tagName;
+					return tag === "INPUT" || tag === "TEXTAREA";
+				};
+
+				if (listEls.length) {
+					// ── Two independent cursors (projects) ──
+					//   Left/Right → nav,  Up/Down → project list
+					let navIdx = navStart;
+					let listIdx = 0;
+					let last: "nav" | "list" = "list";
+					paint(navEls, navIdx);
+					paint(listEls, listIdx);
+
+					document.addEventListener("focusin", (e) => {
+						const t = e.target as HTMLElement;
+						const n = navEls.indexOf(t);
+						if (n !== -1) { navIdx = n; paint(navEls, n); last = "nav"; return; }
+						const l = listEls.indexOf(t);
+						if (l !== -1) { listIdx = l; paint(listEls, l); last = "list"; }
+					});
+
+					document.addEventListener("keydown", (e) => {
+						if (skipTarget(e)) return;
+						switch (e.key) {
+							case "ArrowLeft": case "h":
+								e.preventDefault();
+								navIdx = (navIdx - 1 + navEls.length) % navEls.length;
+								paint(navEls, navIdx); last = "nav"; break;
+							case "ArrowRight": case "l":
+								e.preventDefault();
+								navIdx = (navIdx + 1) % navEls.length;
+								paint(navEls, navIdx); last = "nav"; break;
+							case "ArrowUp": case "k":
+								e.preventDefault();
+								listIdx = (listIdx - 1 + listEls.length) % listEls.length;
+								paint(listEls, listIdx);
+								listEls[listIdx].scrollIntoView({ block: "nearest" }); last = "list"; break;
+							case "ArrowDown": case "j":
+								e.preventDefault();
+								listIdx = (listIdx + 1) % listEls.length;
+								paint(listEls, listIdx);
+								listEls[listIdx].scrollIntoView({ block: "nearest" }); last = "list"; break;
+							case "Enter": {
+								const a = document.activeElement as HTMLElement;
+								if (navEls.includes(a) || listEls.includes(a)) return;
+								e.preventDefault();
+								(last === "list" ? listEls[listIdx] : navEls[navIdx]).click();
+								break;
+							}
+						}
+					});
+					return;
+				}
+
+				// ── Single row/col cursor (music, now, writing) ──
+				//   Up/Down → between rows (nav, then each .kbd-row)
+				//   Left/Right → within the current row
+				const rows: HTMLElement[][] = [
+					navEls,
+					...rowGroups.map((g) =>
+						Array.from(g.querySelectorAll<HTMLElement>(".row-item")),
+					),
+				].filter((r) => r.length);
+
+				let r = 0;
+				let c = navStart;
+				const paintCell = () => {
+					rows.forEach(clear);
+					paint(rows[r], c);
+				};
+				const scrollForRow = () => {
+					if (r === 0) {
+						window.scrollTo({ top: 0, behavior: "smooth" });
+					} else if (r === rows.length - 1) {
+						// Last row → reveal everything below it (e.g. the last.fm link)
+						window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+					} else {
+						const bar = rows[r][c].closest(".kbd-row") || rows[r][c];
+						bar.scrollIntoView({ block: "center", behavior: "smooth" });
+					}
+				};
+				paintCell();
+
+				document.addEventListener("focusin", (e) => {
+					const t = e.target as HTMLElement;
+					for (let ri = 0; ri < rows.length; ri++) {
+						const ci = rows[ri].indexOf(t);
+						if (ci !== -1) { r = ri; c = ci; paintCell(); return; }
+					}
+				});
+
+				document.addEventListener("keydown", (e) => {
+					if (skipTarget(e)) return;
+					switch (e.key) {
+						case "ArrowUp": case "k":
+							if (rows.length > 1) {
+								e.preventDefault();
+								r = (r - 1 + rows.length) % rows.length;
+								c = Math.min(c, rows[r].length - 1);
+								paintCell();
+								scrollForRow();
+							}
+							break;
+						case "ArrowDown": case "j":
+							if (rows.length > 1) {
+								e.preventDefault();
+								r = (r + 1) % rows.length;
+								c = Math.min(c, rows[r].length - 1);
+								paintCell();
+								scrollForRow();
+							}
+							break;
+						case "ArrowLeft": case "h":
+							e.preventDefault();
+							c = (c - 1 + rows[r].length) % rows[r].length;
+							paintCell(); break;
+						case "ArrowRight": case "l":
+							e.preventDefault();
+							c = (c + 1) % rows[r].length;
+							paintCell(); break;
+						case "Enter": {
+							const a = document.activeElement as HTMLElement;
+							if (rows.some((row) => row.includes(a))) return;
+							e.preventDefault();
+							rows[r][c].click();
+							break;
+						}
+					}
+				});
+			})();
+		</script>
+	</body>
+</html>

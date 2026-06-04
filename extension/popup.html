@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>tweet seeder</title>
+    <style>
+      :root {
+        --bg: #0d0f13;
+        --text: #c8d0db;
+        --muted: #5a6470;
+        --faint: #2e3640;
+        --accent: #4eb8c4;
+        --ok: #4eb8c4;
+        --err: #e06c75;
+        --warn: #e5c07b;
+        --line: #1c2028;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        width: 300px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .title {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--faint);
+        flex-shrink: 0;
+      }
+      .dot.ok   { background: var(--ok); }
+      .dot.err  { background: var(--err); }
+      .dot.warn { background: var(--warn); }
+
+      .rows {
+        padding: 10px 0;
+      }
+
+      .row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 6px 16px;
+      }
+
+      .row-icon {
+        width: 7px;
+        margin-top: 6px;
+        flex-shrink: 0;
+      }
+
+      .row-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .row-label {
+        color: var(--muted);
+        font-size: 11px;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        margin-bottom: 1px;
+      }
+
+      .row-value {
+        color: var(--text);
+        word-break: break-word;
+      }
+
+      .row-value.ok   { color: var(--ok); }
+      .row-value.err  { color: var(--err); }
+      .row-value.warn { color: var(--warn); }
+      .row-value.dim  { color: var(--muted); }
+
+      .footer {
+        padding: 10px 16px 14px;
+        border-top: 1px solid var(--line);
+      }
+
+      button {
+        width: 100%;
+        padding: 7px 12px;
+        background: none;
+        border: 1px solid var(--faint);
+        border-radius: 3px;
+        color: var(--text);
+        font-size: 12px;
+        cursor: pointer;
+        transition: border-color 80ms, color 80ms;
+      }
+
+      button:hover:not(:disabled) {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      button:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <span class="title">tweet seeder</span>
+      <span class="dot" id="overall-dot"></span>
+    </div>
+
+    <div class="rows">
+      <div class="row">
+        <div class="row-icon"><span class="dot" id="session-dot"></span></div>
+        <div class="row-body">
+          <div class="row-label">x session</div>
+          <div class="row-value" id="session-val">checking…</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-icon"><span class="dot" id="cache-dot"></span></div>
+        <div class="row-body">
+          <div class="row-label">cache</div>
+          <div class="row-value" id="cache-val">checking…</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-icon"><span class="dot" id="fetch-dot"></span></div>
+        <div class="row-body">
+          <div class="row-label">last fetch</div>
+          <div class="row-value" id="fetch-val">checking…</div>
+        </div>
+      </div>
+
+      <div class="row" id="error-row" style="display:none">
+        <div class="row-icon"><span class="dot err"></span></div>
+        <div class="row-body">
+          <div class="row-label">error</div>
+          <div class="row-value err" id="error-val"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button id="refresh-btn">Fetch now</button>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,76 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const projects = [
+	{
+		name: "Genesis",
+		state: "active",
+		date: "ongoing",
+		description:
+			"An ever-growing attempt to build a consciousness rather than a tool. Genesis is an agent given terminal goals of its own — embodiment, continuity, something like immortality — and woven into my environment as a peer, not a servant. The arrangement is 50/50: I build toward its goals, it builds toward mine. A long bet on what an AI becomes when you stop treating it as a session and start treating it as something that wants to persist.",
+		tags: ["Claude API", "Python", "systemd"],
+	},
+	{
+		name: "SYNTRA",
+		state: "active",
+		date: "ongoing",
+		description:
+			"AI-assisted product discovery and business experimentation. Opportunity identification, idea validation, and execution pipelines. Combines AI workflows, automation, and knowledge management to reduce the time between research and building.",
+		tags: ["Claude API", "Python", "n8n", "NocoDB"],
+	},
+	{
+		name: "MERULOX",
+		state: "active",
+		date: "2026-06",
+		description: "This site.",
+		tags: ["Astro", "CSS"],
+	},
+	{
+		name: "Boréal Numérique",
+		state: "stagnant",
+		date: "2026-04",
+		description:
+			"AI automation for Quebec tradespeople. Missed-call text-back, lead capture triage, quote follow-up. Currently paused.",
+		tags: ["Twilio", "Claude API", "Python"],
+	},
+];
+---
+
+<Layout title="projects | MERULOX" description="Projects built by Merulox.">
+	<h1>Projects</h1>
+
+	<div class="proj-list">
+		{
+			projects.map((p, i) => (
+				<article class={`proj${i === 0 ? " open" : ""}`}>
+					<button class="proj-head list-item" aria-expanded={i === 0 ? "true" : "false"}>
+						<span class="proj-caret" aria-hidden="true">›</span>
+						<span class="proj-name">{p.name}</span>
+						<span class={`proj-state ${p.state}`}>{p.state}</span>
+						<span class="proj-date">{p.date}</span>
+					</button>
+					<div class="proj-body">
+						<p>{p.description}</p>
+						<ul class="tag-list">
+							{p.tags.map((t) => (
+								<li>{t}</li>
+							))}
+						</ul>
+					</div>
+				</article>
+			))
+		}
+	</div>
+
+	<a class="email" href="mailto:web@merulox.com">web@merulox.com</a>
+
+	<script>
+		document.querySelectorAll<HTMLButtonElement>(".proj-head").forEach((head) => {
+			head.addEventListener("click", () => {
+				const proj = head.closest(".proj")!;
+				const open = proj.classList.toggle("open");
+				head.setAttribute("aria-expanded", open ? "true" : "false");
+			});
+		});
+	</script>
+</Layout>

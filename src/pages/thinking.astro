@@ -1,0 +1,296 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<style is:global>
+	.writing-section .work-item + .work-item {
+		border-top-color: var(--faint);
+	}
+	.generating {
+		opacity: 0.35;
+		font-style: italic;
+	}
+</style>
+
+<Layout title="writing | MERULOX" description="Writing by Merulox.">
+	<h1>Writing</h1>
+
+	<section class="section writing-section">
+		<h2 style="display:flex;align-items:center;gap:7px">
+			<svg width="13" height="13" viewBox="0 0 1200 1227" fill="currentColor" aria-label="X" style="flex-shrink:0;position:relative;top:0.5px">
+				<path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"/>
+			</svg>
+			posts
+		</h2>
+		<div id="tweets-container">
+			<p class="muted">Loading...</p>
+		</div>
+		<a
+			class="email"
+			href="https://x.com/merulox"
+			target="_blank"
+			rel="noopener"
+			id="x-link"
+			style="display:none">→ x.com/@merulox</a
+		>
+	</section>
+
+	<section class="section writing-section">
+		<h2>Substack</h2>
+		<div id="posts-container">
+			<p class="muted">Loading...</p>
+		</div>
+		<a
+			class="email"
+			href="https://substack.com/@merulox"
+			target="_blank"
+			rel="noopener"
+			id="substack-link"
+			style="display:none">→ substack.com/@merulox</a
+		>
+	</section>
+
+	<script>
+		// ── Substack ──────────────────────────────────────────────
+		const RSS_URL = "https://merulox.substack.com/feed";
+		const SUBSTACK_API = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
+		const SUMMARY_CACHE_KEY = "merulox_summaries_v1";
+
+		function formatDate(dateStr: string) {
+			if (!dateStr) return "";
+			const d = new Date(dateStr);
+			return d.toISOString().slice(0, 7);
+		}
+
+		function getSummaryCache(): Record<string, string> {
+			try { return JSON.parse(localStorage.getItem(SUMMARY_CACHE_KEY) || "{}"); }
+			catch { return {}; }
+		}
+
+		function saveSummary(url: string, summary: string) {
+			try {
+				const cache = getSummaryCache();
+				cache[url] = summary;
+				localStorage.setItem(SUMMARY_CACHE_KEY, JSON.stringify(cache));
+			} catch {}
+		}
+
+		function postSlug(url: string) {
+			return url.replace(/[^a-z0-9]/gi, "-").slice(-40);
+		}
+
+		async function fetchSummary(postUrl: string): Promise<string> {
+			const res = await fetch(`/api/summarize?url=${encodeURIComponent(postUrl)}`);
+			const data = await res.json();
+			return data.summary ?? "";
+		}
+
+		function renderSummary(slug: string, text: string) {
+			const el = document.getElementById(`summary-${slug}`);
+			if (!el) return;
+			el.textContent = text;
+			el.classList.remove("generating");
+		}
+
+		async function loadPosts() {
+			const container = document.getElementById("posts-container")!;
+			const link = document.getElementById("substack-link") as HTMLAnchorElement;
+
+			try {
+				const res = await fetch(SUBSTACK_API);
+				const data = await res.json();
+
+				if (data.status !== "ok" || !data.items?.length) {
+					container.innerHTML = '<p class="muted">Nothing here yet.</p>';
+					link.style.display = "inline";
+					return;
+				}
+
+				const cache = getSummaryCache();
+
+				container.innerHTML = data.items
+					.map((post: { link: string; title: string; pubDate: string }) => {
+						const slug = postSlug(post.link);
+						const cached = cache[post.link];
+						const summaryHtml = `<p id="summary-${slug}" class="muted${cached ? "" : " generating"}" style="margin-top:6px;font-size:13px;max-width:58ch">${cached ?? "generating…"}</p>`;
+						return `
+					<article class="work-item">
+						<header class="item-header">
+							<a href="${post.link}" target="_blank" rel="noopener" style="text-decoration:none">
+								<h2 style="font-size:15px;font-weight:600">${post.title}</h2>
+							</a>
+							<time class="date">${formatDate(post.pubDate)}</time>
+						</header>
+						${summaryHtml}
+					</article>`;
+					})
+					.join("");
+
+				link.style.display = "inline";
+
+				// Fetch summaries for any posts not yet cached
+				for (const post of data.items as { link: string }[]) {
+					if (cache[post.link]) continue;
+					fetchSummary(post.link).then((summary) => {
+						if (!summary) return;
+						saveSummary(post.link, summary);
+						renderSummary(postSlug(post.link), summary);
+					}).catch(() => {
+						renderSummary(postSlug(post.link), "");
+					});
+				}
+			} catch {
+				container.innerHTML = '<p class="muted">Unable to load posts.</p>';
+				link.style.display = "inline";
+			}
+		}
+
+		// ── X / tweets ────────────────────────────────────────────
+		interface Tweet {
+			text: string;
+			url: string;
+			date: string;
+		}
+
+		interface TweetCache {
+			tweets: Tweet[];
+			fetchedAt: number;
+		}
+
+		const TWEET_CACHE_KEY = "merulox_tweets_v1";
+		const CACHE_STALE_MS = 60 * 60 * 1000; // 1 hour
+
+		// Static curated fallback — update these with real posts
+		const STATIC_TWEETS: Tweet[] = [
+			// { text: "tweet text here", url: "https://x.com/merulox/status/...", date: "2026-01" },
+		];
+
+		const TWEET_FEEDS = [
+			"https://nitter.privacydev.net/merulox/rss",
+			"https://nitter.poast.org/merulox/rss",
+			"https://nitter.cz/merulox/rss",
+			"https://nitter.1d4.us/merulox/rss",
+			"https://nitter.unixfox.eu/merulox/rss",
+			"https://nitter.hu/merulox/rss",
+			"https://nitter.moomoo.me/merulox/rss",
+			"https://nitter.esmailelbob.xyz/merulox/rss",
+			"https://nitter.nixnet.services/merulox/rss",
+			"https://nitter.it/merulox/rss",
+			"https://rsshub.app/twitter/user/merulox",
+		];
+
+		function getCache(): TweetCache | null {
+			try {
+				const raw = localStorage.getItem(TWEET_CACHE_KEY);
+				return raw ? JSON.parse(raw) : null;
+			} catch {
+				return null;
+			}
+		}
+
+		function setCache(tweets: Tweet[]) {
+			try {
+				localStorage.setItem(
+					TWEET_CACHE_KEY,
+					JSON.stringify({ tweets, fetchedAt: Date.now() }),
+				);
+			} catch {}
+		}
+
+		function toXUrl(nitterLink: string) {
+			try {
+				const url = new URL(nitterLink);
+				return `https://x.com${url.pathname}`;
+			} catch {
+				return nitterLink;
+			}
+		}
+
+		function renderTweets(tweets: Tweet[], container: HTMLElement) {
+			container.innerHTML = tweets
+				.slice(0, 10)
+				.map(
+					(t) => `
+				<article class="work-item">
+					<header class="item-header">
+						<a href="${t.url}" target="_blank" rel="noopener" style="text-decoration:none">
+							<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">${t.text}</p>
+						</a>
+						<time class="date">${t.date}</time>
+					</header>
+				</article>
+			`,
+				)
+				.join("");
+		}
+
+		async function fetchFromNitter(): Promise<Tweet[] | null> {
+			for (const rss of TWEET_FEEDS) {
+				const api = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rss)}`;
+				try {
+					const res = await fetch(api, { signal: AbortSignal.timeout(6000) });
+					const data = await res.json();
+					if (data.status !== "ok" || !data.items?.length) continue;
+
+					return data.items.map((item: { title: string; link: string; pubDate: string }) => ({
+						text: item.title.replace(/<[^>]*>/g, "").slice(0, 280),
+						url: toXUrl(item.link),
+						date: formatDate(item.pubDate),
+					}));
+				} catch {
+					continue;
+				}
+			}
+			return null;
+		}
+
+		async function loadTweets() {
+			const container = document.getElementById("tweets-container")!;
+			const link = document.getElementById("x-link") as HTMLAnchorElement;
+
+			const cached = getCache();
+
+			// Show cache immediately
+			if (cached?.tweets.length) {
+				renderTweets(cached.tweets, container);
+				link.style.display = "inline";
+
+				// Only re-fetch if stale
+				if (Date.now() - cached.fetchedAt < CACHE_STALE_MS) return;
+			}
+
+			// Fetch fresh (background if cache was shown, blocking if not)
+			const fresh = await fetchFromNitter();
+
+			if (fresh) {
+				setCache(fresh);
+				renderTweets(fresh, container);
+				link.style.display = "inline";
+				return;
+			}
+
+			// No cache, no fresh — use static fallback
+			if (!cached?.tweets.length) {
+				if (STATIC_TWEETS.length) {
+					renderTweets(STATIC_TWEETS, container);
+				} else {
+					container.innerHTML = '<p class="muted">Unable to load posts.</p>';
+				}
+				link.style.display = "inline";
+			}
+		}
+
+		loadPosts();
+		loadTweets();
+
+		// Extension seeder fires after document_idle — re-render if it updates the cache
+		window.addEventListener("tweetsUpdated", () => {
+			const cached = getCache();
+			if (!cached?.tweets.length) return;
+			const container = document.getElementById("tweets-container")!;
+			const link = document.getElementById("x-link") as HTMLAnchorElement;
+			renderTweets(cached.tweets, container);
+			link.style.display = "inline";
+		});
+	</script>
+</Layout>

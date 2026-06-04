@@ -1,0 +1,225 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const periodButtons = `
+	<button class="period-btn row-item" data-period="7day">7 days</button>
+	<button class="period-btn row-item" data-period="1month">30 days</button>
+	<button class="period-btn row-item" data-period="3month">90 days</button>
+	<button class="period-btn row-item" data-period="6month">180 days</button>
+	<button class="period-btn row-item active" data-period="12month">365 days</button>
+	<button class="period-btn row-item" data-period="overall">all time</button>
+`;
+---
+
+<Layout title="music | MERULOX" description="What merulox is listening to.">
+	<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:34px">
+		<h1 style="margin-bottom:0">Music</h1>
+		<div style="text-align:right;line-height:1.4">
+			<div class="date" id="scrobble-total"></div>
+			<div class="date" id="scrobble-since" style="font-size:11px;opacity:0.7"></div>
+		</div>
+	</div>
+
+	<section class="section">
+		<h2>recently played</h2>
+		<div id="recent-tracks" class="track-scroll">
+			<p class="muted">Loading...</p>
+		</div>
+	</section>
+
+	<section class="section">
+		<div class="section-head">
+			<h2 id="artists-heading">top artists</h2>
+		</div>
+		<div class="period-bar kbd-row" data-target="artists" role="group" aria-label="Artist time range" set:html={periodButtons} />
+		<div id="top-artists" class="music-grid">
+			<p class="muted">Loading...</p>
+		</div>
+	</section>
+
+	<section class="section">
+		<div class="section-head">
+			<h2 id="albums-heading">top albums</h2>
+		</div>
+		<div class="period-bar kbd-row" data-target="albums" role="group" aria-label="Album time range" set:html={periodButtons} />
+		<div id="top-albums" class="music-grid">
+			<p class="muted">Loading...</p>
+		</div>
+	</section>
+
+	<a class="email" href="https://www.last.fm/user/merulox" target="_blank" rel="noopener">
+		→ last.fm/user/merulox
+	</a>
+
+	<script>
+		const API_KEY = "9fdb2ae95fb0b95470334c260149c3cb";
+		const USER = "merulox";
+		const LFM = "https://ws.audioscrobbler.com/2.0/";
+		const NO_IMG = "2a96cbd8b46e442fc41c2b86b821562f.png";
+
+		function lfmImg(images: any[]): string {
+			const img = images?.find((i) => i.size === "extralarge");
+			const url = img?.["#text"] || "";
+			return url.includes(NO_IMG) || !url ? "" : url;
+		}
+
+		function nameColor(name: string): string {
+			let h = 0;
+			for (let i = 0; i < name.length; i++) {
+				h = ((h << 5) - h) + name.charCodeAt(i);
+				h |= 0;
+			}
+			return `hsl(${Math.abs(h) % 360}, 28%, 18%)`;
+		}
+
+		function initial(name: string): string {
+			return name.replace(/^[^a-zA-Z0-9]*/, "")[0]?.toUpperCase() || name[0] || "?";
+		}
+
+		function fmt(n: string | number): string {
+			return Number(n).toLocaleString();
+		}
+
+		function formatDate(str: string): string {
+			return str ? str.split(", ")[0] : "";
+		}
+
+		function formatTrackDate(date: { "#text": string; uts: string } | undefined): string {
+			if (!date) return "";
+			const time = date["#text"].split(", ")[1] ?? "";
+			const dayMonth = date["#text"].split(", ")[0].split(" ").slice(0, 2).join(" "); // "04 Jun"
+			const uts = Number(date.uts);
+			if (!uts) return time || dayMonth;
+			const ageHrs = (Date.now() - uts * 1000) / 3_600_000;
+			return ageHrs < 24 ? time : `${dayMonth} · ${time}`;
+		}
+
+		async function getArtistImg(name: string): Promise<string> {
+			try {
+				const res = await fetch(`/api/artist-image?q=${encodeURIComponent(name)}`);
+				if (!res.ok) return "";
+				const data = await res.json();
+				return data.image || "";
+			} catch {
+				return "";
+			}
+		}
+
+		async function loadUserInfo() {
+			try {
+				const res = await fetch(`${LFM}?method=user.getinfo&user=${USER}&api_key=${API_KEY}&format=json`);
+				const data = await res.json();
+				const count = data.user?.playcount;
+				if (count) {
+					const el = document.getElementById("scrobble-total");
+					if (el) el.textContent = `${fmt(count)} scrobbles`;
+				}
+				const unix = data.user?.registered?.unixtime;
+				if (unix) {
+					const d = new Date(Number(unix) * 1000);
+					const since = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+					const el = document.getElementById("scrobble-since");
+					if (el) el.textContent = `since ${since}`;
+				}
+			} catch {}
+		}
+
+		async function loadArtists(period: string) {
+			const el = document.getElementById("top-artists")!;
+			el.innerHTML = '<p class="muted">Loading...</p>';
+			try {
+				const res = await fetch(`${LFM}?method=user.gettopartists&user=${USER}&api_key=${API_KEY}&period=${period}&limit=16&format=json`);
+				const data = await res.json();
+				const artists: any[] = data.topartists?.artist || [];
+				if (!artists.length) {
+					el.innerHTML = '<p class="muted">No data.</p>';
+					return;
+				}
+				const imgs = await Promise.all(artists.map((a) => getArtistImg(a.name)));
+				el.innerHTML = artists.map((a, i) => {
+					const img = imgs[i];
+					return `<a class="grid-item" href="${a.url}" target="_blank" rel="noopener">
+						${img ? `<img src="${img}" alt="" loading="lazy">` : `<div class="grid-fallback" style="background:${nameColor(a.name)}">${initial(a.name)}</div>`}
+						<span class="grid-label">${a.name}</span>
+						<span class="grid-sublabel">${fmt(a.playcount)} plays</span>
+					</a>`;
+				}).join("");
+			} catch {
+				el.innerHTML = '<p class="muted">Failed to load.</p>';
+			}
+		}
+
+		async function loadAlbums(period: string) {
+			const el = document.getElementById("top-albums")!;
+			el.innerHTML = '<p class="muted">Loading...</p>';
+			try {
+				const res = await fetch(`${LFM}?method=user.gettopalbums&user=${USER}&api_key=${API_KEY}&period=${period}&limit=16&format=json`);
+				const data = await res.json();
+				const albums: any[] = data.topalbums?.album || [];
+				if (!albums.length) {
+					el.innerHTML = '<p class="muted">No data.</p>';
+					return;
+				}
+				el.innerHTML = albums.map((a) => {
+					const img = lfmImg(a.image);
+					return `<a class="grid-item" href="${a.url}" target="_blank" rel="noopener">
+						${img ? `<img src="${img}" alt="" loading="lazy">` : `<div class="grid-fallback" style="background:${nameColor(a.name)}">${initial(a.name)}</div>`}
+						<span class="grid-label">${a.name}</span>
+						<span class="grid-sublabel">${a.artist.name} · ${fmt(a.playcount)} plays</span>
+					</a>`;
+				}).join("");
+			} catch {
+				el.innerHTML = '<p class="muted">Failed to load.</p>';
+			}
+		}
+
+		async function loadRecent() {
+			const trackEl = document.getElementById("recent-tracks");
+			if (!trackEl) return;
+			try {
+				const res = await fetch(`${LFM}?method=user.getrecenttracks&user=${USER}&api_key=${API_KEY}&limit=30&format=json`);
+				const data = await res.json();
+				const tracks: any[] = data.recenttracks?.track || [];
+				if (!tracks.length) {
+					trackEl.innerHTML = '<p class="muted">No recent tracks.</p>';
+					return;
+				}
+				trackEl.innerHTML = tracks.map((t) => {
+					const nowPlaying = t["@attr"]?.nowplaying === "true";
+					const dateStr = nowPlaying ? "now playing" : formatTrackDate(t.date);
+					return `<div class="track-item${nowPlaying ? " track-now" : ""}">
+						<span class="track-name">
+							${nowPlaying ? '<span class="np-dot" title="now playing"></span>' : ""}
+							<span class="track-artist">${t.artist["#text"]}</span>
+							<span class="track-sep">—</span>
+							<span class="track-title">${t.name}</span>
+						</span>
+						<span class="track-date">${dateStr}</span>
+					</div>`;
+				}).join("");
+			} catch {
+				trackEl.innerHTML = '<p class="muted">Failed to load.</p>';
+			}
+		}
+
+		// Wire up each period bar independently
+		document.querySelectorAll<HTMLElement>(".period-bar").forEach((bar) => {
+			const target = bar.dataset.target;
+			bar.querySelectorAll(".period-btn").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const period = btn.getAttribute("data-period")!;
+					if (btn.classList.contains("active")) return;
+					bar.querySelectorAll(".period-btn").forEach((b) => b.classList.remove("active"));
+					btn.classList.add("active");
+					if (target === "artists") loadArtists(period);
+					else loadAlbums(period);
+				});
+			});
+		});
+
+		loadUserInfo();
+		loadRecent();
+		loadArtists("12month");
+		loadAlbums("12month");
+	</script>
+</Layout>

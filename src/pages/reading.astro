@@ -1,0 +1,65 @@
+---
+import Layout from "../layouts/Layout.astro";
+import tiers from "../data/books.json";
+
+type Book = { title: string; author: string; stars: number; owned: boolean; note: string };
+type Tier = { tier: string; desc: string; books: Book[] };
+
+const data = tiers as Tier[];
+
+const totalBooks = data.reduce((n, t) => n + t.books.length, 0);
+const owned = data.reduce((n, t) => n + t.books.filter((b) => b.owned).length, 0);
+
+// Split the tier label like "TIER 2 — CORE" into a short label + name
+function splitTier(label: string): { tag: string; name: string } {
+	const parts = label.split("—");
+	if (parts.length === 2) return { tag: parts[0].trim(), name: parts[1].trim() };
+	return { tag: "", name: label.trim() };
+}
+---
+
+<Layout title="reading | MERULOX" description="What merulox reads — a tiered skill tree.">
+	<div class="page-head">
+		<h1>Reading</h1>
+		<span class="date">{owned}/{totalBooks} owned</span>
+	</div>
+
+	<p class="reading-intro">
+		A skill tree, not a list. Each tier assumes the one before it. Foundation books
+		change how you read everything after them; the final tier only makes sense once
+		the rest is in you.
+	</p>
+
+	{
+		data.map((tier) => {
+			const { tag, name } = splitTier(tier.tier);
+			return (
+				<section class="tier">
+					<div class="tier-head">
+						<span class="tier-tag">{tag}</span>
+						<h2 class="tier-name">{name}</h2>
+					</div>
+					<p class="tier-desc">{tier.desc}</p>
+					<ul class="book-list">
+						{tier.books.map((b) => (
+							<li class="book">
+								<div class="book-line">
+									<span class="book-stars" aria-label={`${b.stars} of 3`}>
+										{"★".repeat(b.stars)}
+										<span class="book-stars-empty">{"★".repeat(3 - b.stars)}</span>
+									</span>
+									<span class="book-title">{b.title}</span>
+									<span class="book-author">{b.author}</span>
+									<span class={`book-state ${b.owned ? "owned" : "want"}`}>
+										{b.owned ? "owned" : "get it"}
+									</span>
+								</div>
+								{b.note && <p class="book-note">{b.note}</p>}
+							</li>
+						))}
+					</ul>
+				</section>
+			);
+		})
+	}
+</Layout>

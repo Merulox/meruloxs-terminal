@@ -1,0 +1,276 @@
+[
+  {
+    "tier": "TIER 0 — FOUNDATION",
+    "desc": "Read these first. Each one changes how you read everything else.",
+    "books": [
+      {
+        "title": "The Structure of Scientific Revolutions",
+        "author": "Thomas Kuhn",
+        "stars": 3,
+        "owned": false,
+        "note": "Makes every other book's claims legible. Short (200p)."
+      },
+      {
+        "title": "Thinking in Systems",
+        "author": "Donella Meadows",
+        "stars": 3,
+        "owned": false,
+        "note": "Practical systems lens. Unlocks GEB, Wolfram, Bohm at depth."
+      },
+      {
+        "title": "Influence",
+        "author": "Robert Cialdini",
+        "stars": 3,
+        "owned": false,
+        "note": "Foundation under all Hormozi. Read before 100M Leads."
+      }
+    ]
+  },
+  {
+    "tier": "TIER 1 — CLUSTER ENTRIES",
+    "desc": "Entry point into each domain. Pick your cluster, start here.",
+    "books": [
+      {
+        "title": "Being You",
+        "author": "Anil Seth",
+        "stars": 2,
+        "owned": true,
+        "note": "Best entry into consciousness. Accessible, rigorous."
+      },
+      {
+        "title": "Complexity: A Guided Tour",
+        "author": "Melanie Mitchell",
+        "stars": 2,
+        "owned": true,
+        "note": "Entry into systems/complexity before GEB."
+      },
+      {
+        "title": "How to Change Your Mind",
+        "author": "Michael Pollan",
+        "stars": 2,
+        "owned": true,
+        "note": "Best entry into psychedelics cluster. Journalistic, grounded."
+      },
+      {
+        "title": "100M Offers",
+        "author": "Alex Hormozi",
+        "stars": 2,
+        "owned": true,
+        "note": "Entry into business cluster. Read before 100M Leads."
+      },
+      {
+        "title": "The Kybalion",
+        "author": "Three Initiates",
+        "stars": 1,
+        "owned": true,
+        "note": "Entry into esoteric. Short. Mental models for the cluster."
+      },
+      {
+        "title": "The Telomere Effect",
+        "author": "Blackburn & Epel",
+        "stars": 1,
+        "owned": true,
+        "note": "Standalone. Read whenever."
+      }
+    ]
+  },
+  {
+    "tier": "TIER 2 — CORE",
+    "desc": "Requires Tier 1 of same cluster. The real payload.",
+    "books": [
+      {
+        "title": "The Ego Tunnel",
+        "author": "Thomas Metzinger",
+        "stars": 3,
+        "owned": true,
+        "note": "After: Being You. Hardest consciousness book. Most important."
+      },
+      {
+        "title": "Galileo's Error",
+        "author": "Philip Goff",
+        "stars": 2,
+        "owned": true,
+        "note": "After: Being You. Panpsychism argument — read alongside Metzinger."
+      },
+      {
+        "title": "Surfing Uncertainty",
+        "author": "Andy Clark",
+        "stars": 3,
+        "owned": true,
+        "note": "After: Being You. Predictive processing — dense, foundational."
+      },
+      {
+        "title": "The Mind Illuminated",
+        "author": "Culadasa",
+        "stars": 2,
+        "owned": true,
+        "note": "After: How to Change Your Mind. Practice manual for meditation."
+      },
+      {
+        "title": "Gödel, Escher, Bach",
+        "author": "Douglas Hofstadter",
+        "stars": 3,
+        "owned": true,
+        "note": "After: Complexity. The monument. Takes time."
+      },
+      {
+        "title": "Wholeness & the Implicate Order",
+        "author": "David Bohm",
+        "stars": 3,
+        "owned": true,
+        "note": "After: Complexity + Thinking in Systems. Dense physics/philosophy."
+      },
+      {
+        "title": "DMT Dialogues",
+        "author": "David Luke et al.",
+        "stars": 2,
+        "owned": true,
+        "note": "After: How to Change Your Mind."
+      },
+      {
+        "title": "Entangled Minds",
+        "author": "Dean Radin",
+        "stars": 2,
+        "owned": true,
+        "note": "After: DMT Dialogues. Psi research, quantum framing."
+      },
+      {
+        "title": "100M Leads",
+        "author": "Alex Hormozi",
+        "stars": 2,
+        "owned": true,
+        "note": "After: Influence + 100M Offers."
+      },
+      {
+        "title": "The Science Delusion",
+        "author": "Rupert Sheldrake",
+        "stars": 2,
+        "owned": true,
+        "note": "After: The Kybalion. Challenges scientific dogma directly."
+      }
+    ]
+  },
+  {
+    "tier": "TIER 3 — ADVANCED",
+    "desc": "Requires Tier 2. High cognitive load. High payoff.",
+    "books": [
+      {
+        "title": "The Case Against Reality",
+        "author": "Donald Hoffman",
+        "stars": 3,
+        "owned": true,
+        "note": "After: Ego Tunnel + Galileo's Error. Most radical consciousness thesis."
+      },
+      {
+        "title": "Consciousness Beyond Life",
+        "author": "Pim van Lommel",
+        "stars": 2,
+        "owned": true,
+        "note": "After: Ego Tunnel. NDE data — empirical edge case for consciousness."
+      },
+      {
+        "title": "I Am a Strange Loop",
+        "author": "Douglas Hofstadter",
+        "stars": 3,
+        "owned": false,
+        "note": "After: GEB. Distills GEB's core — more readable, equally deep."
+      },
+      {
+        "title": "A New Kind of Science",
+        "author": "Stephen Wolfram",
+        "stars": 2,
+        "owned": true,
+        "note": "After: GEB + Thinking in Systems. Dense. Skim strategically."
+      },
+      {
+        "title": "Prometheus Rising",
+        "author": "Robert Anton Wilson",
+        "stars": 3,
+        "owned": false,
+        "note": "After: Tier 1 of all clusters. Makes every book you own talk to each other."
+      }
+    ]
+  },
+  {
+    "tier": "TIER 4 — SYNTHESIZERS (final bosses)",
+    "desc": "Read last. These recontextualize everything above.",
+    "books": [
+      {
+        "title": "Steps to an Ecology of Mind",
+        "author": "Gregory Bateson",
+        "stars": 3,
+        "owned": false,
+        "note": "After: everything. Connects cybernetics, consciousness, biology, language."
+      }
+    ]
+  },
+  {
+    "tier": "TO ACQUIRE",
+    "desc": "Not yet owned. High priority.",
+    "books": [
+      {
+        "title": "The Structure of Scientific Revolutions",
+        "author": "Kuhn",
+        "stars": 3,
+        "owned": false,
+        "note": "Short. Get first."
+      },
+      {
+        "title": "Thinking in Systems",
+        "author": "Meadows",
+        "stars": 3,
+        "owned": false,
+        "note": ""
+      },
+      {
+        "title": "Influence",
+        "author": "Cialdini",
+        "stars": 3,
+        "owned": false,
+        "note": ""
+      },
+      {
+        "title": "I Am a Strange Loop",
+        "author": "Hofstadter",
+        "stars": 3,
+        "owned": false,
+        "note": "After GEB."
+      },
+      {
+        "title": "Prometheus Rising",
+        "author": "R.A. Wilson",
+        "stars": 3,
+        "owned": false,
+        "note": "The synthesizer."
+      },
+      {
+        "title": "Steps to an Ecology of Mind",
+        "author": "Bateson",
+        "stars": 3,
+        "owned": false,
+        "note": "The final boss."
+      },
+      {
+        "title": "Psicobiofísica (Vol. 1–4)",
+        "author": "Jacobo Grinberg-Zylberbaum",
+        "stars": 3,
+        "owned": false,
+        "note": "Mexican neuroscientist. Brain fields, consciousness, psi. Pairs with Entangled Minds."
+      },
+      {
+        "title": "La teoría sintérgica",
+        "author": "Jacobo Grinberg-Zylberbaum",
+        "stars": 3,
+        "owned": false,
+        "note": "His core theoretical framework — syntergy, neuronal fields, reality construction."
+      },
+      {
+        "title": "El espacio de la conciencia",
+        "author": "Jacobo Grinberg-Zylberbaum",
+        "stars": 2,
+        "owned": false,
+        "note": "Bridges indigenous Mexican traditions + neuroscience. After Psicobiofísica."
+      }
+    ]
+  }
+]
