@@ -1,0 +1,67 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+// Placeholder entries — the log will eventually be generated from real signals
+// (recent writing, scrobble digests, commits, vault activity). For now this is
+// a hand-written sketch of the format and the kind of thing it will surface.
+const entries = [
+	{
+		date: "2026-06-04",
+		kind: "site",
+		text: "Rebuilt the site from scratch. Terminal-style index, keyboard navigation, live music + reading tabs.",
+	},
+	{
+		date: "2026-06",
+		kind: "genesis",
+		text: "Genesis given persistent memory across sessions and its own terminal goals. Ongoing.",
+	},
+	{
+		date: "2026-04",
+		kind: "boréal",
+		text: "Boréal Numérique paused — 1012 SMS sent, 98 replies, 1 discovery call. Case-study gap still open.",
+	},
+];
+---
+
+<Layout title="log | MERULOX" description="A running log of what merulox is building and thinking.">
+	<h1>Log</h1>
+
+	<p class="log-note">
+		A running record of what's moving — shipped work, shifts in focus, things
+		learned. Eventually generated from the systems that already track this:
+		writing, listening, commits, the vault. For now, a sketch.
+	</p>
+
+	<ul class="log-list">
+		{
+			entries.map((e) => (
+				<li class="log-entry">
+					<div class="log-meta">
+						<time class="log-date">{e.date}</time>
+						<span class="log-kind">{e.kind}</span>
+					</div>
+					<p class="log-text">{e.text}</p>
+				</li>
+			))
+		}
+	</ul>
+
+	<!--
+	IDEAS for the log (build later):
+
+	- Auto-feed: pull recent git commits across active repos (Genesis, SYNTRA, this site),
+	  filter to meaningful ones, render as dated entries.
+	- Weekly scrobble digest: "this week: heavy $uicideboy$, first time hearing X" —
+	  generated from Last.fm weekly chart deltas.
+	- Writing pings: new Substack posts auto-append a log line linking the piece.
+	- Vault signal: when a note crosses from inbox → permanent (synthesized), log it
+	  as "learned: <claim>" — surfaces the knowledge graph growing without exposing it.
+	- Reading movement: book status changes (get it → owned → read) become log lines.
+	- Milestone markers: Boréal client #1, first $X MRR, Genesis embodiment step — manual
+	  but high-signal, pinned above the auto-feed.
+	- Format: group by month, reverse-chronological, monospace dates, one-line entries,
+	  kind tag (ship / think / read / listen / learn). No metrics, no charts — keep it human.
+	- Source of truth: a single log.json (or the obsidian daily notes) that a build step
+	  compiles; site stays static.
+	-->
+</Layout>

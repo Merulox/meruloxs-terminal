@@ -52,8 +52,7 @@ import Layout from "../layouts/Layout.astro";
 
 	<script>
 		// ── Substack ──────────────────────────────────────────────
-		const RSS_URL = "https://merulox.substack.com/feed";
-		const SUBSTACK_API = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
+		const SUBSTACK_API = "/api/feed";
 		const SUMMARY_CACHE_KEY = "merulox_summaries_v1";
 
 		function formatDate(dateStr: string) {
