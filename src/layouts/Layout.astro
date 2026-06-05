@@ -5,23 +5,30 @@ interface Props {
 	title: string;
 	description?: string;
 	homepage?: boolean;
+	navItems?: { href: string; label: string }[];
+	homeHref?: string;
 }
 
 const {
 	title,
 	description = ">merulox's terminal",
 	homepage = false,
+	navItems: customNavItems,
+	homeHref = "/",
 } = Astro.props;
 
 const pathname = Astro.url.pathname;
 const canonicalUrl = new URL(pathname, Astro.site ?? Astro.url.origin);
 
-const navItems = [
+const defaultNavItems = [
 	{ href: "/work", label: "projects" },
 	{ href: "/thinking", label: "writing" },
 	{ href: "/music", label: "music" },
+	{ href: "/reading", label: "reading" },
 	{ href: "/log", label: "log" },
 ];
+
+const navItems = customNavItems ?? defaultNavItems;
 ---
 
 <!doctype html>
@@ -55,7 +62,7 @@ const navItems = [
 			) : (
 				<div class="site-shell">
 					<header class="site-header">
-						<a class="site-name kbd-item" href="/">
+						<a class="site-name kbd-item" href={homeHref}>
 							MERULOX
 						</a>
 						<nav class="site-nav" aria-label="Primary navigation">

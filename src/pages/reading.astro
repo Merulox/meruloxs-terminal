@@ -1,0 +1,125 @@
+---
+import Layout from "../layouts/Layout.astro";
+import tiers from "../data/books.json";
+import shelf from "../data/reading.json";
+
+type Book = { title: string; author: string; stars: number; owned: boolean; note: string };
+type Tier = { tier: string; desc: string; books: Book[] };
+type Shaped = { title: string; author: string; stars: number; note: string };
+type Recent = { title: string; author: string; note: string };
+
+const data = tiers as Tier[];
+const shaped = (shelf.shaped ?? []) as Shaped[];
+const recent = (shelf.recent ?? []) as Recent[];
+
+const totalBooks = data.reduce((n, t) => n + t.books.length, 0);
+const owned = data.reduce((n, t) => n + t.books.filter((b) => b.owned).length, 0);
+
+// Split the tier label like "TIER 2 — CORE" into a short label + name
+function splitTier(label: string): { tag: string; name: string } {
+	const parts = label.split("—");
+	if (parts.length === 2) return { tag: parts[0].trim(), name: parts[1].trim() };
+	return { tag: "", name: label.trim() };
+}
+---
+
+<Layout title="reading | MERULOX" description="What merulox reads — what shaped me, and the curriculum.">
+	<div class="page-head">
+		<h1>Reading</h1>
+		<span class="date">a shelf, not a tracker</span>
+	</div>
+
+	<p class="reading-intro">
+		Not a progress bar — I'm not reading much lately and won't pretend otherwise.
+		This is what's actually rewired how I think, and the curriculum I'd hand
+		someone who wanted to get there.
+	</p>
+
+	{
+		shaped.length > 0 && (
+			<section class="shelf-section">
+				<h2 class="shelf-head">Shaped me</h2>
+				<ul class="book-list">
+					{shaped.map((b) => (
+						<li class="book">
+							<div class="book-line">
+								<span class="book-stars" aria-label={`${b.stars} of 3`}>
+									{"★".repeat(b.stars)}
+									<span class="book-stars-empty">{"★".repeat(3 - b.stars)}</span>
+								</span>
+								<span class="book-title">{b.title}</span>
+								<span class="book-author">{b.author}</span>
+							</div>
+							{b.note && <p class="book-note">{b.note}</p>}
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
+
+	{
+		recent.length > 0 && (
+			<section class="shelf-section">
+				<h2 class="shelf-head">Recently finished</h2>
+				<ul class="book-list">
+					{recent.map((b) => (
+						<li class="book">
+							<div class="book-line">
+								<span class="book-stars book-check" aria-hidden="true">✓</span>
+								<span class="book-title">{b.title}</span>
+								<span class="book-author">{b.author}</span>
+							</div>
+							{b.note && <p class="book-note">{b.note}</p>}
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
+
+	<section class="shelf-section">
+		<div class="shelf-head-row">
+			<h2 class="shelf-head">The curriculum</h2>
+			<span class="date">{owned}/{totalBooks} owned</span>
+		</div>
+		<p class="reading-intro curriculum-intro">
+			A skill tree, not a list. Each tier assumes the one before it. Foundation
+			books change how you read everything after them; the last tier only makes
+			sense once the rest is in you.
+		</p>
+
+		{
+			data.map((tier) => {
+				const { tag, name } = splitTier(tier.tier);
+				return (
+					<section class="tier">
+						<div class="tier-head">
+							<span class="tier-tag">{tag}</span>
+							<h3 class="tier-name">{name}</h3>
+						</div>
+						<p class="tier-desc">{tier.desc}</p>
+						<ul class="book-list">
+							{tier.books.map((b) => (
+								<li class="book">
+									<div class="book-line">
+										<span class="book-stars" aria-label={`${b.stars} of 3`}>
+											{"★".repeat(b.stars)}
+											<span class="book-stars-empty">{"★".repeat(3 - b.stars)}</span>
+										</span>
+										<span class="book-title">{b.title}</span>
+										<span class="book-author">{b.author}</span>
+										<span class={`book-state ${b.owned ? "owned" : "want"}`}>
+											{b.owned ? "owned" : "get it"}
+										</span>
+									</div>
+									{b.note && <p class="book-note">{b.note}</p>}
+								</li>
+							))}
+						</ul>
+					</section>
+				);
+			})
+		}
+	</section>
+</Layout>
