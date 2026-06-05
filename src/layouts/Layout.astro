@@ -189,15 +189,51 @@ const navItems = customNavItems ?? defaultNavItems;
 					rows.forEach(clear);
 					paint(rows[r], c);
 				};
+				const scrollIntoFullView = (el: HTMLElement) => {
+					const margin = 24;
+					const rect = el.getBoundingClientRect();
+					const visualViewport = window.visualViewport;
+					const viewportHeight = visualViewport?.height ?? window.innerHeight;
+					const viewportOffsetTop = visualViewport?.offsetTop ?? 0;
+					const absoluteTop = window.scrollY + viewportOffsetTop + rect.top;
+					const absoluteBottom = absoluteTop + rect.height;
+					const visibleTop = window.scrollY + viewportOffsetTop + margin;
+					const visibleBottom = window.scrollY + viewportOffsetTop + viewportHeight - margin;
+					const maxTop = document.documentElement.scrollHeight - viewportHeight;
+					let top = window.scrollY;
+
+					if (rect.height + margin * 2 <= viewportHeight) {
+						if (absoluteBottom > visibleBottom) {
+							top = absoluteBottom + margin - viewportOffsetTop - viewportHeight;
+						}
+						if (absoluteTop < visibleTop) {
+							top = absoluteTop - margin - viewportOffsetTop;
+						}
+					} else {
+						top = absoluteTop - margin - viewportOffsetTop;
+					}
+
+					window.scrollTo({
+						top: Math.max(0, Math.min(top, maxTop)),
+						behavior: "smooth",
+					});
+				};
 				const scrollForRow = () => {
 					if (r === 0) {
 						window.scrollTo({ top: 0, behavior: "smooth" });
+						return;
+					}
+
+					const bar = rows[r][c].closest<HTMLElement>(".kbd-row");
+					const scrollTarget = bar?.dataset.scrollTarget;
+					if (scrollTarget) {
+						const target = document.querySelector<HTMLElement>(scrollTarget);
+						if (target) scrollIntoFullView(target);
 					} else if (r === rows.length - 1) {
 						// Last row → reveal everything below it (e.g. the last.fm link)
 						window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 					} else {
-						const bar = rows[r][c].closest(".kbd-row") || rows[r][c];
-						bar.scrollIntoView({ block: "center", behavior: "smooth" });
+						(bar || rows[r][c]).scrollIntoView({ block: "center", behavior: "smooth" });
 					}
 				};
 				paintCell();

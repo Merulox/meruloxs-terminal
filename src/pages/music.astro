@@ -27,29 +27,31 @@ const periodButtons = `
 		</div>
 	</section>
 
-	<section class="section">
+	<section id="top-artists-section" class="section">
 		<div class="section-head">
 			<h2 id="artists-heading" class="eyebrow">top artists</h2>
 		</div>
-		<div class="period-bar kbd-row" data-target="artists" role="group" aria-label="Artist time range" set:html={periodButtons} />
+		<div class="period-bar kbd-row" data-target="artists" data-scroll-target="#top-artists-section" role="group" aria-label="Artist time range" set:html={periodButtons} />
 		<div id="top-artists" class="music-grid">
 			<p class="muted">Loading...</p>
 		</div>
 	</section>
 
-	<section class="section">
-		<div class="section-head">
-			<h2 id="albums-heading" class="eyebrow">top albums</h2>
-		</div>
-		<div class="period-bar kbd-row" data-target="albums" role="group" aria-label="Album time range" set:html={periodButtons} />
-		<div id="top-albums" class="music-grid">
-			<p class="muted">Loading...</p>
-		</div>
-	</section>
+	<div id="top-albums-region">
+		<section id="top-albums-section" class="section">
+			<div class="section-head">
+				<h2 id="albums-heading" class="eyebrow">top albums</h2>
+			</div>
+			<div class="period-bar kbd-row" data-target="albums" data-scroll-target="#top-albums-region" role="group" aria-label="Album time range" set:html={periodButtons} />
+			<div id="top-albums" class="music-grid">
+				<p class="muted">Loading...</p>
+			</div>
+		</section>
 
-	<a class="email" href="https://www.last.fm/user/merulox" target="_blank" rel="noopener">
-		→ last.fm/user/merulox
-	</a>
+		<a class="email" href="https://www.last.fm/user/merulox" target="_blank" rel="noopener">
+			→ last.fm/user/merulox
+		</a>
+	</div>
 
 	<script>
 		const API_KEY = "9fdb2ae95fb0b95470334c260149c3cb";
