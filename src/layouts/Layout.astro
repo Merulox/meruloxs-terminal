@@ -107,6 +107,8 @@ const navItems = [
 					navEls.findIndex((el) => el.getAttribute("aria-current") === "page"),
 				);
 				const skipTarget = (e: KeyboardEvent) => {
+					// Let browser/OS shortcuts (Ctrl+L, Cmd+L, etc.) through untouched.
+					if (e.ctrlKey || e.metaKey || e.altKey) return true;
 					const tag = (e.target as HTMLElement).tagName;
 					return tag === "INPUT" || tag === "TEXTAREA";
 				};

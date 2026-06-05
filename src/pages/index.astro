@@ -47,6 +47,7 @@ import Layout from "../layouts/Layout.astro";
 		});
 
 		document.addEventListener("keydown", (e) => {
+			if (e.ctrlKey || e.metaKey || e.altKey) return; // let browser shortcuts through
 			if (e.key === "ArrowDown" || e.key === "j") {
 				e.preventDefault();
 				setActive((active + 1) % items.length);
