@@ -63,6 +63,19 @@ async function render() {
     errorRow.style.display = "flex";
   }
 
+  // ChatGPT → log bridge
+  const { chatgpt_status } = await chrome.storage.local.get("chatgpt_status");
+  if (!chatgpt_status) {
+    setDot("gpt-dot", "warn");
+    setVal("gpt-val", "no sync yet — open chatgpt.com", "warn");
+  } else if (chatgpt_status.ok) {
+    setDot("gpt-dot", "ok");
+    setVal("gpt-val", `${chatgpt_status.count} convos · ${ago(chatgpt_status.time)}`, "ok");
+  } else {
+    setDot("gpt-dot", "err");
+    setVal("gpt-val", `${chatgpt_status.error} · ${ago(chatgpt_status.time)}`, "err");
+  }
+
   // Overall dot
   const allOk = authToken && tweets_cache?.tweets?.length && last_attempt?.ok !== false;
   const anyErr = !authToken || last_attempt?.ok === false;

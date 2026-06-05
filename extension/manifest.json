@@ -1,13 +1,16 @@
 {
   "manifest_version": 3,
   "name": "merulox tweet seeder",
-  "version": "1.1",
-  "description": "Seeds the writing page with fresh X posts via DOM scraping",
+  "version": "1.2",
+  "description": "Seeds the writing page with fresh X posts, and feeds the build-log with ChatGPT history",
   "permissions": ["cookies", "storage", "scripting", "tabs"],
   "host_permissions": [
     "https://x.com/*",
     "https://twitter.com/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
     "http://localhost:4321/*",
+    "http://localhost:47832/*",
     "https://merulox.com/*"
   ],
   "action": {
@@ -21,6 +24,11 @@
     {
       "matches": ["https://x.com/merulox", "https://x.com/merulox/*"],
       "js": ["x_profile.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+      "js": ["chatgpt_history.js"],
       "run_at": "document_idle"
     },
     {

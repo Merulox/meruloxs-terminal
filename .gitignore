@@ -23,6 +23,9 @@ pnpm-debug.log*
 # local Cloudflare/Wrangler state
 .wrangler/
 
+# extension local secret (ChatGPT bridge ingest token)
+extension/config.local.js
+
 # macOS-specific files
 .DS_Store
 

@@ -1,26 +1,11 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import logData from "../data/log.json";
 
-// Placeholder entries — the log will eventually be generated from real signals
-// (recent writing, scrobble digests, commits, vault activity). For now this is
-// a hand-written sketch of the format and the kind of thing it will surface.
-const entries = [
-	{
-		date: "2026-06-04",
-		kind: "site",
-		text: "Rebuilt the site from scratch. Terminal-style index, keyboard navigation, live music + reading tabs.",
-	},
-	{
-		date: "2026-06",
-		kind: "genesis",
-		text: "Genesis given persistent memory across sessions and its own terminal goals. Ongoing.",
-	},
-	{
-		date: "2026-04",
-		kind: "boréal",
-		text: "Boréal Numérique paused — 1012 SMS sent, 98 replies, 1 discovery call. Case-study gap still open.",
-	},
-];
+// Entries are generated every ~48h by ~/scripts/log-digest, which gathers real
+// signals (git commits, Claude Code sessions, vault deltas, ChatGPT history),
+// summarizes + sanitizes them through one Claude call, and writes log.json.
+const entries = logData.entries;
 ---
 
 <Layout title="log | MERULOX" description="A running log of what merulox is building and thinking.">

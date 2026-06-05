@@ -1,0 +1,20 @@
+{
+  "generated": "2026-06-04",
+  "entries": [
+    {
+      "date": "2026-06-04",
+      "kind": "ship",
+      "text": "Spent the last couple days building out the personal site — mostly the writing page and a public build-log that summarizes what I've actually been working on every couple days. Got pulled into a long fight keeping an X/Twitter feed alive: tried a rotating set of Nitter and RSSHub fallbacks, then a cached database approach so it survives flaky uptime, and ended up prototyping a small browser extension to keep the feed populated when everything else fails. Also added Substack and music scrobble sections to the same page."
+    },
+    {
+      "date": "2026-06",
+      "kind": "think",
+      "text": "Genesis given persistent memory across sessions and its own terminal goals. Ongoing."
+    },
+    {
+      "date": "2026-04",
+      "kind": "ship",
+      "text": "Boréal Numérique paused — outreach ran its course, one discovery call booked. Case-study gap still open."
+    }
+  ]
+}
