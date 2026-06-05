@@ -4,7 +4,7 @@
     {
       "date": "2026-06-04",
       "kind": "ship",
-      "text": "Spent the last couple days building out the personal site — mostly the writing page and a public build-log that summarizes what I've actually been working on every couple days. Got pulled into a long fight keeping an X/Twitter feed alive: tried a rotating set of Nitter and RSSHub fallbacks, then a cached database approach so it survives flaky uptime, and ended up prototyping a small browser extension to keep the feed populated when everything else fails. Also added Substack and music scrobble sections to the same page."
+      "text": "Spent the last couple days building out the personal site's /log feature — a bi-daily, auto-generated public record of what I'm actually working on, gathered, summarized, and sanitized before it ever hits the page. Also rebuilt the writing tab to pull in my own posts and music listening, which meant wrestling with unreliable third-party feeds: settled on caching every fetched post into a small database so the page survives when the upstream sources go down. Fixed a keyboard-nav bug that was swallowing browser shortcuts along the way."
     },
     {
       "date": "2026-06",
