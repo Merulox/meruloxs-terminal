@@ -7,6 +7,7 @@ interface Props {
 	homepage?: boolean;
 	navItems?: { href: string; label: string }[];
 	homeHref?: string;
+	noindex?: boolean;
 }
 
 const {
@@ -15,6 +16,7 @@ const {
 	homepage = false,
 	navItems: customNavItems,
 	homeHref = "/",
+	noindex = false,
 } = Astro.props;
 
 const pathname = Astro.url.pathname;
@@ -38,6 +40,7 @@ const navItems = customNavItems ?? defaultNavItems;
 		<link rel="icon" href="/favicon.ico" sizes="32x32" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="description" content={description} />
+		{noindex && <meta name="robots" content="noindex, nofollow" />}
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:type" content="website" />

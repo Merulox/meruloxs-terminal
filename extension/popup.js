@@ -63,6 +63,19 @@ async function render() {
     errorRow.style.display = "flex";
   }
 
+  // Tweets → static site data
+  const { push_status } = await chrome.storage.local.get("push_status");
+  if (!push_status) {
+    setDot("push-dot", "warn");
+    setVal("push-val", "no push yet — click Fetch now", "warn");
+  } else if (push_status.ok) {
+    setDot("push-dot", "ok");
+    setVal("push-val", `pushed ${push_status.count} · ${ago(push_status.time)}`, "ok");
+  } else {
+    setDot("push-dot", "err");
+    setVal("push-val", `${push_status.error} · ${ago(push_status.time)}`, "err");
+  }
+
   // ChatGPT → log bridge
   const { chatgpt_status } = await chrome.storage.local.get("chatgpt_status");
   if (!chatgpt_status) {
@@ -77,8 +90,8 @@ async function render() {
   }
 
   // Overall dot
-  const allOk = authToken && tweets_cache?.tweets?.length && last_attempt?.ok !== false;
-  const anyErr = !authToken || last_attempt?.ok === false;
+  const allOk = authToken && tweets_cache?.tweets?.length && last_attempt?.ok !== false && push_status?.ok === true;
+  const anyErr = !authToken || last_attempt?.ok === false || push_status?.ok === false;
   setDot("overall-dot", anyErr ? "err" : allOk ? "ok" : "warn");
 }
 

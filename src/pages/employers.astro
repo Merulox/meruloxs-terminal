@@ -1,0 +1,79 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { employerNavItems } from "../data/employerNav";
+---
+
+<Layout
+	title="for employers | MERULOX"
+	description="Selected work and how I build — Merulox."
+	homepage={true}
+	noindex={true}
+>
+	<style>
+		.home-inner {
+			gap: 0;
+		}
+
+		.employer-thesis {
+			color: var(--muted);
+			font-size: 13px;
+			line-height: 1.5;
+			max-width: 48ch;
+			text-align: center;
+			margin-top: 12px;
+		}
+
+		.selector {
+			margin-top: 48px;
+		}
+	</style>
+
+	<div class="home">
+		<div class="home-inner">
+			<h1 class="wordmark">MERULOX</h1>
+			<p class="employer-thesis">
+				I build systems that run without me. — open to full-time roles &
+				contract work.
+			</p>
+			<nav class="selector" id="selector" aria-label="Employer navigation">
+				{
+					employerNavItems.map((item, index) => (
+						<a class="sel-item" href={item.href} data-index={index}>
+							<span class="sel-arrow" aria-hidden="true">&gt;</span>
+							<span class="sel-label">{item.label}</span>
+						</a>
+					))
+				}
+			</nav>
+		</div>
+	</div>
+
+	<script>
+		const items = Array.from(document.querySelectorAll(".sel-item"));
+		let active = 0;
+
+		function setActive(i) {
+			items.forEach((el, idx) => el.classList.toggle("active", idx === i));
+			active = i;
+		}
+
+		setActive(0);
+
+		items.forEach((item, idx) => {
+			item.addEventListener("mouseenter", () => setActive(idx));
+		});
+
+		document.addEventListener("keydown", (e) => {
+			if (e.ctrlKey || e.metaKey || e.altKey) return; // let browser shortcuts through
+			if (e.key === "ArrowDown" || e.key === "j") {
+				e.preventDefault();
+				setActive((active + 1) % items.length);
+			} else if (e.key === "ArrowUp" || e.key === "k") {
+				e.preventDefault();
+				setActive((active - 1 + items.length) % items.length);
+			} else if (e.key === "Enter") {
+				items[active].click();
+			}
+		});
+	</script>
+</Layout>

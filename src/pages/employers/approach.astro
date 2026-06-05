@@ -1,0 +1,81 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { employerNavItems } from "../../data/employerNav";
+---
+
+<Layout
+	title="approach for employers | MERULOX"
+	description="How Merulox works and what the stack looks like."
+	navItems={employerNavItems}
+	homeHref="/employers"
+	noindex={true}
+>
+	<style>
+		.principle-list,
+		.stack-cluster {
+			display: grid;
+			gap: 14px;
+		}
+
+		.principle-list p,
+		.stack-row {
+			display: grid;
+			gap: 3px;
+		}
+
+		.principle-list strong,
+		.stack-label {
+			color: var(--text);
+			font-weight: 600;
+		}
+
+		.principle-list .muted,
+		.stack-label {
+			font-size: 13px;
+		}
+	</style>
+
+	<h1>Approach</h1>
+
+	<section class="section">
+		<h2 class="eyebrow">How I work</h2>
+		<div class="principle-list">
+			<p>
+				<strong>Systems over labor.</strong>
+				<span class="muted">I build the thing that does the work, not the work.</span>
+			</p>
+			<p>
+				<strong>AI as a leverage layer.</strong>
+				<span class="muted">Agents handle the clerical; judgment stays human.</span>
+			</p>
+			<p>
+				<strong>Ship to learn.</strong>
+				<span class="muted">
+					Working software surfaces real edge cases faster than specs.
+				</span>
+			</p>
+		</div>
+	</section>
+
+	<section class="section">
+		<h2 class="eyebrow">Stack</h2>
+		<div class="stack-cluster">
+			<div class="stack-row">
+				<span class="stack-label">Build with:</span>
+				<ul class="tag-list">
+					{["Python", "TypeScript", "Astro", "Claude API", "n8n", "SQL/NocoDB", "bash"].map((tag) => (
+						<li>{tag}</li>
+					))}
+				</ul>
+			</div>
+			<div class="stack-row">
+				<span class="stack-label">Run on:</span>
+				<ul class="tag-list">
+					{["systemd", "Cloudflare", "Twilio", "Docker", "Linux (NixOS)"].map((tag) => (
+						<li>{tag}</li>
+					))}
+				</ul>
+			</div>
+		</div>
+	</section>
+</Layout>

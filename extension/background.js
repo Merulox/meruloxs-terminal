@@ -2,19 +2,21 @@ const CACHE_KEY = "tweets_cache";
 const STATUS_KEY = "last_attempt";
 const PROFILE_URL = "https://x.com/merulox";
 
-// Shared ingest secret for the ChatGPT bridge. Lives in config.local.js (gitignored)
-// so it never lands in the repo. Must match LOG_KV_TOKEN on Cloudflare Pages.
+// Shared ingest secret for the local receiver. Lives in config.local.js (gitignored)
+// so it never lands in the repo.
 let LOG_INGEST_TOKEN = "";
 try {
 	importScripts("config.local.js");
 	LOG_INGEST_TOKEN = self.LOG_INGEST_TOKEN || "";
 } catch {
-	// config.local.js absent — ChatGPT bridge disabled until it's added.
+	// config.local.js absent — local receiver pushes are disabled until it's added.
 }
 // Local receiver (log-ingest-receiver, a systemd --user service). Fully local —
 // ChatGPT titles never leave the machine.
 const CHATGPT_INGEST_URL = "http://localhost:47832/chatgpt";
 const CHATGPT_STATUS_KEY = "chatgpt_status";
+const TWEETS_INGEST_URL = "http://localhost:47832/tweets";
+const PUSH_STATUS_KEY = "push_status";
 
 // Injected into an x.com/merulox tab by "Fetch now"
 function scrapeAndStore() {
@@ -78,7 +80,8 @@ async function fetchViaTab() {
       [STATUS_KEY]: { ok: true, time: Date.now(), count: tweets.length, error: null, source: "dom" },
     });
 
-    return { ok: true, tweets };
+    const pushed = await pushTweetsToReceiver(tweets);
+    return { ok: true, tweets, pushed };
   } catch (err) {
     await chrome.storage.local.set({
       [STATUS_KEY]: { ok: false, time: Date.now(), count: 0, error: err.message, source: "dom" },
@@ -86,6 +89,30 @@ async function fetchViaTab() {
     return { ok: false, error: err.message };
   } finally {
     if (opened) chrome.tabs.remove(tabId);
+  }
+}
+
+async function pushTweetsToReceiver(tweets) {
+  const status = { time: Date.now(), count: tweets?.length ?? 0 };
+  try {
+    if (!LOG_INGEST_TOKEN) throw new Error("no ingest token — add config.local.js");
+    if (!tweets?.length) throw new Error("no tweets returned");
+
+    const res = await fetch(TWEETS_INGEST_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${LOG_INGEST_TOKEN}`,
+      },
+      body: JSON.stringify({ tweets }),
+    });
+    if (!res.ok) throw new Error(`ingest ${res.status}`);
+
+    await chrome.storage.local.set({ [PUSH_STATUS_KEY]: { ...status, ok: true, error: null } });
+    return { ok: true };
+  } catch (err) {
+    await chrome.storage.local.set({ [PUSH_STATUS_KEY]: { ...status, ok: false, error: err.message } });
+    return { ok: false, error: err.message };
   }
 }
 

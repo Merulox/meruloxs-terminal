@@ -21,7 +21,7 @@ const periodButtons = `
 	</div>
 
 	<section class="section">
-		<h2>recently played</h2>
+		<h2 class="eyebrow">recently played</h2>
 		<div id="recent-tracks" class="track-scroll">
 			<p class="muted">Loading...</p>
 		</div>
@@ -29,7 +29,7 @@ const periodButtons = `
 
 	<section class="section">
 		<div class="section-head">
-			<h2 id="artists-heading">top artists</h2>
+			<h2 id="artists-heading" class="eyebrow">top artists</h2>
 		</div>
 		<div class="period-bar kbd-row" data-target="artists" role="group" aria-label="Artist time range" set:html={periodButtons} />
 		<div id="top-artists" class="music-grid">
@@ -39,7 +39,7 @@ const periodButtons = `
 
 	<section class="section">
 		<div class="section-head">
-			<h2 id="albums-heading">top albums</h2>
+			<h2 id="albums-heading" class="eyebrow">top albums</h2>
 		</div>
 		<div class="period-bar kbd-row" data-target="albums" role="group" aria-label="Album time range" set:html={periodButtons} />
 		<div id="top-albums" class="music-grid">

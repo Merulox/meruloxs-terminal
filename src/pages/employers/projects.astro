@@ -1,0 +1,112 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { employerNavItems } from "../../data/employerNav";
+
+const projects = [
+	{
+		name: "SYNTRA",
+		state: "active",
+		date: "ongoing",
+		description:
+			"An AI-assisted pipeline for product discovery: scrapes and clusters market signals, validates ideas against them, and outputs ranked, build-ready briefs — compressing the gap between research and a working prototype.",
+		role: "Designed and built the full pipeline.",
+		proof: "Private — demo on request.",
+		tags: ["Claude API", "Python", "n8n", "NocoDB"],
+	},
+	{
+		name: "Personal AI Infrastructure",
+		state: "active",
+		date: "ongoing",
+		description:
+			"A multi-agent system on the Claude API. Ingests articles and transcripts and distills them into a deduplicated claim graph that specialized agents read from and write to over a shared message bus. Persistent memory across sessions; autonomous task execution. Runs as ~50+ coordinated services on systemd.",
+		role: "Sole architect & operator. ~50+ coordinating scripts/services.",
+		proof: "Private repo — walkthrough on request.",
+		tags: ["Claude API", "Python", "systemd", "bash"],
+	},
+	{
+		name: "MERULOX (this site)",
+		state: "active",
+		date: "2026-06",
+		description:
+			"Personal portfolio + auto-updating log/feed pipeline. Static Astro, keyboard-navigable, on Cloudflare Pages with serverless feed proxies.",
+		role: "Design + build + deploy.",
+		proof: "Private repo — you're looking at the live build.",
+		tags: ["Astro", "TypeScript", "CSS", "Cloudflare"],
+	},
+	{
+		name: "Boréal Numérique",
+		state: "paused",
+		date: "2026-04",
+		description:
+			"AI automation for Quebec tradespeople: missed-call text-back, lead triage, quote follow-up. Live Twilio SMS pipeline with Claude reply + close agents. Currently paused.",
+		role: "End-to-end build + outreach system. 1000+ SMS sent through it.",
+		proof: "Private — case study on request.",
+		tags: ["Twilio", "Claude API", "Python", "n8n"],
+	},
+];
+---
+
+<Layout
+	title="projects for employers | MERULOX"
+	description="Selected systems built by Merulox."
+	navItems={employerNavItems}
+	homeHref="/employers"
+	noindex={true}
+>
+	<style>
+		.project-proof {
+			margin-top: 0;
+			font-size: 13px;
+		}
+	</style>
+
+	<h1>Projects</h1>
+
+	<div class="proj-list">
+		{
+			projects.map((p, i) => (
+				<article class={`proj${i === 0 ? " open" : ""}`}>
+					<button class="proj-head list-item" aria-expanded={i === 0 ? "true" : "false"}>
+						<span class="proj-caret" aria-hidden="true">›</span>
+						<span class="proj-name">{p.name}</span>
+						<span class={`proj-state ${p.state}`}>{p.state}</span>
+						<span class="proj-date">{p.date}</span>
+					</button>
+					<div class="proj-body">
+						<p>{p.description}</p>
+						<p><strong>Role:</strong> {p.role}</p>
+						{
+							"link" in p ? (
+								<a
+									class="email project-proof"
+									href={p.link.href}
+									target="_blank"
+									rel="noopener"
+								>
+									{p.link.label}
+								</a>
+							) : (
+								<p class="muted project-proof">{p.proof}</p>
+							)
+						}
+						<ul class="tag-list">
+							{p.tags.map((t) => (
+								<li>{t}</li>
+							))}
+						</ul>
+					</div>
+				</article>
+			))
+		}
+	</div>
+
+	<script>
+		document.querySelectorAll<HTMLButtonElement>(".proj-head").forEach((head) => {
+			head.addEventListener("click", () => {
+				const proj = head.closest(".proj")!;
+				const open = proj.classList.toggle("open");
+				head.setAttribute("aria-expanded", open ? "true" : "false");
+			});
+		});
+	</script>
+</Layout>

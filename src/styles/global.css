@@ -13,7 +13,7 @@
 	color-scheme: dark;
 	--bg: #0d0f13;
 	--text: #c8d0db;
-	--muted: #5a6470;
+	--muted: #8896a4;
 	--faint: #2e3640;
 	--accent: #4eb8c4;
 	--line: #1c2028;
@@ -148,16 +148,19 @@ p {
 h1,
 h2 {
 	color: var(--text);
-	font-size: 15px;
 	font-weight: 600;
-	line-height: 1.4;
+	line-height: 1.3;
 }
 
 h1 {
+	font-size: 22px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
 	margin-bottom: 34px;
 }
 
 h2 {
+	font-size: 17px;
 	margin-bottom: 18px;
 }
 
@@ -312,14 +315,15 @@ h2 {
 	white-space: nowrap;
 }
 
-.proj-state.stagnant {
+.proj-state.stagnant,
+.proj-state.paused {
 	color: #b08c3e;
 }
 
 .proj-date {
 	font-family: "SFMono-Regular", Consolas, monospace;
 	font-size: 11px;
-	color: var(--faint);
+	color: var(--muted);
 	white-space: nowrap;
 }
 
@@ -652,7 +656,7 @@ h2 {
 .reading-date {
 	font-family: "SFMono-Regular", Consolas, monospace;
 	font-size: 11px;
-	color: var(--faint);
+	color: var(--muted);
 }
 
 .reading-soon {
@@ -686,7 +690,7 @@ h2 {
 }
 
 .tier-desc {
-	color: var(--faint);
+	color: var(--muted);
 	font-size: 12px;
 	margin-bottom: 16px;
 	max-width: 56ch;
@@ -748,7 +752,7 @@ h2 {
 
 .book-note {
 	margin: 3px 0 0;
-	color: var(--faint);
+	color: var(--muted);
 	font-size: 12px;
 	max-width: 58ch;
 }
@@ -757,11 +761,12 @@ h2 {
 	margin-bottom: 56px;
 }
 
+.eyebrow,
 .shelf-head {
 	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.1em;
-	color: var(--muted);
+	color: var(--accent);
 	text-transform: uppercase;
 	margin-bottom: 20px;
 }
@@ -823,7 +828,8 @@ h2 {
 .log-date {
 	font-family: "SFMono-Regular", Consolas, monospace;
 	font-size: 11px;
-	color: var(--faint);
+	font-weight: 700;
+	color: var(--muted);
 }
 
 .log-kind {

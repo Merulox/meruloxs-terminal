@@ -65,6 +65,38 @@ Only conversation *titles* + timestamps are ever read, they stay on this machine
 and the summarize+sanitize Claude call strips anything sensitive before it reaches
 the public log.
 
+## X posts → static `/thinking`
+
+The X rail uses the same local-first shape as the log data: scrape locally, write a
+local JSON file, then bake it into the static Astro build.
+
+```
+x.com/merulox tab ──(x_profile.js / Fetch now)──> chrome.storage
+        │  tweets: {text, date:"YYYY-MM", url}
+        ▼
+   background.js ──POST (Bearer token)──> http://localhost:47832/tweets
+                                                    │  (log-ingest-receiver, systemd --user)
+                                                    ▼
+                         ~/website/src/data/tweets.json
+                                                    │
+   npm run deploy ──Astro imports JSON─────────────┘
+                                                    ▼
+                         static HTML on /thinking
+```
+
+After changing `log-ingest-receiver`, restart the user service:
+
+```sh
+systemctl --user restart log-ingest-receiver
+```
+
+Click **Fetch now** in the extension popup while logged in to X. The **tweets →
+site** row should go green after the receiver writes `src/data/tweets.json`.
+
+Freshness is deploy-cadenced: new tweets become public on the next
+`npm run deploy`, not instantly. There is no cloud config, KV, Pages Function, or
+new secret; this reuses `LOG_INGEST_TOKEN` / `~/.secrets/log-ingest-token.txt`.
+
 ## Troubleshooting
 
 - Popup row red with `Failed to fetch` → receiver not running

@@ -1,0 +1,60 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { employerNavItems } from "../../data/employerNav";
+---
+
+<Layout
+	title="contact for employers | MERULOX"
+	description="Contact Merulox for roles and contract work."
+	navItems={employerNavItems}
+	homeHref="/employers"
+	noindex={true}
+>
+	<style>
+		.contact-links {
+			display: grid;
+			gap: 10px;
+			margin-top: 28px;
+			max-width: 58ch;
+		}
+
+		.contact-links .email {
+			margin-top: 0;
+		}
+
+		.contact-links a:not(:first-child) {
+			color: var(--muted);
+		}
+
+		.contact-links a:first-child {
+			font-weight: 600;
+		}
+	</style>
+
+	<h1>Contact</h1>
+
+	<p>
+		Open to full-time roles and contract work — AI/automation engineering,
+		full-stack product, and internal tooling.
+	</p>
+
+	<div class="contact-links">
+		<a class="email" href="mailto:web@merulox.com">web@merulox.com</a>
+		<a
+			class="email"
+			href="https://github.com/merulox"
+			target="_blank"
+			rel="noopener"
+		>
+			GitHub
+		</a>
+		<a
+			class="email"
+			href="https://www.linkedin.com/in/brad-lambert-40088a268/"
+			target="_blank"
+			rel="noopener"
+		>
+			LinkedIn
+		</a>
+	</div>
+</Layout>

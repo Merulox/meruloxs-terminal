@@ -1,0 +1,53 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { employerNavItems } from "../../data/employerNav";
+
+const momentumEntries = [
+	{
+		date: "2026-06-04",
+		kind: "ship",
+		text: "Shipped the site's auto-generated /log pipeline: git commits and work-session signals are gathered, summarized, and sanitized into static JSON, so the site shows real progress without exposing private context.",
+	},
+	{
+		date: "2026-06-03",
+		kind: "ship",
+		text: "Rebuilt the writing feed to pull live X/Substack posts through serverless proxies, with per-post caching so the page stays up when upstream feeds fail.",
+	},
+	{
+		date: "2026-04",
+		kind: "ship",
+		text: "Built and ran Boréal Numérique's SMS automation end to end: missed-call text-back, lead triage, quote follow-up, and Claude reply/close agents over Twilio. 1000+ messages sent through it.",
+	},
+	{
+		date: "2026-06",
+		kind: "think",
+		text: "Genesis: gave a long-running agent persistent memory across sessions and its own terminal goals. Ongoing.",
+	},
+];
+---
+
+<Layout
+	title="momentum for employers | MERULOX"
+	description="Recent shipped work from Merulox."
+	navItems={employerNavItems}
+	homeHref="/employers"
+	noindex={true}
+>
+	<h1>Momentum</h1>
+
+	<p class="log-note">A curated highlight reel of recent shipped work.</p>
+
+	<ul class="log-list">
+		{
+			momentumEntries.map((e) => (
+				<li class="log-entry">
+					<div class="log-meta">
+						<time class="log-date">{e.date}</time>
+						<span class="log-kind">{e.kind}</span>
+					</div>
+					<p class="log-text">{e.text}</p>
+				</li>
+			))
+		}
+	</ul>
+</Layout>

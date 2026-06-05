@@ -3,7 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import tiers from "../data/books.json";
 import shelf from "../data/reading.json";
 
-type Book = { title: string; author: string; stars: number; owned: boolean; note: string };
+type Book = { title: string; author: string; stars: number; owned: boolean; read?: boolean; note: string };
 type Tier = { tier: string; desc: string; books: Book[] };
 type Shaped = { title: string; author: string; stars: number; note: string };
 type Recent = { title: string; author: string; note: string };
@@ -13,7 +13,7 @@ const shaped = (shelf.shaped ?? []) as Shaped[];
 const recent = (shelf.recent ?? []) as Recent[];
 
 const totalBooks = data.reduce((n, t) => n + t.books.length, 0);
-const owned = data.reduce((n, t) => n + t.books.filter((b) => b.owned).length, 0);
+const read = data.reduce((n, t) => n + t.books.filter((b) => b.read).length, 0);
 
 // Split the tier label like "TIER 2 — CORE" into a short label + name
 function splitTier(label: string): { tag: string; name: string } {
@@ -31,8 +31,8 @@ function splitTier(label: string): { tag: string; name: string } {
 
 	<p class="reading-intro">
 		Not a progress bar — I'm not reading much lately and won't pretend otherwise.
-		This is what's actually rewired how I think, and the curriculum I'd hand
-		someone who wanted to get there.
+		The books below shaped how I think. The curriculum under them is the path I'd
+		hand someone who wanted to get there — I'm still working through it myself.
 	</p>
 
 	{
@@ -45,7 +45,7 @@ function splitTier(label: string): { tag: string; name: string } {
 							<div class="book-line">
 								<span class="book-stars" aria-label={`${b.stars} of 3`}>
 									{"★".repeat(b.stars)}
-									<span class="book-stars-empty">{"★".repeat(3 - b.stars)}</span>
+									<span class="book-stars-empty">{"★".repeat(Math.max(0, 3 - b.stars))}</span>
 								</span>
 								<span class="book-title">{b.title}</span>
 								<span class="book-author">{b.author}</span>
@@ -81,7 +81,7 @@ function splitTier(label: string): { tag: string; name: string } {
 	<section class="shelf-section">
 		<div class="shelf-head-row">
 			<h2 class="shelf-head">The curriculum</h2>
-			<span class="date">{owned}/{totalBooks} owned</span>
+			<span class="date">{read}/{totalBooks} read</span>
 		</div>
 		<p class="reading-intro curriculum-intro">
 			A skill tree, not a list. Each tier assumes the one before it. Foundation
@@ -105,7 +105,7 @@ function splitTier(label: string): { tag: string; name: string } {
 									<div class="book-line">
 										<span class="book-stars" aria-label={`${b.stars} of 3`}>
 											{"★".repeat(b.stars)}
-											<span class="book-stars-empty">{"★".repeat(3 - b.stars)}</span>
+											<span class="book-stars-empty">{"★".repeat(Math.max(0, 3 - b.stars))}</span>
 										</span>
 										<span class="book-title">{b.title}</span>
 										<span class="book-author">{b.author}</span>
