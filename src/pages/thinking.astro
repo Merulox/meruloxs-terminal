@@ -60,10 +60,30 @@ function formatTweetTimestamp(tweet: Tweet) {
 		min-height: 340px;
 		overflow-y: auto;
 		padding-right: 10px;
+		position: relative;
 		scrollbar-width: none;
 	}
 	.tweets-viewport::-webkit-scrollbar {
 		display: none;
+	}
+	.tweets-scroll-frame {
+		position: relative;
+	}
+	.tweets-scroll-frame::after {
+		background: linear-gradient(to bottom, transparent, var(--bg));
+		bottom: 0;
+		content: "";
+		height: 56px;
+		left: 0;
+		opacity: 1;
+		pointer-events: none;
+		position: absolute;
+		right: 0;
+		transition: opacity 120ms ease;
+	}
+	.tweets-scroll-frame.at-bottom::after,
+	.tweets-scroll-frame.no-overflow::after {
+		opacity: 0;
 	}
 	.tweet-pagination {
 		align-items: center;
@@ -158,34 +178,36 @@ function formatTweetTimestamp(tweet: Tweet) {
 			</svg>
 			posts
 		</h2>
-		<div class="tweets-viewport" id="tweets-viewport">
-			<div id="tweets-container" data-static-updated-at={tweetData.updatedAt ?? 0}>
-				{
-					tweets.length > 0 ? (
-						tweets.map((tweet, index) => (
-							<article
-								class:list={["work-item", "tweet-item", { "is-reply": tweet.isReply }]}
-								data-tweet-index={index}
-								hidden={index >= TWEET_PAGE_SIZE}
-							>
-								<header class="item-header">
-									<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
-										{tweet.isReply && (
-											<p class="reply-context">
-												<span class="reply-author">{tweet.author ?? "@merulox"}</span>
-												{tweet.replyTo && <> → {tweet.replyTo}</>}
-											</p>
-										)}
-										<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
-									</a>
-									<time class="date" datetime={tweet.timestamp}>{formatTweetTimestamp(tweet)}</time>
-								</header>
-							</article>
-						))
-					) : (
-						<p class="muted">Nothing here yet.</p>
-					)
-				}
+		<div class="tweets-scroll-frame" id="tweets-scroll-frame">
+			<div class="tweets-viewport" id="tweets-viewport">
+				<div id="tweets-container" data-static-updated-at={tweetData.updatedAt ?? 0}>
+					{
+						tweets.length > 0 ? (
+							tweets.map((tweet, index) => (
+								<article
+									class:list={["work-item", "tweet-item", { "is-reply": tweet.isReply }]}
+									data-tweet-index={index}
+									hidden={index >= TWEET_PAGE_SIZE}
+								>
+									<header class="item-header">
+										<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
+											{tweet.isReply && (
+												<p class="reply-context">
+													<span class="reply-author">{tweet.author ?? "@merulox"}</span>
+													{tweet.replyTo && <> → {tweet.replyTo}</>}
+												</p>
+											)}
+											<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
+										</a>
+										<time class="date" datetime={tweet.timestamp}>{formatTweetTimestamp(tweet)}</time>
+									</header>
+								</article>
+							))
+						) : (
+							<p class="muted">Nothing here yet.</p>
+						)
+					}
+				</div>
 			</div>
 		</div>
 		<nav class="tweet-pagination" id="tweet-pagination" aria-label="X post pages" hidden={tweets.length <= TWEET_PAGE_SIZE}>
@@ -421,6 +443,15 @@ function formatTweetTimestamp(tweet: Tweet) {
 			next.disabled = currentTweetPage >= pageCount - 1;
 			status.textContent = `${currentTweetPage + 1} / ${pageCount}`;
 			document.getElementById("tweets-viewport")?.scrollTo({ top: 0 });
+			requestAnimationFrame(updateTweetScrollHint);
+		}
+
+		function updateTweetScrollHint() {
+			const viewport = document.getElementById("tweets-viewport")!;
+			const frame = document.getElementById("tweets-scroll-frame")!;
+			const remaining = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop;
+			frame.classList.toggle("no-overflow", viewport.scrollHeight <= viewport.clientHeight + 1);
+			frame.classList.toggle("at-bottom", remaining <= 2);
 		}
 
 		function renderFreshCachedTweets() {
@@ -443,6 +474,8 @@ function formatTweetTimestamp(tweet: Tweet) {
 			currentTweetPage += 1;
 			setupTweetPagination(document.getElementById("tweets-container")!);
 		});
+		document.getElementById("tweets-viewport")?.addEventListener("scroll", updateTweetScrollHint, { passive: true });
+		window.addEventListener("resize", updateTweetScrollHint);
 
 		// Extension seeder fires after document_idle and only affects the owner's browser.
 		window.addEventListener("tweetsUpdated", () => {
