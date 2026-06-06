@@ -26,13 +26,13 @@ function splitTier(label: string): { tag: string; name: string } {
 <Layout title="reading | MERULOX" description="What merulox reads — what shaped me, and the curriculum.">
 	<div class="page-head">
 		<h1>Reading</h1>
-		<span class="date">a shelf, not a tracker</span>
+		<span class="date">notes and a map</span>
 	</div>
 
 	<p class="reading-intro">
-		Not a progress bar — I'm not reading much lately and won't pretend otherwise.
-		The books below shaped how I think. The curriculum under them is the path I'd
-		hand someone who wanted to get there — I'm still working through it myself.
+		The first shelf is history: books that already shaped how I think. The
+		curriculum below is different. I have not read through it yet; it is a map I
+		built for myself, ordered by what should make the next thing easier to read.
 	</p>
 
 	{
@@ -84,9 +84,8 @@ function splitTier(label: string): { tag: string; name: string } {
 			<span class="date">{read}/{totalBooks} read</span>
 		</div>
 		<p class="reading-intro curriculum-intro">
-			A skill tree, not a list. Each tier assumes the one before it. Foundation
-			books change how you read everything after them; the last tier only makes
-			sense once the rest is in you.
+			A skill tree, not a flex. Each tier assumes the one before it. The point is
+			sequence: foundation books first, synthesizers last.
 		</p>
 
 		{
@@ -109,9 +108,7 @@ function splitTier(label: string): { tag: string; name: string } {
 										</span>
 										<span class="book-title">{b.title}</span>
 										<span class="book-author">{b.author}</span>
-										<span class={`book-state ${b.owned ? "owned" : "want"}`}>
-											{b.owned ? "owned" : "get it"}
-										</span>
+										{b.read && <span class="book-state read">read</span>}
 									</div>
 									{b.note && <p class="book-note">{b.note}</p>}
 								</li>
