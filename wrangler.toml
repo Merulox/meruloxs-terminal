@@ -6,6 +6,6 @@ pages_build_output_dir = "./dist"
 [env.production.ai]
 binding = "AI"
 
-[[kv_namespaces]]
+[[env.production.kv_namespaces]]
 binding = "SUBSTACK_SUMMARIES"
 id = "b54b7e6037804aec93c8f9d1422833e3"
