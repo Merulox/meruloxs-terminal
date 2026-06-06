@@ -29,6 +29,18 @@ import { employerNavItems } from "../../data/employerNav";
 		.contact-links a:first-child {
 			font-weight: 600;
 		}
+
+		.contact-pending {
+			color: var(--muted);
+			font-family: "SFMono-Regular", Consolas, monospace;
+			font-size: 12px;
+		}
+
+		.contact-pending::before {
+			content: "[pending]";
+			color: var(--faint);
+			margin-right: 8px;
+		}
 	</style>
 
 	<h1>Contact</h1>
@@ -56,5 +68,6 @@ import { employerNavItems } from "../../data/employerNav";
 		>
 			LinkedIn
 		</a>
+		<span class="contact-pending">Resume PDF — coming soon</span>
 	</div>
 </Layout>

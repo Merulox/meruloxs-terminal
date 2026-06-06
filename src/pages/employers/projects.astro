@@ -4,13 +4,26 @@ import { employerNavItems } from "../../data/employerNav";
 
 const projects = [
 	{
+		name: "Boréal Numérique",
+		state: "paused",
+		date: "2026-04",
+		description:
+			"AI automation system for Quebec tradespeople: missed-call text-back, lead triage, quote follow-up, and AI-assisted reply and close agents.",
+		role: "End-to-end build: Twilio SMS pipeline, Claude reply logic, lead flow, outreach system, and operational testing.",
+		impact: "1000+ SMS sent through the system.",
+		proof: ["Case study available on request", "Architecture diagram coming soon"],
+		tags: ["Twilio", "Claude API", "Python", "n8n"],
+	},
+	{
 		name: "SYNTRA",
 		state: "active",
 		date: "ongoing",
 		description:
-			"An AI-assisted pipeline for product discovery: scrapes and clusters market signals, validates ideas against them, and outputs ranked, build-ready briefs — compressing the gap between research and a working prototype.",
+			"AI-assisted product discovery pipeline that scrapes and clusters market signals, validates product ideas against those signals, and outputs ranked build-ready briefs.",
 		role: "Designed and built the full pipeline.",
-		proof: "Private — demo on request.",
+		impact:
+			"Compresses early product research into structured product opportunities.",
+		proof: ["Private walkthrough available", "Architecture diagram coming soon"],
 		tags: ["Claude API", "Python", "n8n", "NocoDB"],
 	},
 	{
@@ -18,30 +31,24 @@ const projects = [
 		state: "active",
 		date: "ongoing",
 		description:
-			"A multi-agent system on the Claude API. Ingests articles and transcripts and distills them into a deduplicated claim graph that specialized agents read from and write to over a shared message bus. Persistent memory across sessions; autonomous task execution. Runs as ~50+ coordinated services on systemd.",
-		role: "Sole architect & operator. ~50+ coordinating scripts/services.",
-		proof: "Private repo — walkthrough on request.",
+			"Persistent multi-agent infrastructure for ingesting articles and transcripts, extracting claims, maintaining shared memory, and coordinating specialized agents across long-running work sessions.",
+		role: "Sole architect and operator. Built 50+ scripts and services around ingestion, memory, coordination, and task execution.",
+		impact:
+			"Turns fragmented research and work sessions into durable, recoverable system memory.",
+		proof: ["Private walkthrough available", "Architecture diagram coming soon"],
 		tags: ["Claude API", "Python", "systemd", "bash"],
 	},
 	{
-		name: "MERULOX (this site)",
+		name: "MERULOX",
 		state: "active",
 		date: "2026-06",
 		description:
-			"Personal portfolio + auto-updating log/feed pipeline. Static Astro, keyboard-navigable, on Cloudflare Pages with serverless feed proxies.",
-		role: "Design + build + deploy.",
-		proof: "Private repo — you're looking at the live build.",
+			"Personal portfolio and auto-updating log/feed pipeline. Static Astro site, keyboard-navigable, deployed on Cloudflare Pages with serverless feed proxies.",
+		role: "Designed, built, and deployed.",
+		impact:
+			"Shows shipped work and recent progress without exposing private context.",
+		proof: ["Live build", "Architecture diagram coming soon"],
 		tags: ["Astro", "TypeScript", "CSS", "Cloudflare"],
-	},
-	{
-		name: "Boréal Numérique",
-		state: "paused",
-		date: "2026-04",
-		description:
-			"AI automation for Quebec tradespeople: missed-call text-back, lead triage, quote follow-up. Live Twilio SMS pipeline with Claude reply + close agents. Currently paused.",
-		role: "End-to-end build + outreach system. 1000+ SMS sent through it.",
-		proof: "Private — case study on request.",
-		tags: ["Twilio", "Claude API", "Python", "n8n"],
 	},
 ];
 ---
@@ -54,13 +61,80 @@ const projects = [
 	noindex={true}
 >
 	<style>
-		.project-proof {
-			margin-top: 0;
+		.project-intro {
+			margin-bottom: 28px;
+			color: var(--muted);
 			font-size: 13px;
+		}
+
+		.project-fields {
+			display: grid;
+			gap: 13px;
+		}
+
+		.project-field {
+			display: grid;
+			grid-template-columns: 72px minmax(0, 1fr);
+			gap: 12px;
+			align-items: baseline;
+		}
+
+		.project-field dt {
+			color: var(--accent);
+			font-family: "SFMono-Regular", Consolas, monospace;
+			font-size: 10px;
+			text-transform: uppercase;
+		}
+
+		.project-field dd {
+			margin: 0;
+			color: var(--muted);
+			font-size: 13px;
+			max-width: 58ch;
+		}
+
+		.project-proof {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 7px 14px;
+			list-style: none;
+			padding: 0;
+		}
+
+		.project-proof li {
+			color: var(--muted);
+			font-family: "SFMono-Regular", Consolas, monospace;
+			font-size: 10px;
+		}
+
+		.project-proof li::before {
+			content: "[ ]";
+			color: var(--faint);
+			margin-right: 6px;
+		}
+
+		.project-proof li:first-child::before {
+			content: "[+]";
+			color: var(--accent);
+		}
+
+		.project-stack {
+			margin-top: 15px;
+		}
+
+		@media (max-width: 600px) {
+			.project-field {
+				grid-template-columns: 1fr;
+				gap: 2px;
+			}
 		}
 	</style>
 
 	<h1>Projects</h1>
+	<p class="project-intro">
+		Selected systems with the build, operational value, and available evidence made
+		explicit.
+	</p>
 
 	<div class="proj-list">
 		{
@@ -73,26 +147,34 @@ const projects = [
 						<span class="proj-date">{p.date}</span>
 					</button>
 					<div class="proj-body">
-						<p>{p.description}</p>
-						<p><strong>Role:</strong> {p.role}</p>
-						{
-							"link" in p ? (
-								<a
-									class="email project-proof"
-									href={p.link.href}
-									target="_blank"
-									rel="noopener"
-								>
-									{p.link.label}
-								</a>
-							) : (
-								<p class="muted project-proof">{p.proof}</p>
-							)
-						}
-						<ul class="tag-list">
-							{p.tags.map((t) => (
-								<li>{t}</li>
-							))}
+						<dl class="project-fields">
+							<div class="project-field">
+								<dt>What</dt>
+								<dd>{p.description}</dd>
+							</div>
+							<div class="project-field">
+								<dt>Built</dt>
+								<dd>{p.role}</dd>
+							</div>
+							<div class="project-field">
+								<dt>Impact</dt>
+								<dd>{p.impact}</dd>
+							</div>
+							<div class="project-field">
+								<dt>Proof</dt>
+								<dd>
+									<ul class="project-proof">
+										{p.proof.map((item) => <li>{item}</li>)}
+									</ul>
+								</dd>
+							</div>
+							<div class="project-field">
+								<dt>Status</dt>
+								<dd>{p.state} / {p.date}</dd>
+							</div>
+						</dl>
+						<ul class="tag-list project-stack" aria-label={`${p.name} stack`}>
+							{p.tags.map((t) => <li>{t}</li>)}
 						</ul>
 					</div>
 				</article>
