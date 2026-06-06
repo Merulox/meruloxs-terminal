@@ -9,11 +9,29 @@ type Tweet = {
 	author?: string;
 	isReply?: boolean;
 	replyTo?: string;
+	replyToUrl?: string;
 };
 
-const tweets = ((tweetData.tweets ?? []) as Tweet[])
+function orchestrateTweets(input: Tweet[]) {
+	const replies = new Map<string, Tweet[]>();
+	const roots: Tweet[] = [];
+	const urls = new Set(input.map((tweet) => tweet.url));
+
+	for (const tweet of input) {
+		if (tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl)) {
+			replies.set(tweet.replyToUrl, [...(replies.get(tweet.replyToUrl) ?? []), tweet]);
+		} else {
+			roots.push(tweet);
+		}
+	}
+
+	return roots.flatMap((tweet) => [tweet, ...(replies.get(tweet.url) ?? [])]);
+}
+
+const tweets = orchestrateTweets(((tweetData.tweets ?? []) as Tweet[])
 	.filter((tweet) => tweet.text && tweet.url)
-	.slice(0, 10);
+	.slice(0, 30));
+const TWEET_PAGE_SIZE = 10;
 ---
 
 <style is:global>
@@ -22,6 +40,47 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 	}
 	.tweet-item {
 		position: relative;
+	}
+	.tweets-viewport {
+		height: min(52vh, 460px);
+		min-height: 340px;
+		overflow-y: auto;
+		padding-right: 10px;
+		scrollbar-color: var(--faint) transparent;
+		scrollbar-width: thin;
+	}
+	.tweet-pagination {
+		align-items: center;
+		border-top: 1px solid var(--faint);
+		display: flex;
+		justify-content: space-between;
+		margin-top: 12px;
+		padding-top: 10px;
+	}
+	.tweet-pagination[hidden] {
+		display: none;
+	}
+	.tweet-page-button {
+		background: transparent;
+		border: 0;
+		color: var(--muted);
+		cursor: pointer;
+		font: inherit;
+		height: 28px;
+		padding: 0;
+		width: 28px;
+	}
+	.tweet-page-button:hover:not(:disabled) {
+		color: var(--accent);
+	}
+	.tweet-page-button:disabled {
+		cursor: default;
+		opacity: 0.25;
+	}
+	.tweet-page-status {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
 	}
 	.tweet-item.is-reply {
 		border-top: 0 !important;
@@ -61,6 +120,11 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 		font-style: italic;
 	}
 	@media (max-width: 600px) {
+		.tweets-viewport {
+			height: 55vh;
+			min-height: 320px;
+			padding-right: 6px;
+		}
 		.tweet-item.is-reply {
 			margin-left: 12px;
 			padding-left: 14px;
@@ -78,30 +142,41 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 			</svg>
 			posts
 		</h2>
-		<div id="tweets-container" data-static-updated-at={tweetData.updatedAt ?? 0}>
-			{
-				tweets.length > 0 ? (
-					tweets.map((tweet) => (
-						<article class:list={["work-item", "tweet-item", { "is-reply": tweet.isReply }]}>
-							<header class="item-header">
-								<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
-									{tweet.isReply && (
-										<p class="reply-context">
-											<span class="reply-author">{tweet.author ?? "@merulox"}</span>
-											{tweet.replyTo && <> → {tweet.replyTo}</>}
-										</p>
-									)}
-									<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
-								</a>
-								<time class="date">{tweet.date}</time>
-							</header>
-						</article>
-					))
-				) : (
-					<p class="muted">Nothing here yet.</p>
-				)
-			}
+		<div class="tweets-viewport" id="tweets-viewport">
+			<div id="tweets-container" data-static-updated-at={tweetData.updatedAt ?? 0}>
+				{
+					tweets.length > 0 ? (
+						tweets.map((tweet, index) => (
+							<article
+								class:list={["work-item", "tweet-item", { "is-reply": tweet.isReply }]}
+								data-tweet-index={index}
+								hidden={index >= TWEET_PAGE_SIZE}
+							>
+								<header class="item-header">
+									<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
+										{tweet.isReply && (
+											<p class="reply-context">
+												<span class="reply-author">{tweet.author ?? "@merulox"}</span>
+												{tweet.replyTo && <> → {tweet.replyTo}</>}
+											</p>
+										)}
+										<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
+									</a>
+									<time class="date">{tweet.date}</time>
+								</header>
+							</article>
+						))
+					) : (
+						<p class="muted">Nothing here yet.</p>
+					)
+				}
+			</div>
 		</div>
+		<nav class="tweet-pagination" id="tweet-pagination" aria-label="X post pages" hidden={tweets.length <= TWEET_PAGE_SIZE}>
+			<button class="tweet-page-button" id="tweet-prev" type="button" aria-label="Previous X posts" title="Previous page">←</button>
+			<span class="tweet-page-status" id="tweet-page-status">1 / {Math.max(1, Math.ceil(tweets.length / TWEET_PAGE_SIZE))}</span>
+			<button class="tweet-page-button" id="tweet-next" type="button" aria-label="Next X posts" title="Next page">→</button>
+		</nav>
 		<a
 			class="email"
 			href="https://x.com/merulox"
@@ -129,25 +204,11 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 	<script>
 		// ── Substack ──────────────────────────────────────────────
 		const SUBSTACK_API = "/api/feed";
-		const SUMMARY_CACHE_KEY = "merulox_summaries_v1";
 
 		function formatDate(dateStr: string) {
 			if (!dateStr) return "";
 			const d = new Date(dateStr);
 			return d.toISOString().slice(0, 7);
-		}
-
-		function getSummaryCache(): Record<string, string> {
-			try { return JSON.parse(localStorage.getItem(SUMMARY_CACHE_KEY) || "{}"); }
-			catch { return {}; }
-		}
-
-		function saveSummary(url: string, summary: string) {
-			try {
-				const cache = getSummaryCache();
-				cache[url] = summary;
-				localStorage.setItem(SUMMARY_CACHE_KEY, JSON.stringify(cache));
-			} catch {}
 		}
 
 		function postSlug(url: string) {
@@ -181,13 +242,10 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 					return;
 				}
 
-				const cache = getSummaryCache();
-
 				container.innerHTML = data.items
-					.map((post: { link: string; title: string; pubDate: string }) => {
+					.map((post: { link: string; title: string; pubDate: string; summary?: string }) => {
 						const slug = postSlug(post.link);
-						const cached = cache[post.link];
-						const summaryHtml = `<p id="summary-${slug}" class="muted${cached ? "" : " generating"}" style="margin-top:6px;font-size:13px;max-width:58ch">${cached ?? "generating…"}</p>`;
+						const summaryHtml = `<p id="summary-${slug}" class="muted${post.summary ? "" : " generating"}" style="margin-top:6px;font-size:13px;max-width:58ch">${post.summary ?? "generating…"}</p>`;
 						return `
 					<article class="work-item">
 						<header class="item-header">
@@ -203,12 +261,11 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 
 				link.style.display = "inline";
 
-				// Fetch summaries for any posts not yet cached
-				for (const post of data.items as { link: string }[]) {
-					if (cache[post.link]) continue;
+				// Generate only summaries that do not exist in the shared KV store.
+				for (const post of data.items as { link: string; summary?: string }[]) {
+					if (post.summary) continue;
 					fetchSummary(post.link).then((summary) => {
 						if (!summary) return;
-						saveSummary(post.link, summary);
 						renderSummary(postSlug(post.link), summary);
 					}).catch(() => {
 						renderSummary(postSlug(post.link), "");
@@ -228,6 +285,7 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 			author?: string;
 			isReply?: boolean;
 			replyTo?: string;
+			replyToUrl?: string;
 		}
 
 		interface TweetCache {
@@ -236,6 +294,8 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 		}
 
 		const TWEET_CACHE_KEY = "merulox_tweets_v1";
+		const TWEET_PAGE_SIZE = 10;
+		let currentTweetPage = 0;
 
 		function getCache(): TweetCache | null {
 			try {
@@ -248,9 +308,10 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 
 		function renderTweets(tweets: Tweet[], container: HTMLElement) {
 			container.replaceChildren();
-			for (const tweet of tweets.slice(0, 10)) {
+			for (const [index, tweet] of orchestrateTweets(tweets.slice(0, 30)).entries()) {
 				const article = document.createElement("article");
 				article.className = `work-item tweet-item${tweet.isReply ? " is-reply" : ""}`;
+				article.dataset.tweetIndex = String(index);
 
 				const header = document.createElement("header");
 				header.className = "item-header";
@@ -290,6 +351,45 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 				article.append(header);
 				container.append(article);
 			}
+			currentTweetPage = 0;
+			setupTweetPagination(container);
+		}
+
+		function orchestrateTweets(tweets: Tweet[]) {
+			const replies = new Map<string, Tweet[]>();
+			const roots: Tweet[] = [];
+			const urls = new Set(tweets.map((tweet) => tweet.url));
+
+			for (const tweet of tweets) {
+				if (tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl)) {
+					replies.set(tweet.replyToUrl, [...(replies.get(tweet.replyToUrl) ?? []), tweet]);
+				} else {
+					roots.push(tweet);
+				}
+			}
+
+			return roots.flatMap((tweet) => [tweet, ...(replies.get(tweet.url) ?? [])]);
+		}
+
+		function setupTweetPagination(container: HTMLElement) {
+			const items = Array.from(container.querySelectorAll<HTMLElement>(".tweet-item"));
+			const pageCount = Math.max(1, Math.ceil(items.length / TWEET_PAGE_SIZE));
+			currentTweetPage = Math.min(currentTweetPage, pageCount - 1);
+
+			for (const [index, item] of items.entries()) {
+				item.hidden = Math.floor(index / TWEET_PAGE_SIZE) !== currentTweetPage;
+			}
+
+			const pagination = document.getElementById("tweet-pagination")!;
+			const previous = document.getElementById("tweet-prev") as HTMLButtonElement;
+			const next = document.getElementById("tweet-next") as HTMLButtonElement;
+			const status = document.getElementById("tweet-page-status")!;
+
+			pagination.hidden = pageCount <= 1;
+			previous.disabled = currentTweetPage === 0;
+			next.disabled = currentTweetPage >= pageCount - 1;
+			status.textContent = `${currentTweetPage + 1} / ${pageCount}`;
+			document.getElementById("tweets-viewport")?.scrollTo({ top: 0 });
 		}
 
 		function renderFreshCachedTweets() {
@@ -301,7 +401,17 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 		}
 
 		loadPosts();
+		setupTweetPagination(document.getElementById("tweets-container")!);
 		renderFreshCachedTweets();
+
+		document.getElementById("tweet-prev")?.addEventListener("click", () => {
+			currentTweetPage -= 1;
+			setupTweetPagination(document.getElementById("tweets-container")!);
+		});
+		document.getElementById("tweet-next")?.addEventListener("click", () => {
+			currentTweetPage += 1;
+			setupTweetPagination(document.getElementById("tweets-container")!);
+		});
 
 		// Extension seeder fires after document_idle and only affects the owner's browser.
 		window.addEventListener("tweetsUpdated", () => {

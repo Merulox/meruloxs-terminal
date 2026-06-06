@@ -91,10 +91,10 @@ systemctl --user restart log-ingest-receiver
 ```
 
 The extension fetches automatically once per hour while the browser is running.
-It opens the profile in a background tab when needed, scrapes the rendered posts,
-pushes them to the local receiver, then closes the tab. Visiting the X profile also
-pushes the scraped posts automatically. Reply context is preserved so the writing
-page can render continuations as indented threads with author attribution.
+It opens the replies-inclusive profile in a background tab, scrolls until it has
+up to 30 posts, pushes them to the local receiver, then closes the tab. Reply
+context is preserved so the writing page can render continuations as indented
+threads with author attribution.
 
 Click **Fetch now** in the extension popup to force an immediate refresh. The
 **tweets → site** row should go green after the receiver writes

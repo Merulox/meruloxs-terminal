@@ -1,5 +1,4 @@
-// Cloudflare Pages Function — uses Cloudflare Workers AI (free tier)
-// Requires: add AI binding named "AI" in Cloudflare Pages → Settings → Functions → AI bindings
+// Cloudflare Pages Function — generates each summary once, then stores it in KV.
 
 export async function onRequest(context) {
 	if (context.request.method === "OPTIONS") {
@@ -17,15 +16,34 @@ export async function onRequest(context) {
 	const headers = {
 		"Content-Type": "application/json",
 		"Access-Control-Allow-Origin": "*",
-		"Cache-Control": "public, max-age=2592000",
+		"Cache-Control": "public, max-age=86400",
 	};
 
 	if (!postUrl) {
 		return new Response(JSON.stringify({ error: "url required" }), { status: 400, headers });
 	}
 
-	if (!context.env.AI) {
-		return new Response(JSON.stringify({ error: "AI binding not configured — add it in Cloudflare Pages → Settings → Functions → AI bindings" }), {
+	let parsedPostUrl;
+	try {
+		parsedPostUrl = new URL(postUrl);
+		if (parsedPostUrl.protocol !== "https:" || parsedPostUrl.hostname !== "merulox.substack.com") {
+			throw new Error("unsupported host");
+		}
+	} catch {
+		return new Response(JSON.stringify({ error: "valid merulox.substack.com URL required" }), {
+			status: 400,
+			headers,
+		});
+	}
+
+	const key = `summary:${parsedPostUrl.pathname}`;
+	const stored = await context.env.SUBSTACK_SUMMARIES?.get(key);
+	if (stored) {
+		return new Response(JSON.stringify({ summary: stored, source: "kv" }), { headers });
+	}
+
+	if (!context.env.AI || !context.env.SUBSTACK_SUMMARIES) {
+		return new Response(JSON.stringify({ error: "AI or SUBSTACK_SUMMARIES binding not configured" }), {
 			status: 500,
 			headers,
 		});
@@ -60,7 +78,10 @@ export async function onRequest(context) {
 		});
 
 		const summary = (result.response ?? "").trim();
-		return new Response(JSON.stringify({ summary }), { headers });
+		if (!summary) throw new Error("empty summary");
+
+		await context.env.SUBSTACK_SUMMARIES.put(key, summary);
+		return new Response(JSON.stringify({ summary, source: "generated" }), { headers });
 	} catch (err) {
 		return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
 	}

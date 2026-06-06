@@ -1,6 +1,6 @@
 const CACHE_KEY = "tweets_cache";
 const STATUS_KEY = "last_attempt";
-const PROFILE_URL = "https://x.com/merulox";
+const PROFILE_URL = "https://x.com/merulox/with_replies";
 const AUTO_FETCH_ALARM = "tweet-auto-fetch";
 const AUTO_FETCH_MINUTES = 60;
 let activeFetch = null;
@@ -21,74 +21,89 @@ const CHATGPT_STATUS_KEY = "chatgpt_status";
 const TWEETS_INGEST_URL = "http://localhost:47832/tweets";
 const PUSH_STATUS_KEY = "push_status";
 
-// Injected into an x.com/merulox tab by "Fetch now"
-function scrapeAndStore() {
+// Injected into a hidden replies-inclusive profile tab.
+async function scrapeAndStore() {
   const SCREEN_NAME = "merulox";
-  const articles = document.querySelectorAll('article[data-testid="tweet"]');
-  const tweets = [];
+  const TARGET_COUNT = 30;
+  const tweets = new Map();
 
-  function replyMetadata(article) {
-    const context = article.innerText
+  function replyMetadata(article, currentHref) {
+    const lines = article.innerText
       .split("\n")
-      .map((line) => line.trim())
-      .find((line) => line.startsWith("Replying to"));
+      .map((line) => line.trim());
+    const context = lines.find((line) => line.startsWith("Replying to"));
+    const isThread = lines.some((line) => line === "Show this thread");
 
-    if (!context) return {};
+    if (!context && !isThread) return {};
 
-    return {
+    const parentHref = Array.from(article.querySelectorAll('a[href*="/status/"]'))
+      .map((link) => link.getAttribute("href")?.split("?")[0])
+      .find((href) => href && href !== currentHref);
+    const parentAuthor = parentHref?.match(/^\/([^/]+)\/status\//)?.[1];
+
+    const metadata = {
       isReply: true,
-      replyTo: context.replace(/^Replying to\s*/i, "").trim(),
     };
+    if (context) metadata.replyTo = context.replace(/^Replying to\s*/i, "").trim();
+    else if (parentAuthor) metadata.replyTo = `@${parentAuthor}`;
+    if (parentHref) metadata.replyToUrl = `https://x.com${parentHref}`;
+    return metadata;
   }
 
-  for (const article of articles) {
-    const textEl = article.querySelector('[data-testid="tweetText"]');
-    const timeEl = article.querySelector("time");
-    const linkEl = article.querySelector(`a[href*="/${SCREEN_NAME}/status/"]`);
-    if (!textEl || !linkEl) continue;
-    const href = linkEl.getAttribute("href");
-    const author = href?.match(/^\/([^/]+)\/status\//)?.[1];
-    tweets.push({
-      text: textEl.textContent.trim(),
-      date: timeEl?.getAttribute("datetime")?.slice(0, 7) ?? new Date().toISOString().slice(0, 7),
-      url: `https://x.com${href}`,
-      author: author ? `@${author}` : `@${SCREEN_NAME}`,
-      ...replyMetadata(article),
-    });
+  function collectVisibleTweets() {
+    const articles = document.querySelectorAll('article[data-testid="tweet"]');
+    for (const article of articles) {
+      const textEl = article.querySelector('[data-testid="tweetText"]');
+      const timeEl = article.querySelector("time");
+      const linkEl = timeEl?.closest(`a[href*="/${SCREEN_NAME}/status/"]`)
+        ?? article.querySelector(`a[href*="/${SCREEN_NAME}/status/"]`);
+      if (!textEl || !linkEl) continue;
+      const href = linkEl.getAttribute("href")?.split("?")[0];
+      const author = href?.match(/^\/([^/]+)\/status\//)?.[1];
+      const url = `https://x.com${href}`;
+      tweets.set(url, {
+        text: textEl.textContent.trim(),
+        date: timeEl?.getAttribute("datetime")?.slice(0, 7) ?? new Date().toISOString().slice(0, 7),
+        url,
+        author: author ? `@${author}` : `@${SCREEN_NAME}`,
+        ...replyMetadata(article, href),
+      });
+    }
   }
 
-  return tweets;
+  let unchangedRounds = 0;
+  let previousCount = 0;
+  for (let round = 0; round < 20 && tweets.size < TARGET_COUNT && unchangedRounds < 3; round += 1) {
+    collectVisibleTweets();
+    unchangedRounds = tweets.size === previousCount ? unchangedRounds + 1 : 0;
+    previousCount = tweets.size;
+    window.scrollTo(0, document.body.scrollHeight);
+    await new Promise((resolve) => setTimeout(resolve, 900));
+  }
+  collectVisibleTweets();
+
+  return Array.from(tweets.values()).slice(0, TARGET_COUNT);
 }
 
 async function runFetchViaTab() {
-  // Find an existing x.com/merulox tab
-  const tabs = await chrome.tabs.query({ url: "https://x.com/merulox*" });
-  let tabId;
-  let opened = false;
-
-  if (tabs.length > 0) {
-    tabId = tabs[0].id;
-  } else {
-    // Open the profile page, wait for it to load
-    const tab = await chrome.tabs.create({ url: PROFILE_URL, active: false });
-    tabId = tab.id;
-    opened = true;
-    await new Promise((resolve) => {
-      const listener = (id, info) => {
-        if (id === tabId && info.status === "complete") {
-          chrome.tabs.onUpdated.removeListener(listener);
-          resolve();
-        }
-      };
-      chrome.tabs.onUpdated.addListener(listener);
-      setTimeout(() => {
+  // Always use a disposable hidden tab so collection never scrolls the user's tab.
+  const tab = await chrome.tabs.create({ url: PROFILE_URL, active: false });
+  const tabId = tab.id;
+  await new Promise((resolve) => {
+    const listener = (id, info) => {
+      if (id === tabId && info.status === "complete") {
         chrome.tabs.onUpdated.removeListener(listener);
         resolve();
-      }, 15000);
-    });
-    // Give React time to render tweets
-    await new Promise((r) => setTimeout(r, 2500));
-  }
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+    setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      resolve();
+    }, 15000);
+  });
+  // Give React time to render the first timeline rows.
+  await new Promise((r) => setTimeout(r, 2500));
 
   try {
     const results = await chrome.scripting.executeScript({
@@ -113,7 +128,7 @@ async function runFetchViaTab() {
     });
     return { ok: false, error: err.message };
   } finally {
-    if (opened) chrome.tabs.remove(tabId);
+    chrome.tabs.remove(tabId);
   }
 }
 

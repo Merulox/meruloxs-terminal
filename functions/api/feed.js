@@ -39,6 +39,12 @@ export async function onRequest(context) {
 
 		const xml = await res.text();
 		const items = parseItems(xml);
+		if (context.env.SUBSTACK_SUMMARIES) {
+			await Promise.all(items.map(async (item) => {
+				const pathname = new URL(item.link).pathname;
+				item.summary = await context.env.SUBSTACK_SUMMARIES.get(`summary:${pathname}`);
+			}));
+		}
 
 		return new Response(JSON.stringify({ status: "ok", items }), { headers });
 	} catch (err) {
