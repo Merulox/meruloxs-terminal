@@ -2,6 +2,13 @@
 import Layout from "../layouts/Layout.astro";
 import tweetData from "../data/tweets.json";
 
+type ThreadPost = {
+	text: string;
+	timestamp?: string;
+	url: string;
+	author?: string;
+};
+
 type Tweet = {
 	text: string;
 	date: string;
@@ -11,6 +18,7 @@ type Tweet = {
 	isReply?: boolean;
 	replyTo?: string;
 	replyToUrl?: string;
+	replyThread?: ThreadPost[];
 };
 
 function orchestrateTweets(input: Tweet[]) {
@@ -32,6 +40,7 @@ function orchestrateTweets(input: Tweet[]) {
 const tweets = orchestrateTweets(((tweetData.tweets ?? []) as Tweet[])
 	.filter((tweet) => tweet.text && tweet.url)
 	.slice(0, 30));
+const ownTweetUrls = new Set(tweets.map((tweet) => tweet.url));
 const TWEET_PAGE_SIZE = 10;
 
 function formatTweetTimestamp(tweet: Tweet) {
@@ -45,6 +54,10 @@ function formatTweetTimestamp(tweet: Tweet) {
 		minute: "2-digit",
 		hour12: false,
 	}).format(new Date(tweet.timestamp)).replace(",", "");
+}
+
+function externalReplyThread(tweet: Tweet) {
+	return (tweet.replyThread ?? []).filter((post) => !ownTweetUrls.has(post.url));
 }
 ---
 
@@ -151,6 +164,45 @@ function formatTweetTimestamp(tweet: Tweet) {
 	.reply-author {
 		color: var(--accent);
 	}
+	.reply-thread {
+		display: grid;
+		gap: 12px;
+		margin: 0 0 16px -46px;
+		padding-left: 18px;
+		position: relative;
+	}
+	.reply-thread::before {
+		background: var(--faint);
+		content: "";
+		inset: 10px auto -16px 0;
+		position: absolute;
+		width: 1px;
+	}
+	.thread-post {
+		display: grid;
+		gap: 4px;
+		position: relative;
+	}
+	.thread-post::before {
+		background: var(--faint);
+		content: "";
+		height: 1px;
+		left: -18px;
+		position: absolute;
+		top: 10px;
+		width: 10px;
+	}
+	.thread-post-author {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+	}
+	.thread-post-text {
+		color: var(--muted);
+		font-size: 13px;
+		margin: 0;
+		max-width: 58ch;
+	}
 	.generating {
 		opacity: 0.35;
 		font-style: italic;
@@ -164,6 +216,9 @@ function formatTweetTimestamp(tweet: Tweet) {
 		.tweet-item.is-reply {
 			margin-left: 12px;
 			padding-left: 14px;
+		}
+		.reply-thread {
+			margin-left: -26px;
 		}
 	}
 </style>
@@ -189,6 +244,16 @@ function formatTweetTimestamp(tweet: Tweet) {
 									data-tweet-index={index}
 									hidden={index >= TWEET_PAGE_SIZE}
 								>
+									{externalReplyThread(tweet).length > 0 && (
+										<div class="reply-thread">
+											{externalReplyThread(tweet).map((post) => (
+												<a class="thread-post" href={post.url} target="_blank" rel="noopener" style="text-decoration:none">
+													<span class="thread-post-author">{post.author ?? "original post"}</span>
+													<p class="thread-post-text">{post.text}</p>
+												</a>
+											))}
+										</div>
+									)}
 									<header class="item-header">
 										<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
 											{tweet.isReply && (
@@ -325,6 +390,14 @@ function formatTweetTimestamp(tweet: Tweet) {
 			isReply?: boolean;
 			replyTo?: string;
 			replyToUrl?: string;
+			replyThread?: ThreadPost[];
+		}
+
+		interface ThreadPost {
+			text: string;
+			timestamp?: string;
+			url: string;
+			author?: string;
 		}
 
 		interface TweetCache {
@@ -351,6 +424,33 @@ function formatTweetTimestamp(tweet: Tweet) {
 				const article = document.createElement("article");
 				article.className = `work-item tweet-item${tweet.isReply ? " is-reply" : ""}`;
 				article.dataset.tweetIndex = String(index);
+
+				const externalThread = (tweet.replyThread ?? []).filter((post) =>
+					!tweets.some((ownTweet) => ownTweet.url === post.url)
+				);
+				if (externalThread.length) {
+					const thread = document.createElement("div");
+					thread.className = "reply-thread";
+					for (const post of externalThread) {
+						const postLink = document.createElement("a");
+						postLink.className = "thread-post";
+						postLink.href = post.url;
+						postLink.target = "_blank";
+						postLink.rel = "noopener";
+						postLink.style.textDecoration = "none";
+
+						const author = document.createElement("span");
+						author.className = "thread-post-author";
+						author.textContent = post.author ?? "original post";
+
+						const postText = document.createElement("p");
+						postText.className = "thread-post-text";
+						postText.textContent = post.text;
+						postLink.append(author, postText);
+						thread.append(postLink);
+					}
+					article.append(thread);
+				}
 
 				const header = document.createElement("header");
 				header.className = "item-header";

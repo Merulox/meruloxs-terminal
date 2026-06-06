@@ -95,6 +95,8 @@ It opens the replies-inclusive profile in a background tab, scrolls until it has
 up to 30 posts, resolves new posts against their permalink conversation, pushes
 them to the local receiver, then closes the tab. Permalink results are cached as
 authoritative reply metadata so timeline scrapes cannot invent or erase replies.
+For replies to posts outside the profile timeline, up to five preceding
+conversation posts are retained as display context.
 
 Click **Fetch now** in the extension popup to force an immediate refresh. The
 **tweets → site** row should go green after the receiver writes

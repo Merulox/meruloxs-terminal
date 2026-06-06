@@ -3,6 +3,7 @@ const STATUS_KEY = "last_attempt";
 const PROFILE_URL = "https://x.com/merulox/with_replies";
 const AUTO_FETCH_ALARM = "tweet-auto-fetch";
 const AUTO_FETCH_MINUTES = 60;
+const THREAD_RESOLVER_VERSION = 2;
 let activeFetch = null;
 
 // Shared ingest secret for the local receiver. Lives in config.local.js (gitignored)
@@ -77,19 +78,34 @@ function inspectThread(currentUrl) {
     .split("\n")
     .map((line) => line.trim())
     .find((line) => line.startsWith("Replying to"));
-  const parent = focalIndex > 0 ? articles[focalIndex - 1] : null;
-  const parentTime = parent?.querySelector("time");
-  const parentHref = parentTime?.closest('a[href*="/status/"]')?.getAttribute("href")?.split("?")[0];
-  const parentAuthor = parentHref?.match(/^\/([^/]+)\/status\//)?.[1];
+  const replyThread = articles
+    .slice(Math.max(0, focalIndex - 5), focalIndex)
+    .map((article) => {
+      const textEl = article.querySelector('[data-testid="tweetText"]');
+      const timeEl = article.querySelector("time");
+      const href = timeEl?.closest('a[href*="/status/"]')?.getAttribute("href")?.split("?")[0];
+      const author = href?.match(/^\/([^/]+)\/status\//)?.[1];
+      if (!textEl || !href) return null;
+      return {
+        text: textEl.textContent.trim(),
+        timestamp: timeEl?.getAttribute("datetime") ?? null,
+        url: `https://x.com${href}`,
+        author: author ? `@${author}` : null,
+      };
+    })
+    .filter(Boolean);
+  const parent = replyThread.at(-1);
 
-  if (!parentHref && !context) return { threadResolved: true };
+  if (!parent && !context) return { threadResolved: true, threadVersion: 2 };
 
   return {
     threadResolved: true,
+    threadVersion: 2,
     isReply: true,
-    ...(parentAuthor ? { replyTo: `@${parentAuthor}` } : {}),
-    ...(context && !parentAuthor ? { replyTo: context.replace(/^Replying to\s*/i, "").trim() } : {}),
-    ...(parentHref ? { replyToUrl: `https://x.com${parentHref}` } : {}),
+    ...(parent?.author ? { replyTo: parent.author } : {}),
+    ...(context && !parent?.author ? { replyTo: context.replace(/^Replying to\s*/i, "").trim() } : {}),
+    ...(parent?.url ? { replyToUrl: parent.url } : {}),
+    ...(replyThread.length ? { replyThread } : {}),
   };
 }
 
@@ -116,14 +132,16 @@ async function resolveThreads(tabId, tweets) {
 
   for (const tweet of tweets) {
     const prior = cachedByUrl.get(tweet.url);
-    if (prior?.threadResolved) {
+    if (prior?.threadResolved && prior.threadVersion === THREAD_RESOLVER_VERSION) {
       resolved.push({
         ...tweet,
         threadResolved: true,
+        threadVersion: THREAD_RESOLVER_VERSION,
         ...(prior.isReply ? {
           isReply: true,
           replyTo: prior.replyTo,
           replyToUrl: prior.replyToUrl,
+          replyThread: prior.replyThread,
         } : {}),
       });
       continue;
