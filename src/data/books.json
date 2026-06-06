@@ -7,21 +7,21 @@
         "title": "The Structure of Scientific Revolutions",
         "author": "Thomas Kuhn",
         "stars": 3,
-        "owned": false,
+        "owned": true,
         "note": "Makes every other book's claims legible. Short (200p)."
       },
       {
         "title": "Thinking in Systems",
         "author": "Donella Meadows",
         "stars": 3,
-        "owned": false,
+        "owned": true,
         "note": "Practical systems lens. Unlocks GEB, Wolfram, Bohm at depth."
       },
       {
         "title": "Influence",
         "author": "Robert Cialdini",
         "stars": 3,
-        "owned": false,
+        "owned": true,
         "note": "Foundation under all Hormozi. Read before 100M Leads."
       }
     ]
@@ -172,7 +172,7 @@
         "title": "I Am a Strange Loop",
         "author": "Douglas Hofstadter",
         "stars": 3,
-        "owned": false,
+        "owned": true,
         "note": "After: GEB. Distills GEB's core — more readable, equally deep."
       },
       {
@@ -186,7 +186,7 @@
         "title": "Prometheus Rising",
         "author": "Robert Anton Wilson",
         "stars": 3,
-        "owned": false,
+        "owned": true,
         "note": "After: Tier 1 of all clusters. Makes every book you own talk to each other."
       }
     ]
@@ -199,7 +199,7 @@
         "title": "Steps to an Ecology of Mind",
         "author": "Gregory Bateson",
         "stars": 3,
-        "owned": false,
+        "owned": true,
         "note": "After: everything. Connects cybernetics, consciousness, biology, language."
       }
     ]
@@ -208,48 +208,6 @@
     "tier": "TO ACQUIRE",
     "desc": "Not yet owned. High priority.",
     "books": [
-      {
-        "title": "The Structure of Scientific Revolutions",
-        "author": "Kuhn",
-        "stars": 3,
-        "owned": false,
-        "note": "Short. Get first."
-      },
-      {
-        "title": "Thinking in Systems",
-        "author": "Meadows",
-        "stars": 3,
-        "owned": false,
-        "note": ""
-      },
-      {
-        "title": "Influence",
-        "author": "Cialdini",
-        "stars": 3,
-        "owned": false,
-        "note": ""
-      },
-      {
-        "title": "I Am a Strange Loop",
-        "author": "Hofstadter",
-        "stars": 3,
-        "owned": false,
-        "note": "After GEB."
-      },
-      {
-        "title": "Prometheus Rising",
-        "author": "R.A. Wilson",
-        "stars": 3,
-        "owned": false,
-        "note": "The synthesizer."
-      },
-      {
-        "title": "Steps to an Ecology of Mind",
-        "author": "Bateson",
-        "stars": 3,
-        "owned": false,
-        "note": "The final boss."
-      },
       {
         "title": "Psicobiofísica (Vol. 1–4)",
         "author": "Jacobo Grinberg-Zylberbaum",
