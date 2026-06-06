@@ -90,8 +90,15 @@ After changing `log-ingest-receiver`, restart the user service:
 systemctl --user restart log-ingest-receiver
 ```
 
-Click **Fetch now** in the extension popup while logged in to X. The **tweets →
-site** row should go green after the receiver writes `src/data/tweets.json`.
+The extension fetches automatically once per hour while the browser is running.
+It opens the profile in a background tab when needed, scrapes the rendered posts,
+pushes them to the local receiver, then closes the tab. Visiting the X profile also
+pushes the scraped posts automatically. Reply context is preserved so the writing
+page can render continuations as indented threads.
+
+Click **Fetch now** in the extension popup to force an immediate refresh. The
+**tweets → site** row should go green after the receiver writes
+`src/data/tweets.json`.
 
 Freshness is deploy-cadenced: new tweets become public on the next
 `npm run deploy`, not instantly. There is no cloud config, KV, Pages Function, or
@@ -105,3 +112,5 @@ new secret; this reuses `LOG_INGEST_TOKEN` / `~/.secrets/log-ingest-token.txt`.
   `~/.secrets/log-ingest-token.txt`.
 - Row stays "no sync yet" → you haven't opened chatgpt.com logged-in since loading
   the extension, or the 30-min throttle hasn't elapsed.
+- **auto fetch** says "not scheduled" → reload the extension from
+  `chrome://extensions` so manifest v1.3 and the alarms permission take effect.

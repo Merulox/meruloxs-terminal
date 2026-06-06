@@ -6,6 +6,13 @@ function ago(ms) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+function until(ms) {
+  const s = Math.max(0, Math.floor((ms - Date.now()) / 1000));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+}
+
 function setDot(id, state) {
   const el = document.getElementById(id);
   el.className = `dot ${state}`;
@@ -61,6 +68,16 @@ async function render() {
     setVal("fetch-val", ago(last_attempt.time), "err");
     document.getElementById("error-val").textContent = last_attempt.error;
     errorRow.style.display = "flex";
+  }
+
+  // Automatic fetch schedule
+  const alarm = await chrome.alarms.get("tweet-auto-fetch");
+  if (alarm?.scheduledTime) {
+    setDot("auto-dot", "ok");
+    setVal("auto-val", `hourly · next in ${until(alarm.scheduledTime)}`, "ok");
+  } else {
+    setDot("auto-dot", "warn");
+    setVal("auto-val", "not scheduled — reload extension", "warn");
   }
 
   // Tweets → static site data

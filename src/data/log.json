@@ -1,10 +1,15 @@
 {
-  "generated": "2026-06-04",
+  "generated": "2026-06-06",
   "entries": [
+    {
+      "date": "2026-06-06",
+      "kind": "ship",
+      "text": "Shipped a reading page to the personal site and rebuilt the tweet display as a static server-rendered rail instead of a client-side fetch. Went through a full design pass — new color scheme applied site-wide, typography tightened, reading curriculum framing corrected. Also scaffolded Aperture, a minimal dark web dashboard for the Genesis agent stack, and got it deployed."
+    },
     {
       "date": "2026-06-04",
       "kind": "ship",
-      "text": "Spent the last couple days building out the personal site's /log feature — a bi-daily, auto-generated public record of what I'm actually working on, gathered, summarized, and sanitized before it ever hits the page. Also rebuilt the writing tab to pull in my own posts and music listening, which meant wrestling with unreliable third-party feeds: settled on caching every fetched post into a small database so the page survives when the upstream sources go down. Fixed a keyboard-nav bug that was swallowing browser shortcuts along the way."
+      "text": "Spent the last couple days building out the personal site's /log feature — a daily, auto-generated public record of what I'm actually working on, gathered, summarized, and sanitized before it ever hits the page. Also rebuilt the writing tab to pull in my own posts and music listening, which meant wrestling with unreliable third-party feeds: settled on caching every fetched post into a small database so the page survives when the upstream sources go down. Fixed a keyboard-nav bug that was swallowing browser shortcuts along the way."
     },
     {
       "date": "2026-06",

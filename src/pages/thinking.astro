@@ -2,7 +2,13 @@
 import Layout from "../layouts/Layout.astro";
 import tweetData from "../data/tweets.json";
 
-type Tweet = { text: string; date: string; url: string };
+type Tweet = {
+	text: string;
+	date: string;
+	url: string;
+	isReply?: boolean;
+	replyTo?: string;
+};
 
 const tweets = ((tweetData.tweets ?? []) as Tweet[])
 	.filter((tweet) => tweet.text && tweet.url)
@@ -13,9 +19,44 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 	.writing-section .work-item + .work-item {
 		border-top-color: var(--faint);
 	}
+	.tweet-item {
+		position: relative;
+	}
+	.tweet-item.is-reply {
+		margin-left: 28px;
+		padding-left: 18px;
+	}
+	.tweet-item.is-reply::before {
+		background: var(--faint);
+		content: "";
+		inset: 0 auto 0 0;
+		position: absolute;
+		width: 1px;
+	}
+	.tweet-item.is-reply::after {
+		background: var(--faint);
+		content: "";
+		height: 1px;
+		left: 0;
+		position: absolute;
+		top: 16px;
+		width: 10px;
+	}
+	.reply-context {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+		margin: 0 0 5px;
+	}
 	.generating {
 		opacity: 0.35;
 		font-style: italic;
+	}
+	@media (max-width: 600px) {
+		.tweet-item.is-reply {
+			margin-left: 12px;
+			padding-left: 14px;
+		}
 	}
 </style>
 
@@ -33,9 +74,10 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 			{
 				tweets.length > 0 ? (
 					tweets.map((tweet) => (
-						<article class="work-item">
+						<article class:list={["work-item", "tweet-item", { "is-reply": tweet.isReply }]}>
 							<header class="item-header">
 								<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
+									{tweet.isReply && tweet.replyTo && <p class="reply-context">replying to {tweet.replyTo}</p>}
 									<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
 								</a>
 								<time class="date">{tweet.date}</time>
@@ -170,6 +212,8 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 			text: string;
 			url: string;
 			date: string;
+			isReply?: boolean;
+			replyTo?: string;
 		}
 
 		interface TweetCache {
@@ -192,7 +236,7 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 			container.replaceChildren();
 			for (const tweet of tweets.slice(0, 10)) {
 				const article = document.createElement("article");
-				article.className = "work-item";
+				article.className = `work-item tweet-item${tweet.isReply ? " is-reply" : ""}`;
 
 				const header = document.createElement("header");
 				header.className = "item-header";
@@ -202,6 +246,13 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 				link.target = "_blank";
 				link.rel = "noopener";
 				link.style.textDecoration = "none";
+
+				if (tweet.isReply && tweet.replyTo) {
+					const context = document.createElement("p");
+					context.className = "reply-context";
+					context.textContent = `replying to ${tweet.replyTo}`;
+					link.append(context);
+				}
 
 				const text = document.createElement("p");
 				text.style.fontSize = "13px";

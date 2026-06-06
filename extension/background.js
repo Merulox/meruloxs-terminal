@@ -1,6 +1,9 @@
 const CACHE_KEY = "tweets_cache";
 const STATUS_KEY = "last_attempt";
 const PROFILE_URL = "https://x.com/merulox";
+const AUTO_FETCH_ALARM = "tweet-auto-fetch";
+const AUTO_FETCH_MINUTES = 60;
+let activeFetch = null;
 
 // Shared ingest secret for the local receiver. Lives in config.local.js (gitignored)
 // so it never lands in the repo.
@@ -24,6 +27,20 @@ function scrapeAndStore() {
   const articles = document.querySelectorAll('article[data-testid="tweet"]');
   const tweets = [];
 
+  function replyMetadata(article) {
+    const context = article.innerText
+      .split("\n")
+      .map((line) => line.trim())
+      .find((line) => line.startsWith("Replying to"));
+
+    if (!context) return {};
+
+    return {
+      isReply: true,
+      replyTo: context.replace(/^Replying to\s*/i, "").trim(),
+    };
+  }
+
   for (const article of articles) {
     const textEl = article.querySelector('[data-testid="tweetText"]');
     const timeEl = article.querySelector("time");
@@ -33,13 +50,14 @@ function scrapeAndStore() {
       text: textEl.textContent.trim(),
       date: timeEl?.getAttribute("datetime")?.slice(0, 7) ?? new Date().toISOString().slice(0, 7),
       url: `https://x.com${linkEl.getAttribute("href")}`,
+      ...replyMetadata(article),
     });
   }
 
   return tweets;
 }
 
-async function fetchViaTab() {
+async function runFetchViaTab() {
   // Find an existing x.com/merulox tab
   const tabs = await chrome.tabs.query({ url: "https://x.com/merulox*" });
   let tabId;
@@ -60,6 +78,10 @@ async function fetchViaTab() {
         }
       };
       chrome.tabs.onUpdated.addListener(listener);
+      setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }, 15000);
     });
     // Give React time to render tweets
     await new Promise((r) => setTimeout(r, 2500));
@@ -91,6 +113,39 @@ async function fetchViaTab() {
     if (opened) chrome.tabs.remove(tabId);
   }
 }
+
+function fetchViaTab() {
+  if (!activeFetch) {
+    activeFetch = runFetchViaTab().finally(() => {
+      activeFetch = null;
+    });
+  }
+  return activeFetch;
+}
+
+async function ensureAutoFetchAlarm() {
+  const alarm = await chrome.alarms.get(AUTO_FETCH_ALARM);
+  if (!alarm) {
+    chrome.alarms.create(AUTO_FETCH_ALARM, {
+      delayInMinutes: 1,
+      periodInMinutes: AUTO_FETCH_MINUTES,
+    });
+  }
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  ensureAutoFetchAlarm();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  ensureAutoFetchAlarm();
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === AUTO_FETCH_ALARM) fetchViaTab();
+});
+
+ensureAutoFetchAlarm();
 
 async function pushTweetsToReceiver(tweets) {
   const status = { time: Date.now(), count: tweets?.length ?? 0 };
@@ -145,6 +200,10 @@ async function pushChatgpt(msg) {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.action === "fetchTweets") {
     fetchViaTab().then(sendResponse);
+    return true;
+  }
+  if (msg.action === "pushTweets") {
+    pushTweetsToReceiver(msg.tweets).then(sendResponse);
     return true;
   }
   if (msg.action === "chatgptHistory") {

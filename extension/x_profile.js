@@ -3,6 +3,20 @@ const CACHE_KEY = "tweets_cache";
 const STATUS_KEY = "last_attempt";
 const SCREEN_NAME = "merulox";
 
+function replyMetadata(article) {
+  const context = article.innerText
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.startsWith("Replying to"));
+
+  if (!context) return {};
+
+  return {
+    isReply: true,
+    replyTo: context.replace(/^Replying to\s*/i, "").trim(),
+  };
+}
+
 function extractTweets() {
   const articles = document.querySelectorAll('article[data-testid="tweet"]');
   const tweets = [];
@@ -20,6 +34,7 @@ function extractTweets() {
       text: textEl.textContent.trim(),
       date: timeEl?.getAttribute("datetime")?.slice(0, 7) ?? new Date().toISOString().slice(0, 7),
       url: `https://x.com${href}`,
+      ...replyMetadata(article),
     });
   }
 
@@ -31,6 +46,7 @@ async function saveTweets(tweets) {
     [CACHE_KEY]: { tweets, fetchedAt: Date.now() },
     [STATUS_KEY]: { ok: true, time: Date.now(), count: tweets.length, error: null, source: "dom" },
   });
+  chrome.runtime.sendMessage({ action: "pushTweets", tweets }, () => {});
 }
 
 // Tweets load async — poll until they appear

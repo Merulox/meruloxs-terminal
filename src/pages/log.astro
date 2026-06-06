@@ -2,7 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import logData from "../data/log.json";
 
-// Entries are generated every ~48h by ~/scripts/log-digest, which gathers real
+// Entries are generated daily by ~/scripts/log-digest, which gathers real
 // signals (git commits, Claude Code sessions, vault deltas, ChatGPT history),
 // summarizes + sanitizes them through one Claude call, and writes log.json.
 const entries = logData.entries;
@@ -13,7 +13,7 @@ const entries = logData.entries;
 
 	<p class="log-note">
 		A running record of what's moving — shipped work, shifts in focus, things
-		learned. Generated every couple days from the systems that already track this:
+		learned. Generated daily from the systems that already track this:
 		git commits, coding sessions, the vault, ChatGPT history. One model pass
 		summarizes the signal and strips anything private before it lands here.
 	</p>
