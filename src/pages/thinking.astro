@@ -5,6 +5,7 @@ import tweetData from "../data/tweets.json";
 type Tweet = {
 	text: string;
 	date: string;
+	timestamp?: string;
 	url: string;
 	author?: string;
 	isReply?: boolean;
@@ -32,6 +33,19 @@ const tweets = orchestrateTweets(((tweetData.tweets ?? []) as Tweet[])
 	.filter((tweet) => tweet.text && tweet.url)
 	.slice(0, 30));
 const TWEET_PAGE_SIZE = 10;
+
+function formatTweetTimestamp(tweet: Tweet) {
+	if (!tweet.timestamp) return tweet.date;
+	return new Intl.DateTimeFormat("en-CA", {
+		timeZone: "America/Toronto",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	}).format(new Date(tweet.timestamp)).replace(",", "");
+}
 ---
 
 <style is:global>
@@ -162,7 +176,7 @@ const TWEET_PAGE_SIZE = 10;
 										)}
 										<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
 									</a>
-									<time class="date">{tweet.date}</time>
+									<time class="date" datetime={tweet.timestamp}>{formatTweetTimestamp(tweet)}</time>
 								</header>
 							</article>
 						))
@@ -282,6 +296,7 @@ const TWEET_PAGE_SIZE = 10;
 			text: string;
 			url: string;
 			date: string;
+			timestamp?: string;
 			author?: string;
 			isReply?: boolean;
 			replyTo?: string;
@@ -344,7 +359,8 @@ const TWEET_PAGE_SIZE = 10;
 
 				const date = document.createElement("time");
 				date.className = "date";
-				date.textContent = tweet.date;
+				if (tweet.timestamp) date.dateTime = tweet.timestamp;
+				date.textContent = formatTweetTimestamp(tweet);
 
 				link.append(text);
 				header.append(link, date);
@@ -353,6 +369,19 @@ const TWEET_PAGE_SIZE = 10;
 			}
 			currentTweetPage = 0;
 			setupTweetPagination(container);
+		}
+
+		function formatTweetTimestamp(tweet: Tweet) {
+			if (!tweet.timestamp) return tweet.date;
+			return new Intl.DateTimeFormat("en-CA", {
+				timeZone: "America/Toronto",
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: false,
+			}).format(new Date(tweet.timestamp)).replace(",", "");
 		}
 
 		function orchestrateTweets(tweets: Tweet[]) {

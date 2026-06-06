@@ -27,27 +27,18 @@ async function scrapeAndStore() {
   const TARGET_COUNT = 30;
   const tweets = new Map();
 
-  function replyMetadata(article, currentHref) {
-    const lines = article.innerText
+  function replyMetadata(article) {
+    const context = article.innerText
       .split("\n")
-      .map((line) => line.trim());
-    const context = lines.find((line) => line.startsWith("Replying to"));
-    const isThread = lines.some((line) => line === "Show this thread");
+      .map((line) => line.trim())
+      .find((line) => line.startsWith("Replying to"));
 
-    if (!context && !isThread) return {};
+    if (!context) return {};
 
-    const parentHref = Array.from(article.querySelectorAll('a[href*="/status/"]'))
-      .map((link) => link.getAttribute("href")?.split("?")[0])
-      .find((href) => href && href !== currentHref);
-    const parentAuthor = parentHref?.match(/^\/([^/]+)\/status\//)?.[1];
-
-    const metadata = {
+    return {
       isReply: true,
+      replyTo: context.replace(/^Replying to\s*/i, "").trim(),
     };
-    if (context) metadata.replyTo = context.replace(/^Replying to\s*/i, "").trim();
-    else if (parentAuthor) metadata.replyTo = `@${parentAuthor}`;
-    if (parentHref) metadata.replyToUrl = `https://x.com${parentHref}`;
-    return metadata;
   }
 
   function collectVisibleTweets() {
@@ -63,22 +54,22 @@ async function scrapeAndStore() {
       const url = `https://x.com${href}`;
       tweets.set(url, {
         text: textEl.textContent.trim(),
-        date: timeEl?.getAttribute("datetime")?.slice(0, 7) ?? new Date().toISOString().slice(0, 7),
+        timestamp: timeEl?.getAttribute("datetime") ?? null,
         url,
         author: author ? `@${author}` : `@${SCREEN_NAME}`,
-        ...replyMetadata(article, href),
+        ...replyMetadata(article),
       });
     }
   }
 
   let unchangedRounds = 0;
   let previousCount = 0;
-  for (let round = 0; round < 20 && tweets.size < TARGET_COUNT && unchangedRounds < 3; round += 1) {
+  for (let round = 0; round < 45 && tweets.size < TARGET_COUNT && unchangedRounds < 7; round += 1) {
     collectVisibleTweets();
     unchangedRounds = tweets.size === previousCount ? unchangedRounds + 1 : 0;
     previousCount = tweets.size;
-    window.scrollTo(0, document.body.scrollHeight);
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    window.scrollBy(0, Math.max(window.innerHeight * 0.85, 700));
+    await new Promise((resolve) => setTimeout(resolve, 1400));
   }
   collectVisibleTweets();
 

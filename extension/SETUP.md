@@ -93,8 +93,8 @@ systemctl --user restart log-ingest-receiver
 The extension fetches automatically once per hour while the browser is running.
 It opens the replies-inclusive profile in a background tab, scrolls until it has
 up to 30 posts, pushes them to the local receiver, then closes the tab. Reply
-context is preserved so the writing page can render continuations as indented
-threads with author attribution.
+context is preserved only when X explicitly renders a `Replying to` label, so
+standalone posts are never inferred as replies.
 
 Click **Fetch now** in the extension popup to force an immediate refresh. The
 **tweets → site** row should go green after the receiver writes
