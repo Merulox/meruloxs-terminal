@@ -60,8 +60,10 @@ function formatTweetTimestamp(tweet: Tweet) {
 		min-height: 340px;
 		overflow-y: auto;
 		padding-right: 10px;
-		scrollbar-color: var(--faint) transparent;
-		scrollbar-width: thin;
+		scrollbar-width: none;
+	}
+	.tweets-viewport::-webkit-scrollbar {
+		display: none;
 	}
 	.tweet-pagination {
 		align-items: center;
