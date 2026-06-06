@@ -6,6 +6,7 @@ type Tweet = {
 	text: string;
 	date: string;
 	url: string;
+	author?: string;
 	isReply?: boolean;
 	replyTo?: string;
 };
@@ -23,14 +24,18 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 		position: relative;
 	}
 	.tweet-item.is-reply {
+		border-top: 0 !important;
 		margin-left: 28px;
 		padding-left: 18px;
+		padding-top: 18px;
 	}
 	.tweet-item.is-reply::before {
 		background: var(--faint);
 		content: "";
-		inset: 0 auto 0 0;
+		height: 30px;
+		left: 0;
 		position: absolute;
+		top: 0;
 		width: 1px;
 	}
 	.tweet-item.is-reply::after {
@@ -39,7 +44,7 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 		height: 1px;
 		left: 0;
 		position: absolute;
-		top: 16px;
+		top: 29px;
 		width: 10px;
 	}
 	.reply-context {
@@ -47,6 +52,9 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 		font-family: "SFMono-Regular", Consolas, monospace;
 		font-size: 11px;
 		margin: 0 0 5px;
+	}
+	.reply-author {
+		color: var(--accent);
 	}
 	.generating {
 		opacity: 0.35;
@@ -77,7 +85,12 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 						<article class:list={["work-item", "tweet-item", { "is-reply": tweet.isReply }]}>
 							<header class="item-header">
 								<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
-									{tweet.isReply && tweet.replyTo && <p class="reply-context">replying to {tweet.replyTo}</p>}
+									{tweet.isReply && (
+										<p class="reply-context">
+											<span class="reply-author">{tweet.author ?? "@merulox"}</span>
+											{tweet.replyTo && <> → {tweet.replyTo}</>}
+										</p>
+									)}
 									<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
 								</a>
 								<time class="date">{tweet.date}</time>
@@ -212,6 +225,7 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 			text: string;
 			url: string;
 			date: string;
+			author?: string;
 			isReply?: boolean;
 			replyTo?: string;
 		}
@@ -247,10 +261,16 @@ const tweets = ((tweetData.tweets ?? []) as Tweet[])
 				link.rel = "noopener";
 				link.style.textDecoration = "none";
 
-				if (tweet.isReply && tweet.replyTo) {
+				if (tweet.isReply) {
 					const context = document.createElement("p");
 					context.className = "reply-context";
-					context.textContent = `replying to ${tweet.replyTo}`;
+
+					const author = document.createElement("span");
+					author.className = "reply-author";
+					author.textContent = tweet.author ?? "@merulox";
+
+					context.append(author);
+					if (tweet.replyTo) context.append(` → ${tweet.replyTo}`);
 					link.append(context);
 				}
 

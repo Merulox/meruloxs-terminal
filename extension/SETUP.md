@@ -94,7 +94,7 @@ The extension fetches automatically once per hour while the browser is running.
 It opens the profile in a background tab when needed, scrapes the rendered posts,
 pushes them to the local receiver, then closes the tab. Visiting the X profile also
 pushes the scraped posts automatically. Reply context is preserved so the writing
-page can render continuations as indented threads.
+page can render continuations as indented threads with author attribution.
 
 Click **Fetch now** in the extension popup to force an immediate refresh. The
 **tweets → site** row should go green after the receiver writes
@@ -113,4 +113,4 @@ new secret; this reuses `LOG_INGEST_TOKEN` / `~/.secrets/log-ingest-token.txt`.
 - Row stays "no sync yet" → you haven't opened chatgpt.com logged-in since loading
   the extension, or the 30-min throttle hasn't elapsed.
 - **auto fetch** says "not scheduled" → reload the extension from
-  `chrome://extensions` so manifest v1.3 and the alarms permission take effect.
+  `chrome://extensions` so the current manifest and alarms permission take effect.

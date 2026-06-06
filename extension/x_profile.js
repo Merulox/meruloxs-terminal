@@ -30,10 +30,12 @@ function extractTweets() {
     if (!textEl || !linkEl) continue;
 
     const href = linkEl.getAttribute("href");
+    const author = href?.match(/^\/([^/]+)\/status\//)?.[1];
     tweets.push({
       text: textEl.textContent.trim(),
       date: timeEl?.getAttribute("datetime")?.slice(0, 7) ?? new Date().toISOString().slice(0, 7),
       url: `https://x.com${href}`,
+      author: author ? `@${author}` : `@${SCREEN_NAME}`,
       ...replyMetadata(article),
     });
   }
