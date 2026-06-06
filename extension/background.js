@@ -27,20 +27,6 @@ async function scrapeAndStore() {
   const TARGET_COUNT = 30;
   const tweets = new Map();
 
-  function replyMetadata(article) {
-    const context = article.innerText
-      .split("\n")
-      .map((line) => line.trim())
-      .find((line) => line.startsWith("Replying to"));
-
-    if (!context) return {};
-
-    return {
-      isReply: true,
-      replyTo: context.replace(/^Replying to\s*/i, "").trim(),
-    };
-  }
-
   function collectVisibleTweets() {
     const articles = document.querySelectorAll('article[data-testid="tweet"]');
     for (const article of articles) {
@@ -57,7 +43,6 @@ async function scrapeAndStore() {
         timestamp: timeEl?.getAttribute("datetime") ?? null,
         url,
         author: author ? `@${author}` : `@${SCREEN_NAME}`,
-        ...replyMetadata(article),
       });
     }
   }
@@ -76,11 +61,40 @@ async function scrapeAndStore() {
   return Array.from(tweets.values()).slice(0, TARGET_COUNT);
 }
 
-async function runFetchViaTab() {
-  // Always use a disposable hidden tab so collection never scrolls the user's tab.
-  const tab = await chrome.tabs.create({ url: PROFILE_URL, active: false });
-  const tabId = tab.id;
-  await new Promise((resolve) => {
+function inspectThread(currentUrl) {
+  const currentPath = new URL(currentUrl).pathname;
+  const articles = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
+  const focalIndex = articles.findIndex((article) => {
+    const time = article.querySelector("time");
+    const href = time?.closest('a[href*="/status/"]')?.getAttribute("href")?.split("?")[0];
+    return href === currentPath;
+  });
+
+  if (focalIndex < 0) return { threadResolved: false };
+
+  const focal = articles[focalIndex];
+  const context = focal.innerText
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.startsWith("Replying to"));
+  const parent = focalIndex > 0 ? articles[focalIndex - 1] : null;
+  const parentTime = parent?.querySelector("time");
+  const parentHref = parentTime?.closest('a[href*="/status/"]')?.getAttribute("href")?.split("?")[0];
+  const parentAuthor = parentHref?.match(/^\/([^/]+)\/status\//)?.[1];
+
+  if (!parentHref && !context) return { threadResolved: true };
+
+  return {
+    threadResolved: true,
+    isReply: true,
+    ...(parentAuthor ? { replyTo: `@${parentAuthor}` } : {}),
+    ...(context && !parentAuthor ? { replyTo: context.replace(/^Replying to\s*/i, "").trim() } : {}),
+    ...(parentHref ? { replyToUrl: `https://x.com${parentHref}` } : {}),
+  };
+}
+
+function waitForTabLoad(tabId, timeoutMs = 15000) {
+  return new Promise((resolve) => {
     const listener = (id, info) => {
       if (id === tabId && info.status === "complete") {
         chrome.tabs.onUpdated.removeListener(listener);
@@ -91,8 +105,55 @@ async function runFetchViaTab() {
     setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(listener);
       resolve();
-    }, 15000);
+    }, timeoutMs);
   });
+}
+
+async function resolveThreads(tabId, tweets) {
+  const cached = await chrome.storage.local.get(CACHE_KEY);
+  const cachedByUrl = new Map((cached[CACHE_KEY]?.tweets ?? []).map((tweet) => [tweet.url, tweet]));
+  const resolved = [];
+
+  for (const tweet of tweets) {
+    const prior = cachedByUrl.get(tweet.url);
+    if (prior?.threadResolved) {
+      resolved.push({
+        ...tweet,
+        threadResolved: true,
+        ...(prior.isReply ? {
+          isReply: true,
+          replyTo: prior.replyTo,
+          replyToUrl: prior.replyToUrl,
+        } : {}),
+      });
+      continue;
+    }
+
+    try {
+      const loaded = waitForTabLoad(tabId);
+      await chrome.tabs.update(tabId, { url: tweet.url });
+      await loaded;
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      const result = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: inspectThread,
+        args: [tweet.url],
+      });
+      resolved.push({ ...tweet, ...(result?.[0]?.result ?? { threadResolved: false }) });
+    } catch {
+      resolved.push({ ...tweet, threadResolved: false });
+    }
+  }
+
+  return resolved;
+}
+
+async function runFetchViaTab() {
+  // Always use a disposable hidden tab so collection never scrolls the user's tab.
+  const tab = await chrome.tabs.create({ url: PROFILE_URL, active: false });
+  const tabId = tab.id;
+  await waitForTabLoad(tabId);
   // Give React time to render the first timeline rows.
   await new Promise((r) => setTimeout(r, 2500));
 
@@ -102,9 +163,10 @@ async function runFetchViaTab() {
       func: scrapeAndStore,
     });
 
-    const tweets = results?.[0]?.result ?? [];
+    const timelineTweets = results?.[0]?.result ?? [];
 
-    if (tweets.length === 0) throw new Error("No tweets found in DOM — page may not have loaded");
+    if (timelineTweets.length === 0) throw new Error("No tweets found in DOM — page may not have loaded");
+    const tweets = await resolveThreads(tabId, timelineTweets);
 
     await chrome.storage.local.set({
       [CACHE_KEY]: { tweets, fetchedAt: Date.now() },
