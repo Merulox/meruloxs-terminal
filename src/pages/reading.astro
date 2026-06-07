@@ -3,7 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import tiers from "../data/books.json";
 import shelf from "../data/reading.json";
 
-type Book = { title: string; author: string; stars: number; owned: boolean; read?: boolean; note: string };
+type Book = { title: string; author: string; stars: number; read?: boolean; note: string };
 type Tier = { tier: string; desc: string; books: Book[] };
 type Shaped = { title: string; author: string; stars: number; note: string };
 type Recent = { title: string; author: string; note: string };
@@ -32,8 +32,18 @@ function splitTier(label: string): { tag: string; name: string } {
 	<p class="reading-intro">
 		The first shelf is history: books that already shaped how I think. The
 		curriculum below is different. I have not read through it yet; it is a map I
-		built for myself, ordered by what should make the next thing easier to read.
+		built for myself, ordered where sequence matters and grouped into parallel
+		paths elsewhere.
 	</p>
+
+	<a
+		class="email"
+		href="https://www.goodreads.com/user/show/158374147-merulox"
+		target="_blank"
+		rel="noopener"
+	>
+		→ goodreads.com/merulox
+	</a>
 
 	{
 		shaped.length > 0 && (
@@ -120,12 +130,4 @@ function splitTier(label: string): { tag: string; name: string } {
 		}
 	</section>
 
-	<a
-		class="email"
-		href="https://www.goodreads.com/user/show/158374147-merulox"
-		target="_blank"
-		rel="noopener"
-	>
-		→ goodreads.com/merulox
-	</a>
 </Layout>
