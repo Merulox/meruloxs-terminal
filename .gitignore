@@ -31,3 +31,4 @@ extension/config.local.js
 
 # jetbrains setting folder
 .idea/
+.agent/

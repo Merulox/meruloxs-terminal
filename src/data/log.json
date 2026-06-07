@@ -4,7 +4,7 @@
     {
       "date": "2026-06-06",
       "kind": "ship",
-      "text": "Shipped a reading page to the personal site and rebuilt the tweet display as a static server-rendered rail instead of a client-side fetch. Went through a full design pass — new color scheme applied site-wide, typography tightened, reading curriculum framing corrected. Also scaffolded Aperture, a minimal dark web dashboard for the Genesis agent stack, and got it deployed."
+      "text": "The personal site got a meaningful round of updates: a social feed with threaded replies, timestamps, and pagination was wired in, and the writing feed and daily log now update automatically. A taskboard interface (Aperture) was deployed as a live ops tool. Genesis — an autonomous agent infrastructure layer — was initialized with a daemon and identity stack. Work also began on SYNTRA, a new project, including a database migration and a business model pivot toward running a full storefront rather than a redirect-based affiliate setup."
     },
     {
       "date": "2026-06-04",
