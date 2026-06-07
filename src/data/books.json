@@ -1,8 +1,20 @@
 [
   {
     "path": "Reality",
-    "desc": "Epistemology, competing models of reality, and how claims become believable.",
+    "desc": "Worldviews, epistemology, meaning, and the models used to interpret reality.",
     "books": [
+      {
+        "title": "Meditations",
+        "author": "Marcus Aurelius",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Thus Spoke Zarathustra",
+        "author": "Friedrich Nietzsche",
+        "stars": 1,
+        "note": ""
+      },
       {
         "title": "The Kybalion",
         "author": "Three Initiates",
@@ -13,6 +25,18 @@
         "title": "The Secret Teachings of All Ages",
         "author": "Manly P. Hall",
         "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Beginning of Infinity",
+        "author": "David Deutsch",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Finite and Infinite Games",
+        "author": "James P. Carse",
+        "stars": 2,
         "note": ""
       },
       {
@@ -34,23 +58,53 @@
         "note": ""
       },
       {
+        "title": "The Sovereign Individual",
+        "author": "James Dale Davidson & William Rees-Mogg",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "The Lessons of History",
+        "author": "Will & Ariel Durant",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Man's Search for Meaning",
+        "author": "Viktor Frankl",
+        "stars": 4,
+        "note": ""
+      },
+      {
         "title": "The Case Against Reality",
         "author": "Donald Hoffman",
-        "stars": 3,
+        "stars": 4,
         "note": "After: Ego Tunnel + Galileo's Error. Most radical consciousness thesis."
       },
       {
         "title": "Prometheus Rising",
         "author": "Robert Anton Wilson",
-        "stars": 3,
+        "stars": 4,
         "note": "A synthesis layer that makes ideas across the paths talk to each other."
       }
     ]
   },
   {
     "path": "Systems",
-    "desc": "Feedback, emergence, complexity, and synthesis across domains.",
+    "desc": "Feedback, constraints, emergence, scale, and organizational leverage.",
     "books": [
+      {
+        "title": "Thinking in Systems",
+        "author": "Donella Meadows",
+        "stars": 1,
+        "note": "Practical systems lens. Unlocks GEB, Wolfram, Bohm at depth."
+      },
+      {
+        "title": "The Goal",
+        "author": "Eliyahu M. Goldratt",
+        "stars": 1,
+        "note": ""
+      },
       {
         "title": "The Design of Everyday Things",
         "author": "Don Norman",
@@ -58,10 +112,16 @@
         "note": ""
       },
       {
-        "title": "Thinking in Systems",
-        "author": "Donella Meadows",
+        "title": "Antifragile",
+        "author": "Nassim Nicholas Taleb",
         "stars": 2,
-        "note": "Practical systems lens. Unlocks GEB, Wolfram, Bohm at depth."
+        "note": ""
+      },
+      {
+        "title": "The Fifth Discipline",
+        "author": "Peter Senge",
+        "stars": 2,
+        "note": ""
       },
       {
         "title": "Complexity: A Guided Tour",
@@ -70,29 +130,59 @@
         "note": "Entry into systems/complexity before GEB."
       },
       {
+        "title": "Scale",
+        "author": "Geoffrey West",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "High Output Management",
+        "author": "Andrew Grove",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Poor Charlie's Almanack",
+        "author": "Charles T. Munger",
+        "stars": 4,
+        "note": ""
+      },
+      {
         "title": "Gödel, Escher, Bach",
         "author": "Douglas Hofstadter",
-        "stars": 3,
+        "stars": 4,
         "note": "After: Complexity. The monument. Takes time."
       },
       {
         "title": "A New Kind of Science",
         "author": "Stephen Wolfram",
-        "stars": 3,
+        "stars": 4,
         "note": "After: GEB + Thinking in Systems. Dense. Skim strategically."
       },
       {
         "title": "Steps to an Ecology of Mind",
         "author": "Gregory Bateson",
-        "stars": 3,
+        "stars": 4,
         "note": "Connects cybernetics, consciousness, biology, and language."
       }
     ]
   },
   {
     "path": "Psychology",
-    "desc": "Judgment, behavior, identity, persuasion, and interpersonal dynamics.",
+    "desc": "Judgment, motivation, behavior, identity, and interpersonal dynamics.",
     "books": [
+      {
+        "title": "Thinking, Fast and Slow",
+        "author": "Daniel Kahneman",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Influence",
+        "author": "Robert Cialdini",
+        "stars": 1,
+        "note": "Foundation under all Hormozi. Read before 100M Leads."
+      },
       {
         "title": "Games People Play",
         "author": "Eric Berne",
@@ -118,20 +208,20 @@
         "note": ""
       },
       {
-        "title": "Influence",
-        "author": "Robert Cialdini",
-        "stars": 2,
-        "note": "Foundation under all Hormozi. Read before 100M Leads."
-      },
-      {
-        "title": "The Scout Mindset",
-        "author": "Julia Galef",
+        "title": "The Laws of Human Nature",
+        "author": "Robert Greene",
         "stars": 2,
         "note": ""
       },
       {
-        "title": "Thinking, Fast and Slow",
-        "author": "Daniel Kahneman",
+        "title": "Behave",
+        "author": "Robert Sapolsky",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Scout Mindset",
+        "author": "Julia Galef",
         "stars": 2,
         "note": ""
       },
@@ -148,17 +238,53 @@
         "note": ""
       },
       {
+        "title": "Flow",
+        "author": "Mihaly Csikszentmihalyi",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Maps of Meaning",
+        "author": "Jordan B. Peterson",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Attached",
+        "author": "Amir Levine & Rachel Heller",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The Body Keeps the Score",
+        "author": "Bessel van der Kolk",
+        "stars": 4,
+        "note": ""
+      },
+      {
         "title": "The Matter With Things",
         "author": "Iain McGilchrist",
-        "stars": 3,
+        "stars": 4,
         "note": ""
       }
     ]
   },
   {
     "path": "Consciousness",
-    "desc": "Mind, perception, altered states, selfhood, and theories of consciousness.",
+    "desc": "Attention, selfhood, perception, and theories of subjective experience.",
     "books": [
+      {
+        "title": "Waking Up",
+        "author": "Sam Harris",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Mind Illuminated",
+        "author": "Culadasa",
+        "stars": 1,
+        "note": "After: How to Change Your Mind. Practice manual for meditation."
+      },
       {
         "title": "Being You",
         "author": "Anil Seth",
@@ -172,16 +298,22 @@
         "note": "Grounded journalistic entry into psychedelics and altered states."
       },
       {
+        "title": "I Am That",
+        "author": "Nisargadatta Maharaj",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Gödel, Escher, Bach",
+        "author": "Douglas Hofstadter",
+        "stars": 2,
+        "note": "After: Complexity. The monument. Takes time."
+      },
+      {
         "title": "Galileo's Error",
         "author": "Philip Goff",
         "stars": 2,
         "note": "After: Being You. Panpsychism argument — read alongside Metzinger."
-      },
-      {
-        "title": "The Mind Illuminated",
-        "author": "Culadasa",
-        "stars": 2,
-        "note": "After: How to Change Your Mind. Practice manual for meditation."
       },
       {
         "title": "DMT Dialogues",
@@ -220,41 +352,71 @@
         "note": "Bridges indigenous Mexican traditions + neuroscience. After Psicobiofísica."
       },
       {
+        "title": "The Master and His Emissary",
+        "author": "Iain McGilchrist",
+        "stars": 3,
+        "note": ""
+      },
+      {
         "title": "The Ego Tunnel",
         "author": "Thomas Metzinger",
         "stars": 3,
         "note": "After: Being You. Hardest consciousness book. Most important."
       },
       {
+        "title": "Consciousness Explained",
+        "author": "Daniel Dennett",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The Book",
+        "author": "Alan Watts",
+        "stars": 4,
+        "note": ""
+      },
+      {
         "title": "Surfing Uncertainty",
         "author": "Andy Clark",
-        "stars": 3,
+        "stars": 4,
         "note": "After: Being You. Predictive processing — dense, foundational."
       },
       {
         "title": "I Am a Strange Loop",
         "author": "Douglas Hofstadter",
-        "stars": 3,
+        "stars": 4,
         "note": "After: GEB. Distills GEB's core — more readable, equally deep."
       },
       {
         "title": "Psicobiofísica (Vol. 1–4)",
         "author": "Jacobo Grinberg-Zylberbaum",
-        "stars": 3,
+        "stars": 4,
         "note": "Mexican neuroscientist. Brain fields, consciousness, psi. Pairs with Entangled Minds."
       },
       {
         "title": "La teoría sintérgica",
         "author": "Jacobo Grinberg-Zylberbaum",
-        "stars": 3,
+        "stars": 4,
         "note": "His core theoretical framework — syntergy, neuronal fields, reality construction."
       }
     ]
   },
   {
     "path": "Business",
-    "desc": "Offers, markets, negotiation, strategy, and practical leverage.",
+    "desc": "Products, markets, operations, and durable value creation.",
     "books": [
+      {
+        "title": "Zero to One",
+        "author": "Peter Thiel & Blake Masters",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Personal MBA",
+        "author": "Josh Kaufman",
+        "stars": 1,
+        "note": ""
+      },
       {
         "title": "Exactly What to Say",
         "author": "Phil M. Jones",
@@ -274,10 +436,16 @@
         "note": ""
       },
       {
-        "title": "100M Offers",
-        "author": "Alex Hormozi",
+        "title": "The Lean Startup",
+        "author": "Eric Ries",
         "stars": 2,
-        "note": "Practical entry point. Read before 100M Leads."
+        "note": ""
+      },
+      {
+        "title": "The Almanack of Naval Ravikant",
+        "author": "Eric Jorgenson",
+        "stars": 2,
+        "note": ""
       },
       {
         "title": "100M Leads",
@@ -304,23 +472,59 @@
         "note": ""
       },
       {
+        "title": "100M Offers",
+        "author": "Alex Hormozi",
+        "stars": 3,
+        "note": "Practical entry point. Read before 100M Leads."
+      },
+      {
+        "title": "The E-Myth Revisited",
+        "author": "Michael E. Gerber",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Blue Ocean Strategy",
+        "author": "W. Chan Kim & Renée Mauborgne",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "Good to Great",
+        "author": "Jim Collins",
+        "stars": 4,
+        "note": ""
+      },
+      {
         "title": "Price Theory",
         "author": "Milton Friedman",
-        "stars": 3,
+        "stars": 4,
         "note": ""
       },
       {
         "title": "The Art of Strategy",
         "author": "Avinash K. Dixit & Barry J. Nalebuff",
-        "stars": 3,
+        "stars": 4,
         "note": ""
       }
     ]
   },
   {
     "path": "Humanity",
-    "desc": "Philosophy, civilization, ethics, technology, and ways of living.",
+    "desc": "Human nature, culture, cooperation, and the forces shaping societies.",
     "books": [
+      {
+        "title": "Sapiens",
+        "author": "Yuval Noah Harari",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Guns, Germs, and Steel",
+        "author": "Jared Diamond",
+        "stars": 1,
+        "note": ""
+      },
       {
         "title": "Meditations",
         "author": "Marcus Aurelius",
@@ -331,6 +535,18 @@
         "title": "What the Buddha Taught",
         "author": "Walpola Rahula",
         "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The WEIRDest People in the World",
+        "author": "Joseph Henrich",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Righteous Mind",
+        "author": "Jonathan Haidt",
+        "stars": 2,
         "note": ""
       },
       {
@@ -364,21 +580,69 @@
         "note": ""
       },
       {
+        "title": "The Dawn of Everything",
+        "author": "David Graeber & David Wengrow",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Civilized to Death",
+        "author": "Christopher Ryan",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "The Selfish Gene",
+        "author": "Richard Dawkins",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The Hero with a Thousand Faces",
+        "author": "Joseph Campbell",
+        "stars": 4,
+        "note": ""
+      },
+      {
         "title": "The Complete Works of Aristotle",
         "author": "Aristotle",
-        "stars": 3,
+        "stars": 4,
         "note": ""
       }
     ]
   },
   {
     "path": "Physics & Edge Science",
-    "desc": "Physical models and disputed empirical edges around mind and reality.",
+    "desc": "Physical reality, frontier technology, and disputed empirical edges.",
     "books": [
+      {
+        "title": "Six Easy Pieces",
+        "author": "Richard Feynman",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Fabric of Reality",
+        "author": "David Deutsch",
+        "stars": 1,
+        "note": ""
+      },
       {
         "title": "The Science of Magic",
         "author": "Dean Radin",
         "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Reality Is Not What It Seems",
+        "author": "Carlo Rovelli",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Selfish Gene",
+        "author": "Richard Dawkins",
+        "stars": 2,
         "note": ""
       },
       {
@@ -388,17 +652,53 @@
         "note": "After: DMT Dialogues. Psi research, quantum framing."
       },
       {
+        "title": "Lifespan",
+        "author": "David A. Sinclair",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Superintelligence",
+        "author": "Nick Bostrom",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Life 3.0",
+        "author": "Max Tegmark",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The Singularity Is Nearer",
+        "author": "Ray Kurzweil",
+        "stars": 4,
+        "note": ""
+      },
+      {
         "title": "Wholeness & the Implicate Order",
         "author": "David Bohm",
-        "stars": 3,
+        "stars": 4,
         "note": "After: Complexity + Thinking in Systems. Dense physics/philosophy."
       }
     ]
   },
   {
     "path": "Engineering",
-    "desc": "Building software, electronics, machines, and usable systems.",
+    "desc": "Building reliable software and technical systems.",
     "books": [
+      {
+        "title": "The Pragmatic Programmer",
+        "author": "David Thomas & Andrew Hunt",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Clean Architecture",
+        "author": "Robert C. Martin",
+        "stars": 1,
+        "note": ""
+      },
       {
         "title": "Arduino Cookbook",
         "author": "Michael Margolis",
@@ -424,8 +724,14 @@
         "note": ""
       },
       {
-        "title": "The Pragmatic Programmer",
-        "author": "David Thomas & Andrew Hunt",
+        "title": "Designing Data-Intensive Applications",
+        "author": "Martin Kleppmann",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Refactoring",
+        "author": "Martin Fowler",
         "stars": 2,
         "note": ""
       },
@@ -452,17 +758,59 @@
         "author": "Harold Abelson, Gerald Jay Sussman & Julie Sussman",
         "stars": 3,
         "note": ""
+      },
+      {
+        "title": "The Mythical Man-Month",
+        "author": "Frederick P. Brooks Jr.",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Code Complete",
+        "author": "Steve McConnell",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "Release It!",
+        "author": "Michael T. Nygard",
+        "stars": 4,
+        "note": ""
       }
     ]
   },
   {
     "path": "Mathematics",
-    "desc": "Mathematical fluency, proof, and abstraction.",
+    "desc": "Problem solving, proof, abstraction, and mathematical foundations.",
     "books": [
+      {
+        "title": "How to Solve It",
+        "author": "George Pólya",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Linear Algebra Done Right",
+        "author": "Sheldon Axler",
+        "stars": 1,
+        "note": ""
+      },
       {
         "title": "A Mind for Numbers",
         "author": "Barbara Oakley",
         "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Calculus Made Easy",
+        "author": "Silvanus P. Thompson",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Proofs",
+        "author": "Jay Cummings",
+        "stars": 2,
         "note": ""
       },
       {
@@ -478,20 +826,38 @@
         "note": ""
       },
       {
-        "title": "Linear Algebra Done Right",
-        "author": "Sheldon Axler",
+        "title": "An Introduction to Probability Theory",
+        "author": "William Feller",
         "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Gödel, Escher, Bach",
+        "author": "Douglas Hofstadter",
+        "stars": 3,
+        "note": "After: Complexity. The monument. Takes time."
+      },
+      {
+        "title": "Concrete Mathematics",
+        "author": "Ronald Graham, Donald Knuth & Oren Patashnik",
+        "stars": 4,
         "note": ""
       }
     ]
   },
   {
     "path": "Practice",
-    "desc": "Health, attention, discipline, creativity, and practical self-maintenance.",
+    "desc": "Attention, discipline, skill acquisition, and sustained execution.",
     "books": [
       {
         "title": "Atomic Habits",
         "author": "James Clear",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Deep Work",
+        "author": "Cal Newport",
         "stars": 1,
         "note": ""
       },
@@ -504,12 +870,6 @@
       {
         "title": "Steal Like an Artist",
         "author": "Austin Kleon",
-        "stars": 1,
-        "note": ""
-      },
-      {
-        "title": "The War of Art",
-        "author": "Steven Pressfield",
         "stars": 1,
         "note": ""
       },
@@ -550,6 +910,18 @@
         "note": ""
       },
       {
+        "title": "Peak",
+        "author": "Anders Ericsson & Robert Pool",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The War of Art",
+        "author": "Steven Pressfield",
+        "stars": 2,
+        "note": ""
+      },
+      {
         "title": "The Telomere Effect",
         "author": "Blackburn & Epel",
         "stars": 2,
@@ -559,6 +931,462 @@
         "title": "Why We Sleep",
         "author": "Matthew Walker",
         "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Mastery",
+        "author": "Robert Greene",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "So Good They Can't Ignore You",
+        "author": "Cal Newport",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Can't Hurt Me",
+        "author": "David Goggins",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "Essentialism",
+        "author": "Greg McKeown",
+        "stars": 4,
+        "note": ""
+      }
+    ]
+  },
+  {
+    "path": "Philosophy",
+    "desc": "Ethics, metaphysics, reason, and examined ways of living.",
+    "books": [
+      {
+        "title": "Meditations",
+        "author": "Marcus Aurelius",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Republic",
+        "author": "Plato",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Beyond Good and Evil",
+        "author": "Friedrich Nietzsche",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Tao Te Ching",
+        "author": "Lao Tzu",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Problems of Philosophy",
+        "author": "Bertrand Russell",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "The Nicomachean Ethics",
+        "author": "Aristotle",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Critique of Pure Reason",
+        "author": "Immanuel Kant",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The Conspiracy Against the Human Race",
+        "author": "Thomas Ligotti",
+        "stars": 4,
+        "note": ""
+      }
+    ]
+  },
+  {
+    "path": "Biology",
+    "desc": "Life, evolution, physiology, and biological constraints.",
+    "books": [
+      {
+        "title": "Why We Sleep",
+        "author": "Matthew Walker",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Selfish Gene",
+        "author": "Richard Dawkins",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Behave",
+        "author": "Robert Sapolsky",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Lifespan",
+        "author": "David A. Sinclair",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Vital Question",
+        "author": "Nick Lane",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Breath",
+        "author": "James Nestor",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "The Gene",
+        "author": "Siddhartha Mukherjee",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "Being You",
+        "author": "Anil Seth",
+        "stars": 4,
+        "note": "Best entry into consciousness. Accessible, rigorous."
+      }
+    ]
+  },
+  {
+    "path": "Computation",
+    "desc": "Algorithms, computer systems, AI, and computational thinking.",
+    "books": [
+      {
+        "title": "Structure and Interpretation of Computer Programs (JavaScript Adaptation)",
+        "author": "Harold Abelson, Gerald Jay Sussman & Julie Sussman",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Code: The Hidden Language of Computer Hardware and Software",
+        "author": "Charles Petzold",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Introduction to Algorithms",
+        "author": "Thomas Cormen et al.",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Designing Data-Intensive Applications",
+        "author": "Martin Kleppmann",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Alignment Problem",
+        "author": "Brian Christian",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Artificial Intelligence: A Modern Approach",
+        "author": "Stuart Russell & Peter Norvig",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Deep Learning",
+        "author": "Ian Goodfellow, Yoshua Bengio & Aaron Courville",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The Nature of Code",
+        "author": "Daniel Shiffman",
+        "stars": 4,
+        "note": ""
+      }
+    ]
+  },
+  {
+    "path": "Civilization",
+    "desc": "Institutions, political economy, state capacity, and civilizational change.",
+    "books": [
+      {
+        "title": "The Sovereign Individual",
+        "author": "James Dale Davidson & William Rees-Mogg",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Why Nations Fail",
+        "author": "Daron Acemoglu & James A. Robinson",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Lessons of History",
+        "author": "Will & Ariel Durant",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Rise and Fall of the Great Powers",
+        "author": "Paul Kennedy",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Energy and Civilization",
+        "author": "Vaclav Smil",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Seeing Like a State",
+        "author": "James C. Scott",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Debt: The First 5,000 Years",
+        "author": "David Graeber",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The Origins of Political Order",
+        "author": "Francis Fukuyama",
+        "stars": 4,
+        "note": ""
+      }
+    ]
+  },
+  {
+    "path": "Aesthetics",
+    "desc": "Artistic judgment, creativity, visual language, and craft.",
+    "books": [
+      {
+        "title": "The Creative Act",
+        "author": "Rick Rubin",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Steal Like an Artist",
+        "author": "Austin Kleon",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Ways of Seeing",
+        "author": "John Berger",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Story of Art",
+        "author": "E. H. Gombrich",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "On Writing",
+        "author": "Stephen King",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "The War of Art",
+        "author": "Steven Pressfield",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Understanding Comics",
+        "author": "Scott McCloud",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The Shape of Design",
+        "author": "Frank Chimero",
+        "stars": 4,
+        "note": ""
+      }
+    ]
+  },
+  {
+    "path": "Strategy",
+    "desc": "Conflict, competition, positioning, and coordinated action.",
+    "books": [
+      {
+        "title": "The Art of War",
+        "author": "Sun Tzu",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "On War",
+        "author": "Carl von Clausewitz",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The 33 Strategies of War",
+        "author": "Robert Greene",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Competition Demystified",
+        "author": "Bruce Greenwald & Judd Kahn",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Good Strategy/Bad Strategy",
+        "author": "Richard Rumelt",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Playing to Win",
+        "author": "A. G. Lafley & Roger L. Martin",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "The Prince",
+        "author": "Niccolò Machiavelli",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "Poor Charlie's Almanack",
+        "author": "Charles T. Munger",
+        "stars": 4,
+        "note": ""
+      }
+    ]
+  },
+  {
+    "path": "Health",
+    "desc": "Sleep, exercise, respiration, longevity, and metabolic health.",
+    "books": [
+      {
+        "title": "Why We Sleep",
+        "author": "Matthew Walker",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Outlive",
+        "author": "Peter Attia",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Breath",
+        "author": "James Nestor",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Spark",
+        "author": "John J. Ratey",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Oxygen Advantage",
+        "author": "Patrick McKeown",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Built from Broken",
+        "author": "Scott Hogan",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "The Circadian Code",
+        "author": "Satchin Panda",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The Obesity Code",
+        "author": "Jason Fung",
+        "stars": 4,
+        "note": ""
+      }
+    ]
+  },
+  {
+    "path": "History",
+    "desc": "Recurring patterns, ruptures, and the forces that shaped the modern world.",
+    "books": [
+      {
+        "title": "The Lessons of History",
+        "author": "Will & Ariel Durant",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Rise and Fall of the Third Reich",
+        "author": "William L. Shirer",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Storm Before the Storm",
+        "author": "Mike Duncan",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Silk Roads",
+        "author": "Peter Frankopan",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Postwar",
+        "author": "Tony Judt",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "The Guns of August",
+        "author": "Barbara W. Tuchman",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "Destiny Disrupted",
+        "author": "Tamim Ansary",
+        "stars": 4,
+        "note": ""
+      },
+      {
+        "title": "The History of the Peloponnesian War",
+        "author": "Thucydides",
+        "stars": 4,
         "note": ""
       }
     ]

@@ -12,12 +12,13 @@ const data = paths as Path[];
 const shaped = (shelf.shaped ?? []) as Shaped[];
 const recent = (shelf.recent ?? []) as Recent[];
 
-const totalBooks = data.reduce((n, path) => n + path.books.length, 0);
-const read = data.reduce((n, path) => n + path.books.filter((b) => b.read).length, 0);
+const totalBooks = new Set(data.flatMap((path) => path.books.map((book) => book.title))).size;
+const read = new Set(data.flatMap((path) => path.books.filter((book) => book.read).map((book) => book.title))).size;
 const levels = [
-	{ stars: 1, name: "entry" },
-	{ stars: 2, name: "core" },
-	{ stars: 3, name: "advanced" },
+	{ stars: 1, name: "foundation" },
+	{ stars: 2, name: "models" },
+	{ stars: 3, name: "mastery" },
+	{ stars: 4, name: "frontiers" },
 ];
 ---
 
@@ -140,7 +141,7 @@ const levels = [
 	<p class="reading-intro">
 		The first shelf is history: books that already shaped how I think. The
 		curriculum below is a set of paths I have not read through yet. Within each
-		path, stars indicate progression: entry, core, then advanced.
+		path, stars mark progression: foundation, models, mastery, then frontiers.
 		</p>
 
 		<p class="goodreads-link">
