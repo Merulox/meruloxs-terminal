@@ -97,7 +97,9 @@ them to the local receiver, then closes the tab. Permalink results are cached as
 authoritative reply metadata so timeline scrapes cannot invent or erase replies.
 For replies to posts outside the profile timeline, up to five preceding
 conversation posts are retained as display context. Self-thread continuations are
-resolved from X's ascending adjacent timeline grouping.
+resolved from X's ascending adjacent timeline grouping. External replies keep
+polling their permalink after the `Replying to` label appears so the asynchronously
+loaded parent post is captured too.
 
 Click **Fetch now** in the extension popup to force an immediate refresh. The
 **tweets → site** row should go green after the receiver writes

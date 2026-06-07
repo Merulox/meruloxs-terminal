@@ -3,7 +3,7 @@ const STATUS_KEY = "last_attempt";
 const PROFILE_URL = "https://x.com/merulox/with_replies";
 const AUTO_FETCH_ALARM = "tweet-auto-fetch";
 const AUTO_FETCH_MINUTES = 60;
-const THREAD_RESOLVER_VERSION = 3;
+const THREAD_RESOLVER_VERSION = 4;
 let activeFetch = null;
 
 // Shared ingest secret for the local receiver. Lives in config.local.js (gitignored)
@@ -82,6 +82,7 @@ async function scrapeAndStore() {
 }
 
 function inspectThread(currentUrl) {
+  window.scrollTo(0, 0);
   const currentPath = new URL(currentUrl).pathname;
   const articles = Array.from(document.querySelectorAll('article[data-testid="tweet"]'));
   const focalIndex = articles.findIndex((article) => {
@@ -115,11 +116,11 @@ function inspectThread(currentUrl) {
     .filter(Boolean);
   const parent = replyThread.at(-1);
 
-  if (!parent && !context) return { threadResolved: true, threadVersion: 3 };
+  if (!parent && !context) return { threadResolved: true, threadVersion: 4 };
 
   return {
     threadResolved: true,
-    threadVersion: 3,
+    threadVersion: 4,
     isReply: true,
     ...(parent?.author ? { replyTo: parent.author } : {}),
     ...(context && !parent?.author ? { replyTo: context.replace(/^Replying to\s*/i, "").trim() } : {}),
@@ -176,15 +177,23 @@ async function resolveThreads(tabId, tweets) {
       await chrome.tabs.update(tabId, { url: tweet.url });
       await loaded;
       let metadata = { threadResolved: false };
-      for (let attempt = 0; attempt < 6; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 1200));
+      let standaloneObservations = 0;
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         const result = await chrome.scripting.executeScript({
           target: { tabId },
           func: inspectThread,
           args: [tweet.url],
         });
         metadata = result?.[0]?.result ?? metadata;
-        if (metadata.isReply) break;
+        // X often renders "Replying to" before it inserts the parent article.
+        // It can also render the focal post before either signal, so require
+        // repeated standalone observations before accepting that classification.
+        if (metadata.replyThread?.length) break;
+        if (!metadata.isReply && metadata.threadResolved) {
+          standaloneObservations += 1;
+          if (standaloneObservations >= 4) break;
+        }
       }
       resolved.push({ ...tweet, ...metadata });
     } catch {
