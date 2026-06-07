@@ -101,6 +101,9 @@ resolved from X's ascending adjacent timeline grouping. External replies keep
 polling their permalink after the `Replying to` label appears so the asynchronously
 loaded parent post is captured too.
 
+The public writing page always renders deployed static data. The extension no
+longer overlays browser-local tweet cache data onto merulox.com.
+
 Click **Fetch now** in the extension popup to force an immediate refresh. The
 **tweets → site** row should go green after the receiver writes
 `src/data/tweets.json`.

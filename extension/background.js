@@ -39,11 +39,19 @@ async function scrapeAndStore() {
       const href = linkEl.getAttribute("href")?.split("?")[0];
       const author = href?.match(/^\/([^/]+)\/status\//)?.[1];
       const url = `https://x.com${href}`;
+      const replyContext = article.innerText
+        .split("\n")
+        .map((line) => line.trim())
+        .find((line) => line.startsWith("Replying to"));
       tweets.set(url, {
         text: textEl.textContent.trim(),
         timestamp: timeEl?.getAttribute("datetime") ?? null,
         url,
         author: author ? `@${author}` : `@${SCREEN_NAME}`,
+        ...(replyContext ? {
+          isReply: true,
+          replyTo: replyContext.replace(/^Replying to\s*/i, "").trim(),
+        } : {}),
       });
     }
   }
@@ -94,26 +102,29 @@ function inspectThread(currentUrl) {
   if (focalIndex < 0) return { threadResolved: false };
 
   const focal = articles[focalIndex];
+  const focalTime = Date.parse(focal.querySelector("time")?.getAttribute("datetime") ?? "");
   const context = focal.innerText
     .split("\n")
     .map((line) => line.trim())
     .find((line) => line.startsWith("Replying to"));
   const replyThread = articles
-    .slice(Math.max(0, focalIndex - 5), focalIndex)
     .map((article) => {
       const textEl = article.querySelector('[data-testid="tweetText"]');
       const timeEl = article.querySelector("time");
       const href = timeEl?.closest('a[href*="/status/"]')?.getAttribute("href")?.split("?")[0];
       const author = href?.match(/^\/([^/]+)\/status\//)?.[1];
-      if (!textEl || !href) return null;
+      const timestamp = timeEl?.getAttribute("datetime") ?? null;
+      if (!textEl || !href || href === currentPath) return null;
       return {
         text: textEl.textContent.trim(),
-        timestamp: timeEl?.getAttribute("datetime") ?? null,
+        timestamp,
         url: `https://x.com${href}`,
         author: author ? `@${author}` : null,
       };
     })
-    .filter(Boolean);
+    .filter((post) => post && Date.parse(post.timestamp) <= focalTime)
+    .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+    .slice(-5);
   const parent = replyThread.at(-1);
 
   if (!parent && !context) return { threadResolved: true, threadVersion: 4 };

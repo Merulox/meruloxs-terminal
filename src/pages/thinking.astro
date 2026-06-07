@@ -385,154 +385,9 @@ function externalReplyThread(tweet: Tweet) {
 			}
 		}
 
-		// ── X / tweets owner overlay ──────────────────────────────
-		interface Tweet {
-			text: string;
-			url: string;
-			date: string;
-			timestamp?: string;
-			author?: string;
-			isReply?: boolean;
-			replyTo?: string;
-			replyToUrl?: string;
-			replyThread?: ThreadPost[];
-		}
-
-		interface ThreadPost {
-			text: string;
-			timestamp?: string;
-			url: string;
-			author?: string;
-		}
-
-		interface TweetCache {
-			tweets: Tweet[];
-			fetchedAt: number;
-		}
-
-		const TWEET_CACHE_KEY = "merulox_tweets_v1";
+		// X pagination
 		const TWEET_PAGE_SIZE = 10;
 		let currentTweetPage = 0;
-
-		function getCache(): TweetCache | null {
-			try {
-				const raw = localStorage.getItem(TWEET_CACHE_KEY);
-				return raw ? JSON.parse(raw) : null;
-			} catch {
-				return null;
-			}
-		}
-
-		function renderTweets(tweets: Tweet[], container: HTMLElement) {
-			container.replaceChildren();
-			for (const [index, tweet] of orchestrateTweets(tweets.slice(0, 30)).entries()) {
-				const article = document.createElement("article");
-				article.className = `work-item tweet-item${tweet.isReply ? " is-reply" : ""}`;
-				article.dataset.tweetIndex = String(index);
-
-				const externalThread = (tweet.replyThread ?? []).filter((post) =>
-					!tweets.some((ownTweet) => ownTweet.url === post.url)
-				);
-				if (externalThread.length) {
-					const thread = document.createElement("div");
-					thread.className = "reply-thread";
-					for (const post of externalThread) {
-						const postLink = document.createElement("a");
-						postLink.className = "thread-post";
-						postLink.href = post.url;
-						postLink.target = "_blank";
-						postLink.rel = "noopener";
-						postLink.style.textDecoration = "none";
-
-						const author = document.createElement("span");
-						author.className = "thread-post-author";
-						author.textContent = post.author ?? "original post";
-
-						const postText = document.createElement("p");
-						postText.className = "thread-post-text";
-						postText.textContent = post.text;
-						postLink.append(author, postText);
-						thread.append(postLink);
-					}
-					article.append(thread);
-				}
-
-				const header = document.createElement("header");
-				header.className = "item-header";
-
-				const link = document.createElement("a");
-				link.href = tweet.url;
-				link.target = "_blank";
-				link.rel = "noopener";
-				link.style.textDecoration = "none";
-
-				if (tweet.isReply) {
-					const context = document.createElement("p");
-					context.className = "reply-context";
-
-					const author = document.createElement("span");
-					author.className = "reply-author";
-					author.textContent = tweet.author ?? "@merulox";
-
-					context.append(author);
-					if (tweet.replyTo) context.append(` → ${tweet.replyTo}`);
-					link.append(context);
-				}
-
-				const text = document.createElement("p");
-				text.style.fontSize = "13px";
-				text.style.maxWidth = "58ch";
-				text.style.color = "var(--text)";
-				text.style.margin = "0";
-				text.textContent = tweet.text;
-
-				const date = document.createElement("time");
-				date.className = "date";
-				if (tweet.timestamp) date.dateTime = tweet.timestamp;
-				date.textContent = formatTweetTimestamp(tweet);
-
-				link.append(text);
-				header.append(link, date);
-				article.append(header);
-				container.append(article);
-			}
-			currentTweetPage = 0;
-			setupTweetPagination(container);
-		}
-
-		function formatTweetTimestamp(tweet: Tweet) {
-			if (!tweet.timestamp) return tweet.date;
-			return new Intl.DateTimeFormat("en-CA", {
-				timeZone: "America/Toronto",
-				year: "numeric",
-				month: "2-digit",
-				day: "2-digit",
-				hour: "2-digit",
-				minute: "2-digit",
-				hour12: false,
-			}).format(new Date(tweet.timestamp)).replace(",", "");
-		}
-
-		function orchestrateTweets(tweets: Tweet[]) {
-			const replies = new Map<string, Tweet[]>();
-			const roots: Tweet[] = [];
-			const urls = new Set(tweets.map((tweet) => tweet.url));
-
-			for (const tweet of tweets) {
-				if (tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl)) {
-					replies.set(tweet.replyToUrl, [...(replies.get(tweet.replyToUrl) ?? []), tweet]);
-				} else {
-					roots.push(tweet);
-				}
-			}
-
-			const flattenThread = (tweet: Tweet): Tweet[] => [
-				tweet,
-				...(replies.get(tweet.url) ?? []).flatMap(flattenThread),
-			];
-
-			return roots.flatMap(flattenThread);
-		}
 
 		function setupTweetPagination(container: HTMLElement) {
 			const items = Array.from(container.querySelectorAll<HTMLElement>(".tweet-item"));
@@ -564,17 +419,8 @@ function externalReplyThread(tweet: Tweet) {
 			frame.classList.toggle("at-bottom", remaining <= 2);
 		}
 
-		function renderFreshCachedTweets() {
-			const container = document.getElementById("tweets-container")!;
-			const staticUpdatedAt = Number(container.dataset.staticUpdatedAt ?? 0) * 1000;
-			const cached = getCache();
-			if (!cached?.tweets.length || cached.fetchedAt <= staticUpdatedAt) return;
-			renderTweets(cached.tweets, container);
-		}
-
 		loadPosts();
 		setupTweetPagination(document.getElementById("tweets-container")!);
-		renderFreshCachedTweets();
 
 		document.getElementById("tweet-prev")?.addEventListener("click", () => {
 			currentTweetPage -= 1;
@@ -586,10 +432,5 @@ function externalReplyThread(tweet: Tweet) {
 		});
 		document.getElementById("tweets-viewport")?.addEventListener("scroll", updateTweetScrollHint, { passive: true });
 		window.addEventListener("resize", updateTweetScrollHint);
-
-		// Extension seeder fires after document_idle and only affects the owner's browser.
-		window.addEventListener("tweetsUpdated", () => {
-			renderFreshCachedTweets();
-		});
-	</script>
+		</script>
 </Layout>
