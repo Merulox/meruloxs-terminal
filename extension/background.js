@@ -3,7 +3,7 @@ const STATUS_KEY = "last_attempt";
 const PROFILE_URL = "https://x.com/merulox/with_replies";
 const AUTO_FETCH_ALARM = "tweet-auto-fetch";
 const AUTO_FETCH_MINUTES = 60;
-const THREAD_RESOLVER_VERSION = 4;
+const THREAD_RESOLVER_VERSION = 5;
 let activeFetch = null;
 
 // Shared ingest secret for the local receiver. Lives in config.local.js (gitignored)
@@ -127,15 +127,55 @@ function inspectThread(currentUrl) {
     .slice(-5);
   const parent = replyThread.at(-1);
 
-  if (!parent && !context) return { threadResolved: true, threadVersion: 4 };
+  if (!parent && !context) return { threadResolved: true, threadVersion: 5 };
 
   return {
     threadResolved: true,
-    threadVersion: 4,
+    threadVersion: 5,
     isReply: true,
     ...(parent?.author ? { replyTo: parent.author } : {}),
     ...(context && !parent?.author ? { replyTo: context.replace(/^Replying to\s*/i, "").trim() } : {}),
     ...(parent?.url ? { replyToUrl: parent.url } : {}),
+    ...(replyThread.length ? { replyThread } : {}),
+  };
+}
+
+async function resolveThreadViaApi(tweetUrl) {
+  const statusId = new URL(tweetUrl).pathname.match(/\/status\/(\d+)/)?.[1];
+  if (!statusId) return null;
+
+  const response = await fetch(`https://api.fxtwitter.com/status/${statusId}`);
+  if (!response.ok) return null;
+
+  const current = (await response.json()).tweet;
+  if (!current?.replying_to_status) {
+    return { threadResolved: true, threadVersion: THREAD_RESOLVER_VERSION };
+  }
+
+  const replyThread = [];
+  let parentId = current.replying_to_status;
+  for (let depth = 0; depth < 5 && parentId; depth += 1) {
+    const parentResponse = await fetch(`https://api.fxtwitter.com/status/${parentId}`);
+    if (!parentResponse.ok) break;
+    const parent = (await parentResponse.json()).tweet;
+    if (!parent?.id || !parent.text || !parent.author?.screen_name) break;
+
+    replyThread.unshift({
+      text: parent.text,
+      timestamp: parent.created_at ? new Date(parent.created_at).toISOString() : null,
+      url: parent.url,
+      author: `@${parent.author.screen_name}`,
+    });
+    parentId = parent.replying_to_status;
+  }
+
+  const immediateParent = replyThread.at(-1);
+  return {
+    threadResolved: true,
+    threadVersion: THREAD_RESOLVER_VERSION,
+    isReply: true,
+    replyTo: immediateParent?.author ?? `@${current.replying_to}`,
+    ...(immediateParent?.url ? { replyToUrl: immediateParent.url } : {}),
     ...(replyThread.length ? { replyThread } : {}),
   };
 }
@@ -181,6 +221,16 @@ async function resolveThreads(tabId, tweets) {
         } : {}),
       });
       continue;
+    }
+
+    try {
+      const apiMetadata = await resolveThreadViaApi(tweet.url);
+      if (apiMetadata) {
+        resolved.push({ ...tweet, ...apiMetadata });
+        continue;
+      }
+    } catch {
+      // Fall through to X's rendered permalink when public metadata is unavailable.
     }
 
     try {

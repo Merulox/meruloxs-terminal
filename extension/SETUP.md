@@ -99,7 +99,8 @@ For replies to posts outside the profile timeline, up to five preceding
 conversation posts are retained as display context. Self-thread continuations are
 resolved from X's ascending adjacent timeline grouping. External replies keep
 polling their permalink after the `Replying to` label appears so the asynchronously
-loaded parent post is captured too.
+loaded parent post is captured too. If X does not render the parent chain, the
+extension falls back to public FxTwitter metadata.
 
 The public writing page always renders deployed static data. The extension no
 longer overlays browser-local tweet cache data onto merulox.com.
