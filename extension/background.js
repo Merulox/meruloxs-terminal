@@ -3,7 +3,7 @@ const STATUS_KEY = "last_attempt";
 const PROFILE_URL = "https://x.com/merulox/with_replies";
 const AUTO_FETCH_ALARM = "tweet-auto-fetch";
 const AUTO_FETCH_MINUTES = 60;
-const THREAD_RESOLVER_VERSION = 2;
+const THREAD_RESOLVER_VERSION = 3;
 let activeFetch = null;
 
 // Shared ingest secret for the local receiver. Lives in config.local.js (gitignored)
@@ -59,7 +59,26 @@ async function scrapeAndStore() {
   }
   collectVisibleTweets();
 
-  return Array.from(tweets.values()).slice(0, TARGET_COUNT);
+  const timeline = Array.from(tweets.values()).slice(0, TARGET_COUNT);
+  for (let index = 1; index < timeline.length; index += 1) {
+    const parent = timeline[index - 1];
+    const current = timeline[index];
+    const parentTime = Date.parse(parent.timestamp);
+    const currentTime = Date.parse(current.timestamp);
+    const elapsed = currentTime - parentTime;
+
+    // X displays self-thread continuations directly after their parent in
+    // ascending time order. Normal timeline rows remain newest-first.
+    if (elapsed > 0 && elapsed <= 24 * 60 * 60 * 1000) {
+      current.threadResolved = true;
+      current.threadVersion = THREAD_RESOLVER_VERSION;
+      current.isReply = true;
+      current.replyTo = parent.author;
+      current.replyToUrl = parent.url;
+    }
+  }
+
+  return timeline;
 }
 
 function inspectThread(currentUrl) {
@@ -96,11 +115,11 @@ function inspectThread(currentUrl) {
     .filter(Boolean);
   const parent = replyThread.at(-1);
 
-  if (!parent && !context) return { threadResolved: true, threadVersion: 2 };
+  if (!parent && !context) return { threadResolved: true, threadVersion: 3 };
 
   return {
     threadResolved: true,
-    threadVersion: 2,
+    threadVersion: 3,
     isReply: true,
     ...(parent?.author ? { replyTo: parent.author } : {}),
     ...(context && !parent?.author ? { replyTo: context.replace(/^Replying to\s*/i, "").trim() } : {}),
@@ -131,6 +150,11 @@ async function resolveThreads(tabId, tweets) {
   const resolved = [];
 
   for (const tweet of tweets) {
+    if (tweet.threadResolved && tweet.threadVersion === THREAD_RESOLVER_VERSION) {
+      resolved.push(tweet);
+      continue;
+    }
+
     const prior = cachedByUrl.get(tweet.url);
     if (prior?.threadResolved && prior.threadVersion === THREAD_RESOLVER_VERSION) {
       resolved.push({
@@ -151,14 +175,18 @@ async function resolveThreads(tabId, tweets) {
       const loaded = waitForTabLoad(tabId);
       await chrome.tabs.update(tabId, { url: tweet.url });
       await loaded;
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-
-      const result = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: inspectThread,
-        args: [tweet.url],
-      });
-      resolved.push({ ...tweet, ...(result?.[0]?.result ?? { threadResolved: false }) });
+      let metadata = { threadResolved: false };
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        const result = await chrome.scripting.executeScript({
+          target: { tabId },
+          func: inspectThread,
+          args: [tweet.url],
+        });
+        metadata = result?.[0]?.result ?? metadata;
+        if (metadata.isReply) break;
+      }
+      resolved.push({ ...tweet, ...metadata });
     } catch {
       resolved.push({ ...tweet, threadResolved: false });
     }

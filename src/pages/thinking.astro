@@ -34,7 +34,12 @@ function orchestrateTweets(input: Tweet[]) {
 		}
 	}
 
-	return roots.flatMap((tweet) => [tweet, ...(replies.get(tweet.url) ?? [])]);
+	const flattenThread = (tweet: Tweet): Tweet[] => [
+		tweet,
+		...(replies.get(tweet.url) ?? []).flatMap(flattenThread),
+	];
+
+	return roots.flatMap(flattenThread);
 }
 
 const tweets = orchestrateTweets(((tweetData.tweets ?? []) as Tweet[])
@@ -521,7 +526,12 @@ function externalReplyThread(tweet: Tweet) {
 				}
 			}
 
-			return roots.flatMap((tweet) => [tweet, ...(replies.get(tweet.url) ?? [])]);
+			const flattenThread = (tweet: Tweet): Tweet[] => [
+				tweet,
+				...(replies.get(tweet.url) ?? []).flatMap(flattenThread),
+			];
+
+			return roots.flatMap(flattenThread);
 		}
 
 		function setupTweetPagination(container: HTMLElement) {
