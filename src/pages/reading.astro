@@ -241,23 +241,52 @@ const levels = [
 		</div>
 	</section>
 
-	<script>
-		const summaries = Array.from(document.querySelectorAll<HTMLElement>(".path-summary"));
+		<script>
+			const summaries = Array.from(document.querySelectorAll<HTMLElement>(".path-summary"));
+			const pathDetails = summaries.map((summary) => summary.closest("details")!);
 
-		function focusPath(index: number) {
-			const target = summaries[(index + summaries.length) % summaries.length];
-			target.focus();
-			target.scrollIntoView({ block: "nearest" });
-		}
+			function focusPath(index: number) {
+				const target = summaries[(index + summaries.length) % summaries.length];
+				target.focus();
+				target.scrollIntoView({ block: "nearest" });
+			}
 
-		document.querySelectorAll<HTMLElement>("[data-path-link]").forEach((link) => {
-			link.addEventListener("click", () => {
-				const index = Number(link.dataset.pathLink);
-				const details = summaries[index]?.closest("details");
-				if (details) details.open = true;
-				requestAnimationFrame(() => focusPath(index));
+			function revealPathContext(index: number) {
+				const first = pathDetails[Math.max(0, index - 2)];
+				const last = pathDetails[Math.min(pathDetails.length - 1, index + 2)];
+				const top = window.scrollY + first.getBoundingClientRect().top;
+				const bottom = window.scrollY + last.getBoundingClientRect().bottom;
+				const margin = 24;
+				const available = window.innerHeight - margin * 2;
+				const height = bottom - top;
+				const target = height <= available
+					? top - margin - (available - height) / 2
+					: top - margin;
+
+				window.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+			}
+
+			function openPath(index: number) {
+				for (const [pathIndex, details] of pathDetails.entries()) {
+					if (pathIndex !== index) details.open = false;
+				}
+				pathDetails[index].open = true;
+				requestAnimationFrame(() => requestAnimationFrame(() => revealPathContext(index)));
+			}
+
+			pathDetails.forEach((details, index) => {
+				details.addEventListener("toggle", () => {
+					if (details.open) openPath(index);
+				});
 			});
-		});
+
+			document.querySelectorAll<HTMLElement>("[data-path-link]").forEach((link) => {
+				link.addEventListener("click", () => {
+					const index = Number(link.dataset.pathLink);
+					openPath(index);
+					requestAnimationFrame(() => focusPath(index));
+				});
+			});
 
 		document.addEventListener("keydown", (event) => {
 			if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -277,7 +306,7 @@ const levels = [
 			} else if ((event.key === "l" || event.key === "ArrowRight") && current >= 0) {
 				event.preventDefault();
 				event.stopImmediatePropagation();
-				active.closest("details")!.open = true;
+				openPath(current);
 			} else if ((event.key === "h" || event.key === "ArrowLeft") && current >= 0) {
 				event.preventDefault();
 				event.stopImmediatePropagation();
@@ -286,7 +315,8 @@ const levels = [
 				event.preventDefault();
 				event.stopImmediatePropagation();
 				const details = active.closest("details")!;
-				details.open = !details.open;
+				if (details.open) details.open = false;
+				else openPath(current);
 			}
 		}, true);
 	</script>
