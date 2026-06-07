@@ -160,6 +160,14 @@ function externalReplyThread(tweet: Tweet) {
 		top: 29px;
 		width: 10px;
 	}
+	.tweet-item.is-reply.has-external-thread {
+		border-top: 1px solid var(--faint) !important;
+		padding-top: 28px;
+	}
+	.tweet-item.is-reply.has-external-thread::before,
+	.tweet-item.is-reply.has-external-thread::after {
+		display: none;
+	}
 	.reply-context {
 		color: var(--muted);
 		font-family: "SFMono-Regular", Consolas, monospace;
@@ -245,7 +253,14 @@ function externalReplyThread(tweet: Tweet) {
 						tweets.length > 0 ? (
 							tweets.map((tweet, index) => (
 								<article
-									class:list={["work-item", "tweet-item", { "is-reply": tweet.isReply }]}
+									class:list={[
+										"work-item",
+										"tweet-item",
+										{
+											"is-reply": tweet.isReply,
+											"has-external-thread": externalReplyThread(tweet).length > 0,
+										},
+									]}
 									data-tweet-index={index}
 									hidden={index >= TWEET_PAGE_SIZE}
 								>
