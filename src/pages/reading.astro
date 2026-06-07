@@ -1,27 +1,128 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import tiers from "../data/books.json";
+import paths from "../data/books.json";
 import shelf from "../data/reading.json";
 
 type Book = { title: string; author: string; stars: number; read?: boolean; note: string };
-type Tier = { tier: string; desc: string; books: Book[] };
+type Path = { path: string; desc: string; books: Book[] };
 type Shaped = { title: string; author: string; stars: number; note: string };
 type Recent = { title: string; author: string; note: string };
 
-const data = tiers as Tier[];
+const data = paths as Path[];
 const shaped = (shelf.shaped ?? []) as Shaped[];
 const recent = (shelf.recent ?? []) as Recent[];
 
-const totalBooks = data.reduce((n, t) => n + t.books.length, 0);
-const read = data.reduce((n, t) => n + t.books.filter((b) => b.read).length, 0);
-
-// Split the tier label like "TIER 2 — CORE" into a short label + name
-function splitTier(label: string): { tag: string; name: string } {
-	const parts = label.split("—");
-	if (parts.length === 2) return { tag: parts[0].trim(), name: parts[1].trim() };
-	return { tag: "", name: label.trim() };
-}
+const totalBooks = data.reduce((n, path) => n + path.books.length, 0);
+const read = data.reduce((n, path) => n + path.books.filter((b) => b.read).length, 0);
+const levels = [
+	{ stars: 1, name: "entry" },
+	{ stars: 2, name: "core" },
+	{ stars: 3, name: "advanced" },
+];
 ---
+
+<style>
+	.path-index {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px 18px;
+		margin: 24px 0 42px;
+	}
+	.path-index a {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+		text-decoration: none;
+	}
+	.path-index a:hover {
+		color: var(--accent);
+	}
+	.reading-paths {
+		border-bottom: 1px solid var(--line);
+	}
+	.reading-path {
+		border-top: 1px solid var(--line);
+		scroll-margin-top: 24px;
+	}
+	.path-summary {
+		align-items: baseline;
+		cursor: pointer;
+		display: grid;
+		gap: 12px;
+		grid-template-columns: 20px minmax(0, 1fr) auto;
+		list-style: none;
+		padding: 18px 0;
+	}
+	.path-summary::-webkit-details-marker {
+		display: none;
+	}
+	.path-marker {
+		color: var(--accent);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+	}
+	.reading-path[open] .path-marker::before {
+		content: "−";
+	}
+	.reading-path:not([open]) .path-marker::before {
+		content: "+";
+	}
+	.path-name {
+		color: var(--text);
+		font-size: 14px;
+		font-weight: 600;
+	}
+	.path-count {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+		white-space: nowrap;
+	}
+	.path-body {
+		padding: 0 0 34px 32px;
+	}
+	.path-desc {
+		color: var(--muted);
+		font-size: 12px;
+		margin: -4px 0 24px;
+		max-width: 58ch;
+	}
+	.path-level + .path-level {
+		margin-top: 28px;
+	}
+	.path-level .book-line {
+		grid-template-columns: minmax(0, 1fr) auto;
+	}
+	.level-head {
+		align-items: baseline;
+		display: flex;
+		gap: 10px;
+		margin-bottom: 14px;
+	}
+	.level-stars {
+		color: var(--accent);
+		font-size: 10px;
+		letter-spacing: 1px;
+	}
+	.level-name {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 10px;
+		text-transform: uppercase;
+	}
+	.path-summary:focus-visible {
+		outline: 1px solid var(--accent);
+		outline-offset: 4px;
+	}
+	@media (max-width: 600px) {
+		.path-body {
+			padding-left: 20px;
+		}
+		.path-summary {
+			grid-template-columns: 16px minmax(0, 1fr) auto;
+		}
+	}
+</style>
 
 <Layout title="reading | MERULOX" description="What merulox reads — what shaped me, and the curriculum.">
 	<div class="page-head">
@@ -31,9 +132,8 @@ function splitTier(label: string): { tag: string; name: string } {
 
 	<p class="reading-intro">
 		The first shelf is history: books that already shaped how I think. The
-		curriculum below is different. I have not read through it yet; it is a map I
-		built for myself, ordered where sequence matters and grouped into parallel
-		paths elsewhere.
+		curriculum below is a set of paths I have not read through yet. Within each
+		path, stars indicate progression: entry, core, then advanced.
 	</p>
 
 	<a
@@ -53,9 +153,9 @@ function splitTier(label: string): { tag: string; name: string } {
 					{shaped.map((b) => (
 						<li class="book">
 							<div class="book-line">
-								<span class="book-stars" aria-label={`${b.stars} of 3`}>
+								<span class="book-stars" aria-label={`${b.stars} of 5`}>
 									{"★".repeat(b.stars)}
-									<span class="book-stars-empty">{"★".repeat(Math.max(0, 3 - b.stars))}</span>
+									<span class="book-stars-empty">{"★".repeat(Math.max(0, 5 - b.stars))}</span>
 								</span>
 								<span class="book-title">{b.title}</span>
 								<span class="book-author">{b.author}</span>
@@ -90,44 +190,104 @@ function splitTier(label: string): { tag: string; name: string } {
 
 	<section class="shelf-section">
 		<div class="shelf-head-row">
-			<h2 class="shelf-head">The curriculum</h2>
+			<h2 class="shelf-head">Paths</h2>
 			<span class="date">{read}/{totalBooks} read</span>
 		</div>
-		<p class="reading-intro curriculum-intro">
-			A skill tree, not a flex. Each tier assumes the one before it. The point is
-			sequence: foundation books first, synthesizers last.
-		</p>
+		<nav class="path-index" aria-label="Reading paths">
+			{data.map((path, index) => (
+				<a href={`#path-${index + 1}`} data-path-link={index}>
+					{String(index + 1).padStart(2, "0")}{" "}{path.path.toLowerCase()}
+				</a>
+			))}
+		</nav>
 
-		{
-			data.map((tier) => {
-				const { tag, name } = splitTier(tier.tier);
-				return (
-					<section class="tier">
-						<div class="tier-head">
-							<span class="tier-tag">{tag}</span>
-							<h3 class="tier-name">{name}</h3>
-						</div>
-						<p class="tier-desc">{tier.desc}</p>
-						<ul class="book-list">
-							{tier.books.map((b) => (
-								<li class="book">
-									<div class="book-line">
-										<span class="book-stars" aria-label={`${b.stars} of 3`}>
-											{"★".repeat(b.stars)}
-											<span class="book-stars-empty">{"★".repeat(Math.max(0, 3 - b.stars))}</span>
-										</span>
-										<span class="book-title">{b.title}</span>
-										<span class="book-author">{b.author}</span>
-										{b.read && <span class="book-state read">read</span>}
+		<div class="reading-paths">
+			{data.map((path, index) => (
+				<details class="reading-path" id={`path-${index + 1}`}>
+					<summary class="path-summary">
+						<span class="path-marker" aria-hidden="true"></span>
+						<span class="path-name">{path.path}</span>
+						<span class="path-count">{path.books.filter((b) => b.read).length}/{path.books.length}</span>
+					</summary>
+					<div class="path-body">
+						<p class="path-desc">{path.desc}</p>
+						{levels.map((level) => {
+							const books = path.books.filter((book) => book.stars === level.stars);
+							if (!books.length) return null;
+							return (
+								<section class="path-level">
+									<div class="level-head">
+										<span class="level-stars">{"★".repeat(level.stars)}</span>
+										<span class="level-name">{level.name}</span>
 									</div>
-									{b.note && <p class="book-note">{b.note}</p>}
-								</li>
-							))}
-						</ul>
-					</section>
-				);
-			})
-		}
+									<ul class="book-list">
+										{books.map((book) => (
+											<li class="book">
+												<div class="book-line">
+													<span class="book-title">{book.title}</span>
+													<span class="book-author">{book.author}</span>
+													{book.read && <span class="book-state read">read</span>}
+												</div>
+												{book.note && <p class="book-note">{book.note}</p>}
+											</li>
+										))}
+									</ul>
+								</section>
+							);
+						})}
+					</div>
+				</details>
+			))}
+		</div>
 	</section>
 
+	<script>
+		const summaries = Array.from(document.querySelectorAll<HTMLElement>(".path-summary"));
+
+		function focusPath(index: number) {
+			const target = summaries[(index + summaries.length) % summaries.length];
+			target.focus();
+			target.scrollIntoView({ block: "nearest" });
+		}
+
+		document.querySelectorAll<HTMLElement>("[data-path-link]").forEach((link) => {
+			link.addEventListener("click", () => {
+				const index = Number(link.dataset.pathLink);
+				const details = summaries[index]?.closest("details");
+				if (details) details.open = true;
+				requestAnimationFrame(() => focusPath(index));
+			});
+		});
+
+		document.addEventListener("keydown", (event) => {
+			if (event.ctrlKey || event.metaKey || event.altKey) return;
+			const active = document.activeElement as HTMLElement;
+			const current = summaries.indexOf(active);
+			const isPathKey = ["j", "k", "h", "l", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key);
+			if (current < 0 && !isPathKey) return;
+
+			if (event.key === "j" || event.key === "ArrowDown") {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				focusPath(current < 0 ? 0 : current + 1);
+			} else if (event.key === "k" || event.key === "ArrowUp") {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				focusPath(current < 0 ? summaries.length - 1 : current - 1);
+			} else if ((event.key === "l" || event.key === "ArrowRight") && current >= 0) {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				active.closest("details")!.open = true;
+			} else if ((event.key === "h" || event.key === "ArrowLeft") && current >= 0) {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				active.closest("details")!.open = false;
+			} else if ((event.key === "Enter" || event.key === " ") && current >= 0) {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				const details = active.closest("details")!;
+				details.open = !details.open;
+			}
+		}, true);
+	</script>
 </Layout>

@@ -1,37 +1,67 @@
 [
   {
-    "tier": "TIER 0 — FOUNDATION",
-    "desc": "Read these first. Each one changes how you read everything else.",
+    "path": "Reality",
+    "desc": "Epistemology, competing models of reality, and how claims become believable.",
     "books": [
+      {
+        "title": "The Kybalion",
+        "author": "Three Initiates",
+        "stars": 1,
+        "note": "Short introduction to an esoteric model of reality."
+      },
+      {
+        "title": "The Secret Teachings of All Ages",
+        "author": "Manly P. Hall",
+        "stars": 1,
+        "note": ""
+      },
       {
         "title": "The Structure of Scientific Revolutions",
         "author": "Thomas Kuhn",
-        "stars": 3,
+        "stars": 2,
         "note": "Makes every other book's claims legible. Short (200p)."
       },
       {
-        "title": "Thinking in Systems",
-        "author": "Donella Meadows",
-        "stars": 3,
-        "note": "Practical systems lens. Unlocks GEB, Wolfram, Bohm at depth."
+        "title": "The Science Delusion",
+        "author": "Rupert Sheldrake",
+        "stars": 2,
+        "note": "After: The Kybalion. Challenges scientific dogma directly."
       },
       {
-        "title": "Influence",
-        "author": "Robert Cialdini",
+        "title": "The Demon-Haunted World",
+        "author": "Carl Sagan",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Case Against Reality",
+        "author": "Donald Hoffman",
         "stars": 3,
-        "note": "Foundation under all Hormozi. Read before 100M Leads."
+        "note": "After: Ego Tunnel + Galileo's Error. Most radical consciousness thesis."
+      },
+      {
+        "title": "Prometheus Rising",
+        "author": "Robert Anton Wilson",
+        "stars": 3,
+        "note": "A synthesis layer that makes ideas across the paths talk to each other."
       }
     ]
   },
   {
-    "tier": "TIER 1 — CLUSTER ENTRIES",
-    "desc": "Entry point into each domain. Pick your cluster, start here.",
+    "path": "Systems",
+    "desc": "Feedback, emergence, complexity, and synthesis across domains.",
     "books": [
       {
-        "title": "Being You",
-        "author": "Anil Seth",
+        "title": "The Design of Everyday Things",
+        "author": "Don Norman",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Thinking in Systems",
+        "author": "Donella Meadows",
         "stars": 2,
-        "note": "Best entry into consciousness. Accessible, rigorous."
+        "note": "Practical systems lens. Unlocks GEB, Wolfram, Bohm at depth."
       },
       {
         "title": "Complexity: A Guided Tour",
@@ -40,40 +70,106 @@
         "note": "Entry into systems/complexity before GEB."
       },
       {
-        "title": "How to Change Your Mind",
-        "author": "Michael Pollan",
-        "stars": 2,
-        "note": "Best entry into psychedelics cluster. Journalistic, grounded."
+        "title": "Gödel, Escher, Bach",
+        "author": "Douglas Hofstadter",
+        "stars": 3,
+        "note": "After: Complexity. The monument. Takes time."
       },
       {
-        "title": "100M Offers",
-        "author": "Alex Hormozi",
-        "stars": 2,
-        "note": "Entry into business cluster. Read before 100M Leads."
+        "title": "A New Kind of Science",
+        "author": "Stephen Wolfram",
+        "stars": 3,
+        "note": "After: GEB + Thinking in Systems. Dense. Skim strategically."
       },
       {
-        "title": "The Kybalion",
-        "author": "Three Initiates",
-        "stars": 1,
-        "note": "Entry into esoteric. Short. Mental models for the cluster."
-      },
-      {
-        "title": "The Telomere Effect",
-        "author": "Blackburn & Epel",
-        "stars": 1,
-        "note": "Standalone. Read whenever."
+        "title": "Steps to an Ecology of Mind",
+        "author": "Gregory Bateson",
+        "stars": 3,
+        "note": "Connects cybernetics, consciousness, biology, and language."
       }
     ]
   },
   {
-    "tier": "TIER 2 — CORE",
-    "desc": "Requires Tier 1 of same cluster. The real payload.",
+    "path": "Psychology",
+    "desc": "Judgment, behavior, identity, persuasion, and interpersonal dynamics.",
     "books": [
       {
-        "title": "The Ego Tunnel",
-        "author": "Thomas Metzinger",
+        "title": "Games People Play",
+        "author": "Eric Berne",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Road Less Traveled",
+        "author": "M. Scott Peck",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Subtle Art of Not Giving a F*ck",
+        "author": "Mark Manson",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "101 Essays That Will Change the Way You Think",
+        "author": "Brianna Wiest",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Influence",
+        "author": "Robert Cialdini",
+        "stars": 2,
+        "note": "Foundation under all Hormozi. Read before 100M Leads."
+      },
+      {
+        "title": "The Scout Mindset",
+        "author": "Julia Galef",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Thinking, Fast and Slow",
+        "author": "Daniel Kahneman",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Denial of Death",
+        "author": "Ernest Becker",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Man and His Symbols",
+        "author": "Carl Jung",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Matter With Things",
+        "author": "Iain McGilchrist",
         "stars": 3,
-        "note": "After: Being You. Hardest consciousness book. Most important."
+        "note": ""
+      }
+    ]
+  },
+  {
+    "path": "Consciousness",
+    "desc": "Mind, perception, altered states, selfhood, and theories of consciousness.",
+    "books": [
+      {
+        "title": "Being You",
+        "author": "Anil Seth",
+        "stars": 1,
+        "note": "Best entry into consciousness. Accessible, rigorous."
+      },
+      {
+        "title": "How to Change Your Mind",
+        "author": "Michael Pollan",
+        "stars": 1,
+        "note": "Grounded journalistic entry into psychedelics and altered states."
       },
       {
         "title": "Galileo's Error",
@@ -82,28 +178,10 @@
         "note": "After: Being You. Panpsychism argument — read alongside Metzinger."
       },
       {
-        "title": "Surfing Uncertainty",
-        "author": "Andy Clark",
-        "stars": 3,
-        "note": "After: Being You. Predictive processing — dense, foundational."
-      },
-      {
         "title": "The Mind Illuminated",
         "author": "Culadasa",
         "stars": 2,
         "note": "After: How to Change Your Mind. Practice manual for meditation."
-      },
-      {
-        "title": "Gödel, Escher, Bach",
-        "author": "Douglas Hofstadter",
-        "stars": 3,
-        "note": "After: Complexity. The monument. Takes time."
-      },
-      {
-        "title": "Wholeness & the Implicate Order",
-        "author": "David Bohm",
-        "stars": 3,
-        "note": "After: Complexity + Thinking in Systems. Dense physics/philosophy."
       },
       {
         "title": "DMT Dialogues",
@@ -112,34 +190,10 @@
         "note": "After: How to Change Your Mind."
       },
       {
-        "title": "Entangled Minds",
-        "author": "Dean Radin",
+        "title": "DMT: The Spirit Molecule",
+        "author": "Rick Strassman",
         "stars": 2,
-        "note": "After: DMT Dialogues. Psi research, quantum framing."
-      },
-      {
-        "title": "100M Leads",
-        "author": "Alex Hormozi",
-        "stars": 2,
-        "note": "After: Influence + 100M Offers."
-      },
-      {
-        "title": "The Science Delusion",
-        "author": "Rupert Sheldrake",
-        "stars": 2,
-        "note": "After: The Kybalion. Challenges scientific dogma directly."
-      }
-    ]
-  },
-  {
-    "tier": "TIER 3 — ADVANCED",
-    "desc": "Requires Tier 2. High cognitive load. High payoff.",
-    "books": [
-      {
-        "title": "The Case Against Reality",
-        "author": "Donald Hoffman",
-        "stars": 3,
-        "note": "After: Ego Tunnel + Galileo's Error. Most radical consciousness thesis."
+        "note": ""
       },
       {
         "title": "Consciousness Beyond Life",
@@ -148,22 +202,40 @@
         "note": "After: Ego Tunnel. NDE data — empirical edge case for consciousness."
       },
       {
+        "title": "The World Behind the World",
+        "author": "Erik Hoel",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Why? The Purpose of the Universe",
+        "author": "Philip Goff",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "El espacio de la conciencia",
+        "author": "Jacobo Grinberg-Zylberbaum",
+        "stars": 2,
+        "note": "Bridges indigenous Mexican traditions + neuroscience. After Psicobiofísica."
+      },
+      {
+        "title": "The Ego Tunnel",
+        "author": "Thomas Metzinger",
+        "stars": 3,
+        "note": "After: Being You. Hardest consciousness book. Most important."
+      },
+      {
+        "title": "Surfing Uncertainty",
+        "author": "Andy Clark",
+        "stars": 3,
+        "note": "After: Being You. Predictive processing — dense, foundational."
+      },
+      {
         "title": "I Am a Strange Loop",
         "author": "Douglas Hofstadter",
         "stars": 3,
         "note": "After: GEB. Distills GEB's core — more readable, equally deep."
-      },
-      {
-        "title": "A New Kind of Science",
-        "author": "Stephen Wolfram",
-        "stars": 2,
-        "note": "After: GEB + Thinking in Systems. Dense. Skim strategically."
-      },
-      {
-        "title": "Prometheus Rising",
-        "author": "Robert Anton Wilson",
-        "stars": 3,
-        "note": "After: Tier 1 of all clusters. Makes every book you own talk to each other."
       },
       {
         "title": "Psicobiofísica (Vol. 1–4)",
@@ -176,174 +248,319 @@
         "author": "Jacobo Grinberg-Zylberbaum",
         "stars": 3,
         "note": "His core theoretical framework — syntergy, neuronal fields, reality construction."
+      }
+    ]
+  },
+  {
+    "path": "Business",
+    "desc": "Offers, markets, negotiation, strategy, and practical leverage.",
+    "books": [
+      {
+        "title": "Exactly What to Say",
+        "author": "Phil M. Jones",
+        "stars": 1,
+        "note": ""
       },
       {
-        "title": "El espacio de la conciencia",
-        "author": "Jacobo Grinberg-Zylberbaum",
+        "title": "How to Win Friends and Influence People in the Digital Age",
+        "author": "Dale Carnegie & Associates",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The 48 Laws of Power",
+        "author": "Robert Greene",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "100M Offers",
+        "author": "Alex Hormozi",
         "stars": 2,
-        "note": "Bridges indigenous Mexican traditions + neuroscience. After Psicobiofísica."
+        "note": "Practical entry point. Read before 100M Leads."
+      },
+      {
+        "title": "100M Leads",
+        "author": "Alex Hormozi",
+        "stars": 2,
+        "note": "After: Influence + 100M Offers."
+      },
+      {
+        "title": "Basic Economics",
+        "author": "Thomas Sowell",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Poor Charlie's Almanack",
+        "author": "Charles T. Munger",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Never Split the Difference",
+        "author": "Chris Voss & Tahl Raz",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Price Theory",
+        "author": "Milton Friedman",
+        "stars": 3,
+        "note": ""
+      },
+      {
+        "title": "The Art of Strategy",
+        "author": "Avinash K. Dixit & Barry J. Nalebuff",
+        "stars": 3,
+        "note": ""
       }
     ]
   },
   {
-    "tier": "TIER 4 — SYNTHESIZERS (final bosses)",
-    "desc": "Read last. These recontextualize everything above.",
+    "path": "Humanity",
+    "desc": "Philosophy, civilization, ethics, technology, and ways of living.",
     "books": [
       {
-        "title": "Steps to an Ecology of Mind",
-        "author": "Gregory Bateson",
+        "title": "Meditations",
+        "author": "Marcus Aurelius",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "What the Buddha Taught",
+        "author": "Walpola Rahula",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Beyond Good and Evil",
+        "author": "Friedrich Nietzsche",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Noble Eightfold Path",
+        "author": "Bhikkhu Bodhi",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Less Is More",
+        "author": "Jason Hickel",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Possible Minds",
+        "author": "John Brockman",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Life 3.0",
+        "author": "Max Tegmark",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "The Complete Works of Aristotle",
+        "author": "Aristotle",
         "stars": 3,
-        "note": "After: everything. Connects cybernetics, consciousness, biology, language."
+        "note": ""
       }
     ]
   },
   {
-    "tier": "PARALLEL PATH — PRACTICE, SYSTEMS & MAKING",
-    "desc": "Applied books to pull in when the work demands them.",
+    "path": "Physics & Edge Science",
+    "desc": "Physical models and disputed empirical edges around mind and reality.",
     "books": [
-      { "title": "The Pragmatic Programmer", "author": "David Thomas & Andrew Hunt", "stars": 2, "note": "" },
-      { "title": "Structure and Interpretation of Computer Programs (JavaScript Adaptation)", "author": "Harold Abelson, Gerald Jay Sussman & Julie Sussman", "stars": 3, "note": "" },
-      { "title": "The Design of Everyday Things", "author": "Don Norman", "stars": 2, "note": "" },
-      { "title": "Arduino Cookbook", "author": "Michael Margolis", "stars": 1, "note": "" },
-      { "title": "Make: Electronics", "author": "Charles Platt", "stars": 2, "note": "" },
-      { "title": "Practical Electronics for Inventors", "author": "Paul Scherz & Simon Monk", "stars": 2, "note": "" },
-      { "title": "Robot Builder's Bonanza", "author": "Gordon McComb", "stars": 1, "note": "" },
-      { "title": "Machinery's Handbook", "author": "Erik Oberg et al.", "stars": 1, "note": "" },
-      { "title": "The Way Things Work Now", "author": "David Macaulay", "stars": 2, "note": "" },
-      { "title": "How to Invent Everything", "author": "Ryan North", "stars": 2, "note": "" },
-      { "title": "Basic Mathematics", "author": "Serge Lang", "stars": 2, "note": "" },
-      { "title": "How to Prove It", "author": "Daniel J. Velleman", "stars": 2, "note": "" },
-      { "title": "Linear Algebra Done Right", "author": "Sheldon Axler", "stars": 2, "note": "" },
-      { "title": "A Mind for Numbers", "author": "Barbara Oakley", "stars": 1, "note": "" },
-      { "title": "Basic Economics", "author": "Thomas Sowell", "stars": 2, "note": "" },
-      { "title": "Price Theory", "author": "Milton Friedman", "stars": 2, "note": "" },
-      { "title": "The Art of Strategy", "author": "Avinash K. Dixit & Barry J. Nalebuff", "stars": 2, "note": "" },
-      { "title": "Poor Charlie's Almanack", "author": "Charles T. Munger", "stars": 2, "note": "" },
-      { "title": "Never Split the Difference", "author": "Chris Voss & Tahl Raz", "stars": 2, "note": "" },
-      { "title": "Exactly What to Say", "author": "Phil M. Jones", "stars": 1, "note": "" },
-      { "title": "How to Win Friends and Influence People in the Digital Age", "author": "Dale Carnegie & Associates", "stars": 1, "note": "" },
-      { "title": "Atomic Habits", "author": "James Clear", "stars": 1, "note": "" },
-      { "title": "365 Days with Self-Discipline", "author": "Martin Meadows", "stars": 1, "note": "" },
-      { "title": "Steal Like an Artist", "author": "Austin Kleon", "stars": 1, "note": "" },
-      { "title": "The War of Art", "author": "Steven Pressfield", "stars": 1, "note": "" },
-      { "title": "Digital Minimalism", "author": "Cal Newport", "stars": 1, "note": "" },
-      { "title": "Power Reading", "author": "Rick Ostrov", "stars": 1, "note": "" },
-      { "title": "The Survival Handbook", "author": "Colin Towell", "stars": 1, "note": "" },
-      { "title": "Calisthenics for Beginners", "author": "Matt Schifferle", "stars": 1, "note": "" },
-      { "title": "Why We Sleep", "author": "Matthew Walker", "stars": 1, "note": "" },
-      { "title": "Clean", "author": "James Hamblin", "stars": 1, "note": "" },
-      { "title": "The Eczema Detox", "author": "Karen Fischer", "stars": 1, "note": "" },
-      { "title": "Less Is More", "author": "Jason Hickel", "stars": 1, "note": "" }
+      {
+        "title": "The Science of Magic",
+        "author": "Dean Radin",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Entangled Minds",
+        "author": "Dean Radin",
+        "stars": 2,
+        "note": "After: DMT Dialogues. Psi research, quantum framing."
+      },
+      {
+        "title": "Wholeness & the Implicate Order",
+        "author": "David Bohm",
+        "stars": 3,
+        "note": "After: Complexity + Thinking in Systems. Dense physics/philosophy."
+      }
     ]
   },
   {
-    "tier": "PARALLEL PATH — MIND, PHILOSOPHY & SOCIETY",
-    "desc": "Adjacent lenses on consciousness, judgment, meaning, and coordination.",
+    "path": "Engineering",
+    "desc": "Building software, electronics, machines, and usable systems.",
     "books": [
-      { "title": "The World Behind the World", "author": "Erik Hoel", "stars": 2, "note": "" },
-      { "title": "The Matter With Things", "author": "Iain McGilchrist", "stars": 3, "note": "" },
-      { "title": "Possible Minds", "author": "John Brockman", "stars": 2, "note": "" },
-      { "title": "Life 3.0", "author": "Max Tegmark", "stars": 2, "note": "" },
-      { "title": "Why? The Purpose of the Universe", "author": "Philip Goff", "stars": 2, "note": "" },
-      { "title": "DMT: The Spirit Molecule", "author": "Rick Strassman", "stars": 2, "note": "" },
-      { "title": "The Science of Magic", "author": "Dean Radin", "stars": 2, "note": "" },
-      { "title": "The Demon-Haunted World", "author": "Carl Sagan", "stars": 3, "note": "" },
-      { "title": "The Scout Mindset", "author": "Julia Galef", "stars": 2, "note": "" },
-      { "title": "Thinking, Fast and Slow", "author": "Daniel Kahneman", "stars": 2, "note": "" },
-      { "title": "The Denial of Death", "author": "Ernest Becker", "stars": 2, "note": "" },
-      { "title": "Beyond Good and Evil", "author": "Friedrich Nietzsche", "stars": 2, "note": "" },
-      { "title": "Games People Play", "author": "Eric Berne", "stars": 1, "note": "" },
-      { "title": "Man and His Symbols", "author": "Carl Jung", "stars": 2, "note": "" },
-      { "title": "Meditations", "author": "Marcus Aurelius", "stars": 1, "note": "" },
-      { "title": "The Complete Works of Aristotle", "author": "Aristotle", "stars": 2, "note": "" },
-      { "title": "The Noble Eightfold Path", "author": "Bhikkhu Bodhi", "stars": 2, "note": "" },
-      { "title": "What the Buddha Taught", "author": "Walpola Rahula", "stars": 2, "note": "" },
-      { "title": "The Road Less Traveled", "author": "M. Scott Peck", "stars": 1, "note": "" },
-      { "title": "The Secret Teachings of All Ages", "author": "Manly P. Hall", "stars": 2, "note": "" },
-      { "title": "The 48 Laws of Power", "author": "Robert Greene", "stars": 1, "note": "" },
-      { "title": "The Subtle Art of Not Giving a F*ck", "author": "Mark Manson", "stars": 1, "note": "" },
-      { "title": "101 Essays That Will Change the Way You Think", "author": "Brianna Wiest", "stars": 1, "note": "" }
+      {
+        "title": "Arduino Cookbook",
+        "author": "Michael Margolis",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Robot Builder's Bonanza",
+        "author": "Gordon McComb",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Machinery's Handbook",
+        "author": "Erik Oberg et al.",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Way Things Work Now",
+        "author": "David Macaulay",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Pragmatic Programmer",
+        "author": "David Thomas & Andrew Hunt",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Make: Electronics",
+        "author": "Charles Platt",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Practical Electronics for Inventors",
+        "author": "Paul Scherz & Simon Monk",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "How to Invent Everything",
+        "author": "Ryan North",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Structure and Interpretation of Computer Programs (JavaScript Adaptation)",
+        "author": "Harold Abelson, Gerald Jay Sussman & Julie Sussman",
+        "stars": 3,
+        "note": ""
+      }
     ]
   },
   {
-    "tier": "PARALLEL PATH — LITERATURE & LONG-FORM FICTION",
-    "desc": "Standalone novels and long-form stories in the library.",
+    "path": "Mathematics",
+    "desc": "Mathematical fluency, proof, and abstraction.",
     "books": [
-      { "title": "1984", "author": "George Orwell", "stars": 2, "note": "" },
-      { "title": "A Whole Life", "author": "Robert Seethaler", "stars": 1, "note": "" },
-      { "title": "The Little Prince", "author": "Antoine de Saint-Exupéry", "stars": 2, "note": "" },
-      { "title": "Atlas Shrugged", "author": "Ayn Rand", "stars": 1, "note": "" },
-      { "title": "Dune", "author": "Frank Herbert", "stars": 2, "note": "" },
-      { "title": "The Inheritance Cycle", "author": "Christopher Paolini", "stars": 1, "note": "" },
-      { "title": "The Complete Works of William Shakespeare", "author": "William Shakespeare", "stars": 2, "note": "" },
-      { "title": "I Had That Same Dream Again", "author": "Yoru Sumino", "stars": 1, "note": "" },
-      { "title": "Les Misérables", "author": "Victor Hugo", "stars": 2, "note": "" },
-      { "title": "No Longer Human", "author": "Osamu Dazai", "stars": 2, "note": "" },
-      { "title": "One Hundred Years of Solitude", "author": "Gabriel García Márquez", "stars": 2, "note": "" },
-      { "title": "Pride and Prejudice", "author": "Jane Austen", "stars": 1, "note": "" },
-      { "title": "Snow Country", "author": "Yasunari Kawabata", "stars": 2, "note": "" },
-      { "title": "The Lord of the Rings", "author": "J.R.R. Tolkien", "stars": 2, "note": "" },
-      { "title": "The Waves", "author": "Virginia Woolf", "stars": 2, "note": "" },
-      { "title": "Three Days of Happiness", "author": "Sugaru Miaki", "stars": 1, "note": "" },
-      { "title": "Parasite in Love", "author": "Sugaru Miaki", "stars": 1, "note": "" },
-      { "title": "5 Centimeters per Second", "author": "Makoto Shinkai", "stars": 1, "note": "" },
-      { "title": "Narcissu", "author": "Tomosuke Ogura", "stars": 1, "note": "" },
-      { "title": "Welcome to the NHK", "author": "Tatsuhiko Takimoto", "stars": 1, "note": "" },
-      { "title": "Albert Camus's The Stranger: Critical Essays", "author": "Peter Francev", "stars": 1, "note": "" },
-      { "title": "It Ends with Us", "author": "Colleen Hoover", "stars": 1, "note": "" }
+      {
+        "title": "A Mind for Numbers",
+        "author": "Barbara Oakley",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Basic Mathematics",
+        "author": "Serge Lang",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "How to Prove It",
+        "author": "Daniel J. Velleman",
+        "stars": 2,
+        "note": ""
+      },
+      {
+        "title": "Linear Algebra Done Right",
+        "author": "Sheldon Axler",
+        "stars": 3,
+        "note": ""
+      }
     ]
   },
   {
-    "tier": "PARALLEL PATH — SERIAL FICTION & MANGA",
-    "desc": "Series are represented once, regardless of how many volumes are present.",
+    "path": "Practice",
+    "desc": "Health, attention, discipline, creativity, and practical self-maintenance.",
     "books": [
-      { "title": "Reverend Insanity", "author": "Gu Zhen Ren", "stars": 3, "note": "" },
-      { "title": "Omniscient Reader's Viewpoint", "author": "Sing Shong", "stars": 2, "note": "" },
-      { "title": "Lord of Mysteries", "author": "Cuttlefish That Loves Diving", "stars": 2, "note": "" },
-      { "title": "Renegade Immortal", "author": "Er Gen", "stars": 2, "note": "" },
-      { "title": "Top Tier Providence", "author": "Ren Wo Xiao", "stars": 1, "note": "" },
-      { "title": "A Sister's All You Need", "author": "Yomi Hirasaka", "stars": 1, "note": "" },
-      { "title": "Ascendance of a Bookworm", "author": "Miya Kazuki", "stars": 2, "note": "" },
-      { "title": "Berserk", "author": "Kentaro Miura", "stars": 2, "note": "" },
-      { "title": "Bottom-Tier Character Tomozaki", "author": "Yuki Yaku", "stars": 1, "note": "" },
-      { "title": "Chainsaw Man", "author": "Tatsuki Fujimoto", "stars": 1, "note": "" },
-      { "title": "Chuunibyou demo Koi ga Shitai!", "author": "Torako", "stars": 1, "note": "" },
-      { "title": "Classroom of the Elite", "author": "Shogo Kinugasa", "stars": 1, "note": "" },
-      { "title": "D.Gray-man", "author": "Katsura Hoshino", "stars": 1, "note": "" },
-      { "title": "Great Teacher Onizuka", "author": "Tooru Fujisawa", "stars": 1, "note": "" },
-      { "title": "Genshiken", "author": "Shimoku Kio", "stars": 1, "note": "" },
-      { "title": "Gimai Seikatsu", "author": "Ghost Mikawa", "stars": 1, "note": "" },
-      { "title": "Girlfriend, Girlfriend", "author": "Hiroyuki", "stars": 1, "note": "" },
-      { "title": "Goodnight Punpun", "author": "Inio Asano", "stars": 2, "note": "" },
-      { "title": "Gosick", "author": "Kazuki Sakuraba", "stars": 1, "note": "" },
-      { "title": "Heaven's Memo Pad", "author": "Hikaru Sugii", "stars": 1, "note": "" },
-      { "title": "Helter Skelter", "author": "Kyoko Okazaki", "stars": 1, "note": "" },
-      { "title": "Homunculus", "author": "Hideo Yamamoto", "stars": 2, "note": "" },
-      { "title": "Insomniacs After School", "author": "Makoto Ojiro", "stars": 1, "note": "" },
-      { "title": "Kara no Kyoukai", "author": "Kinoko Nasu", "stars": 1, "note": "" },
-      { "title": "Magus of the Library", "author": "Mitsu Izumi", "stars": 1, "note": "" },
-      { "title": "Monster", "author": "Naoki Urasawa", "stars": 2, "note": "" },
-      { "title": "Mushoku Tensei", "author": "Rifujin na Magonote", "stars": 1, "note": "" },
-      { "title": "My Dress-Up Darling", "author": "Shinichi Fukuda", "stars": 1, "note": "" },
-      { "title": "My Youth Romantic Comedy Is Wrong, As I Expected", "author": "Wataru Watari", "stars": 1, "note": "" },
-      { "title": "Onani Master Kurosawa", "author": "Katsura Ise & Takuma Yokota", "stars": 1, "note": "" },
-      { "title": "Re:Zero", "author": "Tappei Nagatsuki", "stars": 1, "note": "" },
-      { "title": "Roshidere", "author": "SunSunSun", "stars": 1, "note": "" },
-      { "title": "Solanin", "author": "Inio Asano", "stars": 1, "note": "" },
-      { "title": "Spice and Wolf", "author": "Isuna Hasekura", "stars": 2, "note": "" },
-      { "title": "Sword Art Online Progressive", "author": "Reki Kawahara", "stars": 1, "note": "" },
-      { "title": "TenPuru", "author": "Kimitake Yoshioka", "stars": 1, "note": "" },
-      { "title": "The Dangers in My Heart", "author": "Norio Sakurai", "stars": 1, "note": "" },
-      { "title": "The Empty Box and Zeroth Maria", "author": "Eiji Mikage", "stars": 1, "note": "" },
-      { "title": "The Flowers of Evil", "author": "Shuzo Oshimi", "stars": 1, "note": "" },
-      { "title": "The Girl I Like Forgot Her Glasses", "author": "Koume Fujichika", "stars": 1, "note": "" },
-      { "title": "The Haruhi Suzumiya Series", "author": "Nagaru Tanigawa", "stars": 1, "note": "" },
-      { "title": "The Climber", "author": "Shinichi Sakamoto", "stars": 2, "note": "" },
-      { "title": "Monogatari", "author": "Nisio Isin", "stars": 2, "note": "" },
-      { "title": "The Angel Next Door Spoils Me Rotten", "author": "Saekisan", "stars": 1, "note": "" },
-      { "title": "Toradora!", "author": "Yuyuko Takemiya", "stars": 1, "note": "" },
-      { "title": "When Supernatural Battles Became Commonplace", "author": "Kota Nozomi", "stars": 1, "note": "" },
-      { "title": "WorldEnd", "author": "Akira Kareno", "stars": 1, "note": "" }
+      {
+        "title": "Atomic Habits",
+        "author": "James Clear",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "365 Days with Self-Discipline",
+        "author": "Martin Meadows",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Steal Like an Artist",
+        "author": "Austin Kleon",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The War of Art",
+        "author": "Steven Pressfield",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Digital Minimalism",
+        "author": "Cal Newport",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Power Reading",
+        "author": "Rick Ostrov",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Survival Handbook",
+        "author": "Colin Towell",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Calisthenics for Beginners",
+        "author": "Matt Schifferle",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "Clean",
+        "author": "James Hamblin",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Eczema Detox",
+        "author": "Karen Fischer",
+        "stars": 1,
+        "note": ""
+      },
+      {
+        "title": "The Telomere Effect",
+        "author": "Blackburn & Epel",
+        "stars": 2,
+        "note": "Standalone. Read whenever."
+      },
+      {
+        "title": "Why We Sleep",
+        "author": "Matthew Walker",
+        "stars": 2,
+        "note": ""
+      }
     ]
   }
 ]
