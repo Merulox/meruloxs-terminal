@@ -26,7 +26,7 @@ const levels = [
 		display: flex;
 		flex-wrap: wrap;
 		gap: 8px 18px;
-		margin: 24px 0 42px;
+		margin: 18px 0 38px;
 	}
 	.path-index a {
 		color: var(--muted);
@@ -51,7 +51,8 @@ const levels = [
 		gap: 12px;
 		grid-template-columns: 20px minmax(0, 1fr) auto;
 		list-style: none;
-		padding: 18px 0;
+		margin: 0 -8px;
+		padding: 18px 8px;
 	}
 	.path-summary::-webkit-details-marker {
 		display: none;
@@ -111,8 +112,14 @@ const levels = [
 		text-transform: uppercase;
 	}
 	.path-summary:focus-visible {
-		outline: 1px solid var(--accent);
-		outline-offset: 4px;
+		box-shadow: inset 0 0 0 1px var(--accent);
+		outline: 0;
+	}
+	.goodreads-link {
+		margin: 22px 0 34px;
+	}
+	.goodreads-link .email {
+		margin-top: 0;
 	}
 	@media (max-width: 600px) {
 		.path-body {
@@ -134,16 +141,18 @@ const levels = [
 		The first shelf is history: books that already shaped how I think. The
 		curriculum below is a set of paths I have not read through yet. Within each
 		path, stars indicate progression: entry, core, then advanced.
-	</p>
+		</p>
 
-	<a
-		class="email"
-		href="https://www.goodreads.com/user/show/158374147-merulox"
-		target="_blank"
-		rel="noopener"
-	>
-		→ goodreads.com/merulox
-	</a>
+		<p class="goodreads-link">
+			<a
+				class="email"
+				href="https://www.goodreads.com/user/show/158374147-merulox"
+				target="_blank"
+				rel="noopener"
+			>
+				→ goodreads.com/merulox
+			</a>
+		</p>
 
 	{
 		shaped.length > 0 && (
@@ -248,7 +257,11 @@ const levels = [
 			function focusPath(index: number) {
 				const target = summaries[(index + summaries.length) % summaries.length];
 				target.focus();
-				target.scrollIntoView({ block: "nearest" });
+				if (target.closest("details")?.open) {
+					requestAnimationFrame(() => revealPathContext(index));
+				} else {
+					target.scrollIntoView({ block: "nearest" });
+				}
 			}
 
 			function revealPathContext(index: number) {
