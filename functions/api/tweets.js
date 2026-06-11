@@ -47,6 +47,34 @@ function normalizePost(post) {
 	return normalized;
 }
 
+async function resolveThread(post) {
+	if (post.threadResolved === true) return post;
+	const statusId = post.url.match(/\/status\/(\d+)/)?.[1];
+	if (!statusId) return post;
+
+	try {
+		const apiResponse = await fetch(`https://api.fxtwitter.com/status/${statusId}`);
+		if (!apiResponse.ok) return post;
+		const current = (await apiResponse.json()).tweet;
+		if (!current) return post;
+		if (!current.replying_to_status) {
+			return { ...post, threadResolved: true, threadVersion: 5 };
+		}
+
+		const replyTo = cleanString(current.replying_to, 100);
+		return {
+			...post,
+			threadResolved: true,
+			threadVersion: 5,
+			isReply: true,
+			...(replyTo ? { replyTo: `@${replyTo.replace(/^@/, "")}` } : {}),
+			...(replyTo ? { replyToUrl: `https://x.com/${replyTo.replace(/^@/, "")}/status/${current.replying_to_status}` } : {}),
+		};
+	} catch {
+		return post;
+	}
+}
+
 function mergeTweets(existing, incoming) {
 	const byUrl = new Map(existing.map((tweet) => [tweet.url, tweet]));
 	for (const tweet of incoming) {
@@ -91,8 +119,21 @@ export async function onRequestPost(context) {
 	if (!incoming.length) return response({ error: "tweets must contain valid posts" }, 400);
 
 	const stored = await context.env.LIVE_TWEETS.get(STORE_KEY, "json");
-	const tweets = mergeTweets(Array.isArray(stored?.tweets) ? stored.tweets : [], incoming);
+	const existing = Array.isArray(stored?.tweets) ? stored.tweets : [];
+	const existingByUrl = new Map(existing.map((tweet) => [tweet.url, tweet]));
+	const resolvedIncoming = await Promise.all(incoming.map(async (tweet) => {
+		const prior = existingByUrl.get(tweet.url);
+		if (prior?.threadResolved === true && tweet.threadResolved !== true) return prior;
+		return resolveThread(tweet);
+	}));
+	const publishable = resolvedIncoming.filter((tweet) => tweet.threadResolved === true || existingByUrl.has(tweet.url));
+	const tweets = mergeTweets(existing, publishable);
 	const payload = { tweets, updatedAt: Date.now() };
 	await context.env.LIVE_TWEETS.put(STORE_KEY, JSON.stringify(payload));
-	return response({ status: "ok", stored: tweets.length, updatedAt: payload.updatedAt });
+	return response({
+		status: "ok",
+		stored: tweets.length,
+		pending: resolvedIncoming.length - publishable.length,
+		updatedAt: payload.updatedAt,
+	});
 }

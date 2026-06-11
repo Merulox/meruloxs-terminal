@@ -596,7 +596,43 @@ async function pushTweetsToReceiver(tweets) {
     if (!LOG_INGEST_TOKEN) throw new Error("no ingest token — add config.local.js");
     if (!tweets?.length) throw new Error("no tweets returned");
 
-    const body = JSON.stringify({ tweets });
+	const cached = await chrome.storage.local.get(CACHE_KEY);
+	const cachedByUrl = new Map((cached[CACHE_KEY]?.tweets ?? []).map((tweet) => [tweet.url, tweet]));
+	const ready = [];
+	for (const tweet of tweets) {
+		const prior = cachedByUrl.get(tweet.url);
+		if (tweet.threadResolved && tweet.threadVersion === THREAD_RESOLVER_VERSION) {
+			ready.push(tweet);
+			continue;
+		}
+		if (prior?.threadResolved && prior.threadVersion === THREAD_RESOLVER_VERSION) {
+			ready.push({ ...tweet, ...prior, text: tweet.text, timestamp: tweet.timestamp, date: tweet.date });
+			continue;
+		}
+
+		let metadata = null;
+		for (let attempt = 0; attempt < 4 && !metadata; attempt += 1) {
+			try {
+				metadata = await resolveThreadViaApi(tweet.url);
+			} catch {
+				// Public metadata can lag immediately after posting.
+			}
+			if (!metadata && attempt < 3) await new Promise((resolve) => setTimeout(resolve, 2000));
+		}
+		if (metadata?.threadResolved) ready.push({ ...tweet, ...metadata });
+	}
+	if (!ready.length) throw new Error("no thread-resolved tweets ready to publish");
+
+	await chrome.storage.local.set({
+		[CACHE_KEY]: {
+			tweets: Array.from(new Map(
+				[...(cached[CACHE_KEY]?.tweets ?? []), ...ready].map((tweet) => [tweet.url, tweet]),
+			).values()).sort((a, b) => Date.parse(b.timestamp ?? 0) - Date.parse(a.timestamp ?? 0)).slice(0, 100),
+			fetchedAt: Date.now(),
+		},
+	});
+
+    const body = JSON.stringify({ tweets: ready });
     const push = (url) => fetch(url, {
 		method: "POST",
 		headers: {
@@ -622,7 +658,14 @@ async function pushTweetsToReceiver(tweets) {
 	const failures = Object.entries(targets)
 		.filter(([, target]) => !target.ok)
 		.map(([name, target]) => `${name}: ${target.error}`);
-	const pushStatus = { ...status, ok: failures.length === 0, error: failures.join(" · ") || null, targets };
+	const pushStatus = {
+		...status,
+		count: ready.length,
+		pending: tweets.length - ready.length,
+		ok: failures.length === 0,
+		error: failures.join(" · ") || null,
+		targets,
+	};
 	await chrome.storage.local.set({ [PUSH_STATUS_KEY]: pushStatus });
 	if (failures.length) await log.warn("push", "one or more tweet destinations failed", targets);
 	return pushStatus;
