@@ -126,8 +126,8 @@ export async function onRequestPost(context) {
 		if (prior?.threadResolved === true && tweet.threadResolved !== true) return prior;
 		return resolveThread(tweet);
 	}));
-	const publishable = resolvedIncoming.filter((tweet) => tweet.threadResolved === true || existingByUrl.has(tweet.url));
-	const tweets = mergeTweets(existing, publishable);
+	const publishable = resolvedIncoming.filter((tweet) => tweet.threadResolved === true);
+	const tweets = mergeTweets(existing.filter((tweet) => tweet.threadResolved === true), publishable);
 	const payload = { tweets, updatedAt: Date.now() };
 	await context.env.LIVE_TWEETS.put(STORE_KEY, JSON.stringify(payload));
 	return response({
