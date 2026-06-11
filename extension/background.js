@@ -23,6 +23,7 @@ try {
 const CHATGPT_INGEST_URL = "http://localhost:47832/chatgpt";
 const CHATGPT_STATUS_KEY = "chatgpt_status";
 const TWEETS_INGEST_URL = "http://localhost:47832/tweets";
+const LIVE_TWEETS_INGEST_URL = "https://merulox.com/api/tweets";
 const PUSH_STATUS_KEY = "push_status";
 const EASTERN_TIME_ZONE = "America/New_York";
 const TWEET_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -591,15 +592,25 @@ async function pushTweetsToReceiver(tweets) {
     if (!LOG_INGEST_TOKEN) throw new Error("no ingest token — add config.local.js");
     if (!tweets?.length) throw new Error("no tweets returned");
 
-    const res = await fetch(TWEETS_INGEST_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOG_INGEST_TOKEN}`,
-      },
-      body: JSON.stringify({ tweets }),
-    });
-    if (!res.ok) throw new Error(`ingest ${res.status}: ${await res.text()}`);
+    const body = JSON.stringify({ tweets });
+    const push = (url) => fetch(url, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${LOG_INGEST_TOKEN}`,
+		},
+		body,
+	});
+	const [local, live] = await Promise.allSettled([
+		push(TWEETS_INGEST_URL),
+		push(LIVE_TWEETS_INGEST_URL),
+	]);
+	const failures = [];
+	for (const [name, result] of [["local", local], ["live", live]]) {
+		if (result.status === "rejected") failures.push(`${name}: ${result.reason?.message ?? result.reason}`);
+		else if (!result.value.ok) failures.push(`${name}: ${result.value.status} ${await result.value.text()}`);
+	}
+	if (failures.length) throw new Error(failures.join(" · "));
 
     await chrome.storage.local.set({ [PUSH_STATUS_KEY]: { ...status, ok: true, error: null } });
     return { ok: true };

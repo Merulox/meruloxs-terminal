@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "merulox tweet seeder",
-  "version": "2.2",
+  "version": "2.3",
   "description": "Seeds the writing page with fresh X posts, and feeds the build-log with ChatGPT history",
   "permissions": ["alarms", "cookies", "storage", "scripting", "tabs"],
   "host_permissions": [
@@ -12,7 +12,8 @@
     "https://chat.openai.com/*",
     "http://localhost:4321/*",
     "http://localhost:47832/*",
-    "https://merulox.com/*"
+    "https://merulox.com/*",
+    "https://dev.merulox.com/*"
   ],
   "action": {
     "default_popup": "popup.html",

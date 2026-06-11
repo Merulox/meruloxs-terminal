@@ -295,6 +295,7 @@ function externalReplyThread(tweet: Tweet) {
 				</div>
 			</div>
 		</div>
+		<script id="static-tweets" type="application/json" set:html={JSON.stringify(tweets).replaceAll("<", "\\u003c")} />
 		<nav class="tweet-pagination" id="tweet-pagination" aria-label="X post pages" hidden={tweets.length <= TWEET_PAGE_SIZE}>
 			<button class="tweet-page-button" id="tweet-prev" type="button" aria-label="Previous X posts" title="Previous page">←</button>
 			<span class="tweet-page-status" id="tweet-page-status">1 / {Math.max(1, Math.ceil(tweets.length / TWEET_PAGE_SIZE))}</span>
@@ -402,7 +403,95 @@ function externalReplyThread(tweet: Tweet) {
 
 		// X pagination
 		const TWEET_PAGE_SIZE = 100;
+		const LIVE_TWEETS_API = "/api/tweets";
+		const LIVE_TWEETS_POLL_MS = 30_000;
 		let currentTweetPage = 0;
+		let latestTweetUpdate = Number(document.getElementById("tweets-container")?.dataset.staticUpdatedAt ?? 0) * 1000;
+
+		function escapeHtml(value: unknown) {
+			return String(value ?? "")
+				.replaceAll("&", "&amp;")
+				.replaceAll("<", "&lt;")
+				.replaceAll(">", "&gt;")
+				.replaceAll('"', "&quot;")
+				.replaceAll("'", "&#39;");
+		}
+
+		function orchestrateLiveTweets(input: any[]) {
+			const replies = new Map<string, any[]>();
+			const roots: any[] = [];
+			const urls = new Set(input.map((tweet) => tweet.url));
+			for (const tweet of input) {
+				if (tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl)) {
+					replies.set(tweet.replyToUrl, [...(replies.get(tweet.replyToUrl) ?? []), tweet]);
+				} else {
+					roots.push(tweet);
+				}
+			}
+			const flatten = (tweet: any): any[] => [tweet, ...(replies.get(tweet.url) ?? []).flatMap(flatten)];
+			return roots.flatMap(flatten);
+		}
+
+		function formatLiveTweetTimestamp(tweet: any) {
+			if (!tweet.timestamp) return tweet.date ?? "";
+			return new Intl.DateTimeFormat("en-CA", {
+				timeZone: "America/Toronto",
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: false,
+			}).format(new Date(tweet.timestamp)).replace(",", "");
+		}
+
+		function renderLiveTweets(input: any[]) {
+			const tweets = orchestrateLiveTweets(input.filter((tweet) => tweet?.text && tweet?.url).slice(0, 300));
+			const ownUrls = new Set(tweets.map((tweet) => tweet.url));
+			const container = document.getElementById("tweets-container")!;
+			container.innerHTML = tweets.map((tweet, index) => {
+				const externalThread = (tweet.replyThread ?? []).filter((post: any) => !ownUrls.has(post.url));
+				const thread = externalThread.length ? `
+					<div class="reply-thread">
+						${externalThread.map((post: any) => `
+							<a class="thread-post" href="${escapeHtml(post.url)}" target="_blank" rel="noopener" style="text-decoration:none">
+								<span class="thread-post-author">${escapeHtml(post.author ?? "original post")}</span>
+								<p class="thread-post-text">${escapeHtml(post.text)}</p>
+							</a>`).join("")}
+					</div>` : "";
+				const reply = tweet.isReply ? `
+					<p class="reply-context">
+						<span class="reply-author">${escapeHtml(tweet.author ?? "@merulox")}</span>
+						${tweet.replyTo ? ` → ${escapeHtml(tweet.replyTo)}` : ""}
+					</p>` : "";
+				return `
+					<article class="work-item tweet-item${tweet.isReply ? " is-reply" : ""}${externalThread.length ? " has-external-thread" : ""}" data-tweet-index="${index}">
+						${thread}
+						<header class="item-header">
+							<a href="${escapeHtml(tweet.url)}" target="_blank" rel="noopener" style="text-decoration:none">
+								${reply}
+								<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">${escapeHtml(tweet.text)}</p>
+							</a>
+							<time class="date" datetime="${escapeHtml(tweet.timestamp ?? "")}">${escapeHtml(formatLiveTweetTimestamp(tweet))}</time>
+						</header>
+					</article>`;
+			}).join("") || '<p class="muted">Nothing here yet.</p>';
+			currentTweetPage = 0;
+			setupTweetPagination(container);
+		}
+
+		async function refreshLiveTweets() {
+			try {
+				const response = await fetch(LIVE_TWEETS_API, { cache: "no-store" });
+				if (!response.ok) return;
+				const data = await response.json();
+				if (!Array.isArray(data.tweets) || !data.tweets.length || Number(data.updatedAt) <= latestTweetUpdate) return;
+				renderLiveTweets(data.tweets);
+				latestTweetUpdate = Number(data.updatedAt);
+			} catch {
+				// Keep the deployed static list as the offline/error fallback.
+			}
+		}
 
 		function setupTweetPagination(container: HTMLElement) {
 			const items = Array.from(container.querySelectorAll<HTMLElement>(".tweet-item"));
@@ -436,6 +525,8 @@ function externalReplyThread(tweet: Tweet) {
 
 		loadPosts();
 		setupTweetPagination(document.getElementById("tweets-container")!);
+		refreshLiveTweets();
+		window.setInterval(refreshLiveTweets, LIVE_TWEETS_POLL_MS);
 
 		document.getElementById("tweet-prev")?.addEventListener("click", () => {
 			currentTweetPage -= 1;

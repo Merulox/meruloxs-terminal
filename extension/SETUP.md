@@ -65,23 +65,22 @@ Only conversation *titles* + timestamps are ever read, they stay on this machine
 and the summarize+sanitize Claude call strips anything sensitive before it reaches
 the public log.
 
-## X posts → static `/thinking`
+## X posts → live `/thinking`
 
-The X rail uses the same local-first shape as the log data: scrape locally, write a
-local JSON file, then bake it into the static Astro build.
+The X rail keeps a local archive and also pushes an authenticated merged copy to
+Cloudflare KV. `/thinking` polls that live copy every 30 seconds, while the
+deployed static JSON remains an offline/error fallback.
 
 ```
 x.com/merulox tab ──(x_profile.js / Fetch now)──> chrome.storage
         │  tweets: {text, date:"YYYY-MM", url}
         ▼
    background.js ──POST (Bearer token)──> http://localhost:47832/tweets
-                                                    │  (log-ingest-receiver, systemd --user)
-                                                    ▼
-                         ~/website/src/data/tweets.json
-                                                    │
-   npm run deploy ──Astro imports JSON─────────────┘
-                                                    ▼
-                         static HTML on /thinking
+        │                                           │
+        │                                           ▼
+        │                                ~/website/src/data/tweets.json
+        ▼
+   https://merulox.com/api/tweets ──> Cloudflare KV ──> /thinking polling
 ```
 
 After changing `log-ingest-receiver`, restart the user service:
@@ -106,16 +105,18 @@ polling their permalink after the `Replying to` label appears so the asynchronou
 loaded parent post is captured too. If X does not render the parent chain, the
 extension falls back to public FxTwitter metadata.
 
-The public writing page always renders deployed static data. The extension no
-longer overlays browser-local tweet cache data onto merulox.com.
+While you browse the X profile, newly observed posts are pushed after a short
+debounce. Manual and hourly full scrapes also push to both destinations. The
+cloud endpoint merges by URL and never treats a partial scrape as a replacement.
 
 Click **Fetch now** in the extension popup to force an immediate refresh. The
 **tweets → site** row should go green after the receiver writes
 `src/data/tweets.json`.
 
-Freshness is deploy-cadenced: new tweets become public on the next
-`npm run deploy`, not instantly. There is no cloud config, KV, Pages Function, or
-new secret; this reuses `LOG_INGEST_TOKEN` / `~/.secrets/log-ingest-token.txt`.
+Freshness is normally under 45 seconds after the extension observes a post:
+10-second extension debounce plus the writing page's 30-second polling interval.
+The Pages `LOG_KV_TOKEN` secret matches `extension/config.local.js` and the local
+receiver token.
 
 ## Troubleshooting
 

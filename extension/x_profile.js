@@ -2,9 +2,11 @@ const OBSERVED_KEY = "tweets_observed";
 const SCREEN_NAME = "merulox";
 const MAX_OBSERVED = 120;
 const WRITE_DELAY_MS = 500;
+const PUSH_DELAY_MS = 10_000;
 
 const observed = new Map();
 let writeTimer = null;
+let pushTimer = null;
 let collecting = false;
 
 function easternDate(isoTimestamp) {
@@ -75,6 +77,10 @@ async function writeObserved() {
 			page: location.href,
 		},
 	});
+	clearTimeout(pushTimer);
+	pushTimer = setTimeout(() => {
+		chrome.runtime.sendMessage({ action: "pushTweets", tweets });
+	}, PUSH_DELAY_MS);
 }
 
 function collectRenderedTweets() {

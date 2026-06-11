@@ -3,8 +3,16 @@ name = "merulox"
 compatibility_date = "2026-06-04"
 pages_build_output_dir = "./dist"
 
+[[kv_namespaces]]
+binding = "LIVE_TWEETS"
+id = "61fa3931e29b4e0f82b2aec085a3350a"
+
 [env.production.ai]
 binding = "AI"
+
+[[env.production.kv_namespaces]]
+binding = "LIVE_TWEETS"
+id = "61fa3931e29b4e0f82b2aec085a3350a"
 
 [[env.production.kv_namespaces]]
 binding = "SUBSTACK_SUMMARIES"
