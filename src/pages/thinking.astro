@@ -26,6 +26,8 @@ function orchestrateTweets(input: Tweet[]) {
 	const replies = new Map<string, Tweet[]>();
 	const roots: Tweet[] = [];
 	const urls = new Set(input.map((tweet) => tweet.url));
+	const inputOrder = new Map(input.map((tweet, index) => [tweet.url, index]));
+	const timestamp = (tweet: Tweet) => Date.parse(tweet.timestamp ?? "") || 0;
 
 	for (const tweet of input) {
 		if (tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl)) {
@@ -35,12 +37,29 @@ function orchestrateTweets(input: Tweet[]) {
 		}
 	}
 
-	const flattenThread = (tweet: Tweet): Tweet[] => [
-		tweet,
-		...(replies.get(tweet.url) ?? []).flatMap(flattenThread),
-	];
+	for (const children of replies.values()) {
+		children.sort((a, b) => timestamp(a) - timestamp(b) || (inputOrder.get(a.url) ?? 0) - (inputOrder.get(b.url) ?? 0));
+	}
 
-	return roots.flatMap(flattenThread);
+	const collectThread = (tweet: Tweet): Tweet[] => [
+		tweet,
+		...(replies.get(tweet.url) ?? []).flatMap(collectThread),
+	];
+	const chronological = (a: Tweet, b: Tweet) => {
+		const timeDifference = timestamp(a) - timestamp(b);
+		if (timeDifference) return timeDifference;
+		if (a.replyToUrl === b.url) return 1;
+		if (b.replyToUrl === a.url) return -1;
+		return (inputOrder.get(a.url) ?? 0) - (inputOrder.get(b.url) ?? 0);
+	};
+
+	return roots
+		.map((root) => {
+			const thread = collectThread(root).sort(chronological);
+			return { thread, latest: Math.max(...thread.map(timestamp)) };
+		})
+		.sort((a, b) => b.latest - a.latest || (inputOrder.get(a.thread[0].url) ?? 0) - (inputOrder.get(b.thread[0].url) ?? 0))
+		.flatMap(({ thread }) => thread);
 }
 
 const tweets = orchestrateTweets(((tweetData.tweets ?? []) as Tweet[])
@@ -448,6 +467,8 @@ function externalReplyThread(tweet: Tweet) {
 			const replies = new Map<string, any[]>();
 			const roots: any[] = [];
 			const urls = new Set(input.map((tweet) => tweet.url));
+			const inputOrder = new Map(input.map((tweet, index) => [tweet.url, index]));
+			const timestamp = (tweet: any) => Date.parse(tweet.timestamp ?? "") || 0;
 			for (const tweet of input) {
 				if (tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl)) {
 					replies.set(tweet.replyToUrl, [...(replies.get(tweet.replyToUrl) ?? []), tweet]);
@@ -455,8 +476,24 @@ function externalReplyThread(tweet: Tweet) {
 					roots.push(tweet);
 				}
 			}
-			const flatten = (tweet: any): any[] => [tweet, ...(replies.get(tweet.url) ?? []).flatMap(flatten)];
-			return roots.flatMap(flatten);
+			for (const children of replies.values()) {
+				children.sort((a, b) => timestamp(a) - timestamp(b) || (inputOrder.get(a.url) ?? 0) - (inputOrder.get(b.url) ?? 0));
+			}
+			const collect = (tweet: any): any[] => [tweet, ...(replies.get(tweet.url) ?? []).flatMap(collect)];
+			const chronological = (a: any, b: any) => {
+				const timeDifference = timestamp(a) - timestamp(b);
+				if (timeDifference) return timeDifference;
+				if (a.replyToUrl === b.url) return 1;
+				if (b.replyToUrl === a.url) return -1;
+				return (inputOrder.get(a.url) ?? 0) - (inputOrder.get(b.url) ?? 0);
+			};
+			return roots
+				.map((root) => {
+					const thread = collect(root).sort(chronological);
+					return { thread, latest: Math.max(...thread.map(timestamp)) };
+				})
+				.sort((a, b) => b.latest - a.latest || (inputOrder.get(a.thread[0].url) ?? 0) - (inputOrder.get(b.thread[0].url) ?? 0))
+				.flatMap(({ thread }) => thread);
 		}
 
 		function formatLiveTweetTimestamp(tweet: any) {
