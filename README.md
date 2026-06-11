@@ -1,31 +1,36 @@
 # merulox.com
 
-Source for [merulox.com](https://merulox.com) — a personal site that auto-logs what I'm building.
-
-Built with Astro, deployed on Cloudflare Pages.
+Personal site. Dark, monospace, no JavaScript frameworks.
 
 ## Pages
 
-| | |
-|---|---|
-| `/log` | Daily build log — auto-generated nightly from Claude + ChatGPT session history |
-| `/music` | Last.fm listening history, pulled and rendered on deploy |
-| `/reading` | Book tree synced from Kobo device |
-| `/stack` | Tools in use |
-| `/thinking` | Notes |
-| `/work` | Projects |
+| Route | What it is |
+|-------|-----------|
+| `/` | Index — links out to everything |
+| `/work` | Active and shipped projects with state indicators |
+| `/thinking` | X posts and threads, scraped and rendered locally |
+| `/reading` | Book list reconciled with local Kobo ownership data |
+| `/music` | Last.fm listening data |
+| `/stack` | Operational systems running in the background |
+| `/log` | Session log (currently broken — pipeline under repair) |
+| `/employers` | Separate section: approach, projects, momentum, contact |
 
-## How the log works
+## Stack
 
-A systemd timer (`log-digest`) runs nightly. It pulls Claude conversation titles, ChatGPT history (via browser extension in `/extension/`), Last.fm scrobbles, and any other signals — summarizes them, sanitizes, and appends to `log.json`. Cloudflare Pages redeploys on push.
+Astro · Cloudflare Pages · Cloudflare Workers (API routes) · browser extension for X post scraping · Last.fm API · JSON content files
 
-The extension captures ChatGPT session titles and POSTs them to a local receiver that `log-digest` reads at run time.
+## Commands
 
-## Deploy
-
-```bash
-npm run build    # Astro build
-npm run deploy   # wrangler pages deploy
+```sh
+npm install
+npm run dev
+npm run build
+npm run deploy
 ```
 
-Or push to main — Cloudflare Pages picks it up automatically.
+## Repo layout
+
+- `src/pages/` — all routes
+- `src/data/` — tweets.json, books, other content state
+- `functions/api/` — Cloudflare Workers: tweets, feed, summarize, artist-image
+- `extension/` — browser extension (X post capture)
