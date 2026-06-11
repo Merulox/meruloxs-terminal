@@ -46,7 +46,7 @@ const periodButtons = `
 		<div class="section-head">
 			<h2 id="artists-heading" class="eyebrow">top artists</h2>
 		</div>
-		<div class="period-bar kbd-row" data-target="artists" data-scroll-target="#top-artists-section" role="group" aria-label="Artist time range" set:html={periodButtons} />
+		<div class="period-bar kbd-row" data-target="artists" data-scroll-target="#top-artists-section" data-scroll-preview="#top-albums-section" role="group" aria-label="Artist time range" set:html={periodButtons} />
 		<div id="top-artists" class="music-grid">
 			<p class="muted">Loading...</p>
 		</div>
@@ -57,7 +57,7 @@ const periodButtons = `
 			<div class="section-head">
 				<h2 id="albums-heading" class="eyebrow">top albums</h2>
 			</div>
-			<div class="period-bar kbd-row" data-target="albums" data-scroll-target="#top-albums-region" role="group" aria-label="Album time range" set:html={periodButtons} />
+			<div class="period-bar kbd-row" data-target="albums" data-scroll-target="#top-albums-region" data-scroll-preview="#top-tracks-section" role="group" aria-label="Album time range" set:html={periodButtons} />
 			<div id="top-albums" class="music-grid">
 				<p class="muted">Loading...</p>
 			</div>
@@ -278,7 +278,8 @@ const periodButtons = `
 					bar.querySelectorAll(".period-btn").forEach((b) => b.classList.remove("active"));
 					btn.classList.add("active");
 					if (target === "artists") loadArtists(period);
-					else loadAlbums(period);
+					else if (target === "albums") loadAlbums(period);
+					else loadTracks(period);
 				});
 			});
 		});

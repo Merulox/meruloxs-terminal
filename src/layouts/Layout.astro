@@ -228,6 +228,22 @@ const navItems = customNavItems ?? defaultNavItems;
 						behavior: "smooth",
 					});
 				};
+				const scrollToPreview = (el: HTMLElement) => {
+					const visualViewport = window.visualViewport;
+					const viewportHeight = visualViewport?.height ?? window.innerHeight;
+					const viewportOffsetTop = visualViewport?.offsetTop ?? 0;
+					const previewHeight = Math.min(180, Math.max(120, viewportHeight * 0.16));
+					const absoluteTop = window.scrollY + viewportOffsetTop + el.getBoundingClientRect().top;
+					const maxTop = document.documentElement.scrollHeight - viewportHeight;
+
+					window.scrollTo({
+						top: Math.max(0, Math.min(
+							absoluteTop - viewportOffsetTop - viewportHeight + previewHeight,
+							maxTop,
+						)),
+						behavior: "smooth",
+					});
+				};
 				const scrollForRow = () => {
 					if (r === 0) {
 						window.scrollTo({ top: 0, behavior: "smooth" });
@@ -235,6 +251,14 @@ const navItems = customNavItems ?? defaultNavItems;
 					}
 
 					const bar = rows[r][c].closest<HTMLElement>(".kbd-row");
+					const scrollPreview = bar?.dataset.scrollPreview;
+					if (scrollPreview) {
+						const preview = document.querySelector<HTMLElement>(scrollPreview);
+						if (preview) {
+							scrollToPreview(preview);
+							return;
+						}
+					}
 					const scrollTarget = bar?.dataset.scrollTarget;
 					if (scrollTarget) {
 						const target = document.querySelector<HTMLElement>(scrollTarget);
