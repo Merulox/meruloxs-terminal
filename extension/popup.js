@@ -24,6 +24,57 @@ function setVal(id, text, cls = "") {
   el.className = `row-value ${cls}`.trim();
 }
 
+function formatLogTime(ms) {
+  return new Date(ms).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function formatLogDetail(detail) {
+  if (detail == null) return "";
+  if (typeof detail === "string") return detail;
+  try {
+    return JSON.stringify(detail);
+  } catch {
+    return String(detail);
+  }
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderLogs(logs = []) {
+  const el = document.getElementById("log-list");
+  const dot = document.getElementById("logs-dot");
+  if (!el || !dot) return;
+
+  if (!logs.length) {
+    dot.className = "dot warn";
+    el.textContent = "empty";
+    return;
+  }
+
+  dot.className = logs.some((entry) => entry.level === "error") ? "dot err" : "dot ok";
+  el.innerHTML = logs.slice(0, 6).map((entry) => {
+    const detail = formatLogDetail(entry.detail);
+    const message = detail ? `${entry.message} · ${detail}` : entry.message;
+    return `
+      <div class="log-entry ${entry.level}">
+        <div class="meta">${escapeHtml(formatLogTime(entry.time))} · ${escapeHtml(entry.scope)}</div>
+        <div class="msg">${escapeHtml(message)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
 async function render() {
   // Session check
   const authToken = await chrome.cookies.get({ url: "https://x.com", name: "auth_token" });
@@ -48,6 +99,20 @@ async function render() {
   } else {
     setDot("cache-dot", "err");
     setVal("cache-val", "empty", "err");
+  }
+
+  // Tweets observed while naturally scrolling the X profile.
+  const { tweets_observed } = await chrome.storage.local.get("tweets_observed");
+  if (tweets_observed?.tweets?.length) {
+    setDot("observed-dot", "ok");
+    setVal(
+      "observed-val",
+      `${tweets_observed.tweets.length} tweets · seen ${ago(tweets_observed.updatedAt)}`,
+      "ok",
+    );
+  } else {
+    setDot("observed-dot", "warn");
+    setVal("observed-val", "open profile and scroll", "warn");
   }
 
   // Last attempt
@@ -106,6 +171,9 @@ async function render() {
     setVal("gpt-val", `${chatgpt_status.error} · ${ago(chatgpt_status.time)}`, "err");
   }
 
+  const { tweet_seeder_logs } = await chrome.storage.local.get("tweet_seeder_logs");
+  renderLogs(tweet_seeder_logs ?? []);
+
   // Overall dot
   const allOk = authToken && tweets_cache?.tweets?.length && last_attempt?.ok !== false && push_status?.ok === true;
   const anyErr = !authToken || last_attempt?.ok === false || push_status?.ok === false;
@@ -122,6 +190,11 @@ document.getElementById("refresh-btn").addEventListener("click", async () => {
     btn.textContent = "Fetch now";
     await render();
   });
+});
+
+document.getElementById("clear-logs-btn").addEventListener("click", async () => {
+  await chrome.storage.local.remove("tweet_seeder_logs");
+  await render();
 });
 
 render();

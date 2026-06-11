@@ -111,6 +111,10 @@ const navItems = customNavItems ?? defaultNavItems;
 					els.forEach((el, i) => el.classList.toggle(CUR, i === idx));
 				const clear = (els: HTMLElement[]) =>
 					els.forEach((el) => el.classList.remove(CUR));
+				const focusItem = (el: HTMLElement) => {
+					if (document.activeElement === el) return;
+					el.focus({ preventScroll: true });
+				};
 
 				const navStart = Math.max(
 					0,
@@ -146,20 +150,26 @@ const navItems = customNavItems ?? defaultNavItems;
 							case "ArrowLeft": case "h":
 								e.preventDefault();
 								navIdx = (navIdx - 1 + navEls.length) % navEls.length;
-								paint(navEls, navIdx); last = "nav"; break;
+								paint(navEls, navIdx);
+								focusItem(navEls[navIdx]);
+								last = "nav"; break;
 							case "ArrowRight": case "l":
 								e.preventDefault();
 								navIdx = (navIdx + 1) % navEls.length;
-								paint(navEls, navIdx); last = "nav"; break;
+								paint(navEls, navIdx);
+								focusItem(navEls[navIdx]);
+								last = "nav"; break;
 							case "ArrowUp": case "k":
 								e.preventDefault();
 								listIdx = (listIdx - 1 + listEls.length) % listEls.length;
 								paint(listEls, listIdx);
+								focusItem(listEls[listIdx]);
 								listEls[listIdx].scrollIntoView({ block: "nearest" }); last = "list"; break;
 							case "ArrowDown": case "j":
 								e.preventDefault();
 								listIdx = (listIdx + 1) % listEls.length;
 								paint(listEls, listIdx);
+								focusItem(listEls[listIdx]);
 								listEls[listIdx].scrollIntoView({ block: "nearest" }); last = "list"; break;
 							case "Enter": {
 								const a = document.activeElement as HTMLElement;
@@ -255,6 +265,7 @@ const navItems = customNavItems ?? defaultNavItems;
 								r = (r - 1 + rows.length) % rows.length;
 								c = Math.min(c, rows[r].length - 1);
 								paintCell();
+								focusItem(rows[r][c]);
 								scrollForRow();
 							}
 							break;
@@ -264,17 +275,20 @@ const navItems = customNavItems ?? defaultNavItems;
 								r = (r + 1) % rows.length;
 								c = Math.min(c, rows[r].length - 1);
 								paintCell();
+								focusItem(rows[r][c]);
 								scrollForRow();
 							}
 							break;
 						case "ArrowLeft": case "h":
 							e.preventDefault();
 							c = (c - 1 + rows[r].length) % rows[r].length;
-							paintCell(); break;
+							paintCell();
+							focusItem(rows[r][c]); break;
 						case "ArrowRight": case "l":
 							e.preventDefault();
 							c = (c + 1) % rows[r].length;
-							paintCell(); break;
+							paintCell();
+							focusItem(rows[r][c]); break;
 						case "Enter": {
 							const a = document.activeElement as HTMLElement;
 							if (rows.some((row) => row.includes(a))) return;

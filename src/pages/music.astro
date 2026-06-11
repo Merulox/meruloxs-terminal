@@ -2,16 +2,31 @@
 import Layout from "../layouts/Layout.astro";
 
 const periodButtons = `
-	<button class="period-btn row-item" data-period="7day">7 days</button>
+	<button class="period-btn row-item active" data-period="7day">7 days</button>
 	<button class="period-btn row-item" data-period="1month">30 days</button>
 	<button class="period-btn row-item" data-period="3month">90 days</button>
 	<button class="period-btn row-item" data-period="6month">180 days</button>
-	<button class="period-btn row-item active" data-period="12month">365 days</button>
+	<button class="period-btn row-item" data-period="12month">365 days</button>
 	<button class="period-btn row-item" data-period="overall">all time</button>
 `;
 ---
 
 <Layout title="music | MERULOX" description="What merulox is listening to.">
+	<style>
+		.top-tracks-section {
+			margin-top: 42px;
+		}
+
+		.top-tracks-section .period-bar {
+			margin-top: 2px;
+			margin-bottom: 18px;
+		}
+
+		.top-tracks-section .top-tracks-scroll {
+			margin-top: 2px;
+		}
+	</style>
+
 	<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:34px">
 		<h1 style="margin-bottom:0">Music</h1>
 		<div style="text-align:right;line-height:1.4">
@@ -37,7 +52,7 @@ const periodButtons = `
 		</div>
 	</section>
 
-	<div id="top-albums-region">
+	<div id="top-albums-region" style="margin-top:34px">
 		<section id="top-albums-section" class="section">
 			<div class="section-head">
 				<h2 id="albums-heading" class="eyebrow">top albums</h2>
@@ -48,16 +63,38 @@ const periodButtons = `
 			</div>
 		</section>
 
+	</div>
+
+	<section id="top-tracks-section" class="section top-tracks-section">
+		<div class="section-head">
+			<h2 id="tracks-heading" class="eyebrow">top tracks</h2>
+		</div>
+		<div class="period-bar kbd-row" data-target="tracks" data-scroll-target="#top-tracks-section" role="group" aria-label="Track time range" set:html={periodButtons} />
+		<div id="top-tracks" class="track-scroll top-tracks-scroll">
+			<p class="muted">Loading...</p>
+		</div>
 		<a class="email" href="https://www.last.fm/user/merulox" target="_blank" rel="noopener">
 			→ last.fm/user/merulox
 		</a>
-	</div>
+	</section>
 
 	<script>
 		const API_KEY = "9fdb2ae95fb0b95470334c260149c3cb";
 		const USER = "merulox";
 		const LFM = "https://ws.audioscrobbler.com/2.0/";
 		const NO_IMG = "2a96cbd8b46e442fc41c2b86b821562f.png";
+		const EASTERN_TIME_ZONE = "America/New_York";
+		const trackTimeFormatter = new Intl.DateTimeFormat("en-US", {
+			timeZone: EASTERN_TIME_ZONE,
+			hour: "2-digit",
+			minute: "2-digit",
+			hour12: false,
+		});
+		const trackDateFormatter = new Intl.DateTimeFormat("en-US", {
+			timeZone: EASTERN_TIME_ZONE,
+			month: "short",
+			day: "2-digit",
+		});
 
 		function lfmImg(images: any[]): string {
 			const img = images?.find((i) => i.size === "extralarge");
@@ -86,13 +123,13 @@ const periodButtons = `
 			return str ? str.split(", ")[0] : "";
 		}
 
-		function formatTrackDate(date: { "#text": string; uts: string } | undefined): string {
-			if (!date) return "";
-			const time = date["#text"].split(", ")[1] ?? "";
-			const dayMonth = date["#text"].split(", ")[0].split(" ").slice(0, 2).join(" "); // "04 Jun"
-			const uts = Number(date.uts);
-			if (!uts) return time || dayMonth;
-			const ageHrs = (Date.now() - uts * 1000) / 3_600_000;
+		function formatTrackDate(date: { uts: string } | undefined): string {
+			if (!date?.uts) return "";
+			const timestamp = Number(date.uts) * 1000;
+			if (!timestamp) return "";
+			const ageHrs = (Date.now() - timestamp) / 3_600_000;
+			const time = trackTimeFormatter.format(new Date(timestamp));
+			const dayMonth = trackDateFormatter.format(new Date(timestamp));
 			return ageHrs < 24 ? time : `${dayMonth} · ${time}`;
 		}
 
@@ -145,6 +182,33 @@ const periodButtons = `
 						<span class="grid-label">${a.name}</span>
 						<span class="grid-sublabel">${fmt(a.playcount)} plays</span>
 					</a>`;
+				}).join("");
+			} catch {
+				el.innerHTML = '<p class="muted">Failed to load.</p>';
+			}
+		}
+
+		async function loadTracks(period: string) {
+			const el = document.getElementById("top-tracks")!;
+			el.innerHTML = '<p class="muted">Loading...</p>';
+			try {
+				const res = await fetch(`${LFM}?method=user.gettoptracks&user=${USER}&api_key=${API_KEY}&period=${period}&limit=30&format=json`);
+				const data = await res.json();
+				const tracks: any[] = data.toptracks?.track || [];
+				if (!tracks.length) {
+					el.innerHTML = '<p class="muted">No data.</p>';
+					return;
+				}
+				el.innerHTML = tracks.map((t, i) => {
+					const artist = t.artist?.name || t.artist?.["#text"] || "";
+					return `<div class="track-item top-track-item">
+						<span class="track-rank">${String(i + 1).padStart(2, "0")}</span>
+						<span class="track-copy">
+							<span class="track-title">${t.name}</span>
+							<span class="track-artist">${artist}</span>
+						</span>
+						<span class="track-date">${fmt(t.playcount)} plays</span>
+					</div>`;
 				}).join("");
 			} catch {
 				el.innerHTML = '<p class="muted">Failed to load.</p>';
@@ -221,7 +285,8 @@ const periodButtons = `
 
 		loadUserInfo();
 		loadRecent();
-		loadArtists("12month");
-		loadAlbums("12month");
+		loadTracks("7day");
+		loadArtists("7day");
+		loadAlbums("7day");
 	</script>
 </Layout>

@@ -26,6 +26,11 @@
       "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
       "js": ["chatgpt_history.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://x.com/merulox", "https://x.com/merulox/*"],
+      "js": ["x_profile.js"],
+      "run_at": "document_idle"
     }
   ]
 }

@@ -94,6 +94,73 @@
       .row-value.warn { color: var(--warn); }
       .row-value.dim  { color: var(--muted); }
 
+      .log-list {
+        display: grid;
+        gap: 6px;
+        padding: 10px 16px 14px;
+        border-top: 1px solid var(--line);
+      }
+
+      .log-entry {
+        display: grid;
+        gap: 2px;
+        padding: 6px 8px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .log-entry .meta {
+        color: var(--muted);
+        font-size: 10px;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        line-height: 1.3;
+      }
+
+      .log-entry .msg {
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.35;
+        word-break: break-word;
+      }
+
+      .log-entry.info .msg { color: var(--text); }
+      .log-entry.warn .msg { color: var(--warn); }
+      .log-entry.err .msg { color: var(--err); }
+
+      .footer-actions {
+        display: grid;
+        gap: 8px;
+      }
+
+      details.logs-panel summary {
+        padding: 10px 16px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 11px;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        list-style: none;
+      }
+
+      details.logs-panel summary .dot {
+        display: inline-block;
+        margin-right: 5px;
+      }
+
+      details.logs-panel summary::-webkit-details-marker {
+        display: none;
+      }
+
+      details.logs-panel summary::before {
+        content: "+ ";
+        color: var(--accent);
+      }
+
+      details.logs-panel[open] summary::before {
+        content: "− ";
+      }
+
       .footer {
         padding: 10px 16px 14px;
         border-top: 1px solid var(--line);
@@ -146,6 +213,14 @@
       </div>
 
       <div class="row">
+        <div class="row-icon"><span class="dot" id="observed-dot"></span></div>
+        <div class="row-body">
+          <div class="row-label">scroll collector</div>
+          <div class="row-value" id="observed-val">checking…</div>
+        </div>
+      </div>
+
+      <div class="row">
         <div class="row-icon"><span class="dot" id="fetch-dot"></span></div>
         <div class="row-body">
           <div class="row-label">last fetch</div>
@@ -184,11 +259,20 @@
           <div class="row-value err" id="error-val"></div>
         </div>
       </div>
+
     </div>
 
     <div class="footer">
-      <button id="refresh-btn">Fetch now</button>
+      <div class="footer-actions">
+        <button id="refresh-btn">Fetch now</button>
+        <button id="clear-logs-btn" type="button">Clear logs</button>
+      </div>
     </div>
+
+    <details class="logs-panel">
+      <summary><span class="dot" id="logs-dot"></span> logs</summary>
+      <div class="log-list" id="log-list">checking…</div>
+    </details>
 
     <script src="popup.js"></script>
   </body>

@@ -44,9 +44,9 @@ function orchestrateTweets(input: Tweet[]) {
 
 const tweets = orchestrateTweets(((tweetData.tweets ?? []) as Tweet[])
 	.filter((tweet) => tweet.text && tweet.url)
-	.slice(0, 30));
+	.slice(0, 300));
 const ownTweetUrls = new Set(tweets.map((tweet) => tweet.url));
-const TWEET_PAGE_SIZE = 10;
+const TWEET_PAGE_SIZE = 100;
 
 function formatTweetTimestamp(tweet: Tweet) {
 	if (!tweet.timestamp) return tweet.date;
@@ -401,7 +401,7 @@ function externalReplyThread(tweet: Tweet) {
 		}
 
 		// X pagination
-		const TWEET_PAGE_SIZE = 10;
+		const TWEET_PAGE_SIZE = 100;
 		let currentTweetPage = 0;
 
 		function setupTweetPagination(container: HTMLElement) {

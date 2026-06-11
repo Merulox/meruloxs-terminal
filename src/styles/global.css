@@ -451,6 +451,10 @@ h2 {
 	display: none;
 }
 
+.top-tracks-scroll {
+	max-height: 340px;
+}
+
 .track-item {
 	display: flex;
 	align-items: baseline;
@@ -463,6 +467,38 @@ h2 {
 
 .track-item:last-child {
 	border-bottom: none;
+}
+
+.top-track-item {
+	display: grid;
+	grid-template-columns: 22px minmax(0, 1fr) auto;
+	align-items: baseline;
+	gap: 12px;
+}
+
+.track-rank {
+	color: var(--accent);
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.track-copy {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.track-copy .track-title {
+	color: var(--text);
+}
+
+.track-copy .track-artist {
+	color: var(--muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .track-name {

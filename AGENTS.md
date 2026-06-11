@@ -13,6 +13,7 @@ npm run build
 ```
 
 Use `npm run dev` for local development and `npm run build` before handing off changes.
+For branch previews and verification, use `https://dev.merulox.com` as the default preview target.
 
 ## Structure
 
@@ -29,3 +30,4 @@ Use `npm run dev` for local development and `npm run build` before handing off c
 - Use one accent color and the existing dark visual system.
 - Leave missing contact/profile URLs as clear `TODO` comments until real values are provided.
 - Keep pages static and deployable to Cloudflare Pages.
+- Treat `dev.merulox.com` as the preview destination for branch builds unless the user says otherwise.

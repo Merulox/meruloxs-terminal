@@ -95,6 +95,10 @@ It opens the replies-inclusive profile in a background tab, scrolls until it has
 up to 30 posts, resolves new posts against their permalink conversation, pushes
 them to the local receiver, then closes the tab. Permalink results are cached as
 authoritative reply metadata so timeline scrapes cannot invent or erase replies.
+While you browse and scroll `x.com/merulox`, a profile content script continuously
+collects each rendered post before X virtualizes it out of the DOM. Manual and
+hourly fetches merge those observations with the automated background scrape,
+deduplicate by post URL, and keep the newest 100.
 For replies to posts outside the profile timeline, up to five preceding
 conversation posts are retained as display context. Self-thread continuations are
 resolved from X's ascending adjacent timeline grouping. External replies keep
