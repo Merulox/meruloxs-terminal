@@ -145,18 +145,46 @@ async function render() {
     setVal("auto-val", "not scheduled — reload extension", "warn");
   }
 
-  // Tweets → static site data
+  // Tweet destinations: durable local archive and public live API.
   const { push_status } = await chrome.storage.local.get("push_status");
-  if (!push_status) {
-    setDot("push-dot", "warn");
-    setVal("push-val", "no push yet — click Fetch now", "warn");
-  } else if (push_status.ok) {
-    setDot("push-dot", "ok");
-    setVal("push-val", `pushed ${push_status.count} · ${ago(push_status.time)}`, "ok");
-  } else {
-    setDot("push-dot", "err");
-    setVal("push-val", `${push_status.error} · ${ago(push_status.time)}`, "err");
+  let liveState = null;
+  try {
+    const response = await fetch("https://merulox.com/api/tweets", { cache: "no-store" });
+    if (response.ok) liveState = await response.json();
+  } catch {
+    // The last push result below still reports whether the extension can sync.
   }
+  const renderPushTarget = (name, label) => {
+    const target = push_status?.targets?.[name];
+    const dotId = `${name}-push-dot`;
+    const valueId = `${name}-push-val`;
+    if (!push_status) {
+      setDot(dotId, "warn");
+      setVal(valueId, "no sync yet — click Fetch now", "warn");
+    } else if (!target) {
+      setDot(dotId, push_status.ok ? "ok" : "err");
+      setVal(valueId, push_status.ok
+        ? `${push_status.count} tweets · ${ago(push_status.time)}`
+        : `${push_status.error} · ${ago(push_status.time)}`, push_status.ok ? "ok" : "err");
+    } else if (target.ok) {
+      setDot(dotId, "ok");
+      if (name === "live" && Array.isArray(liveState?.tweets)) {
+        setVal(valueId, `${liveState.tweets.length} stored · updated ${ago(liveState.updatedAt)}`, "ok");
+      } else {
+        setVal(valueId, `sent ${push_status.count} · ${ago(push_status.time)}`, "ok");
+      }
+    } else {
+      setDot(dotId, "err");
+      setVal(valueId, `${label} failed · ${ago(push_status.time)}`, "err");
+    }
+  };
+  renderPushTarget("local", "archive");
+  renderPushTarget("live", "public sync");
+
+  /*
+   * Legacy push_status records had only one combined result. The target renderer
+   * above shows that state on both rows until the next extension push replaces it.
+   */
 
   // ChatGPT → log bridge
   const { chatgpt_status } = await chrome.storage.local.get("chatgpt_status");
@@ -175,8 +203,10 @@ async function render() {
   renderLogs(tweet_seeder_logs ?? []);
 
   // Overall dot
-  const allOk = authToken && tweets_cache?.tweets?.length && last_attempt?.ok !== false && push_status?.ok === true;
-  const anyErr = !authToken || last_attempt?.ok === false || push_status?.ok === false;
+  const liveOk = push_status?.targets?.live?.ok ?? push_status?.ok;
+  const localOk = push_status?.targets?.local?.ok ?? push_status?.ok;
+  const allOk = authToken && tweets_cache?.tweets?.length && last_attempt?.ok !== false && liveOk === true && localOk === true;
+  const anyErr = !authToken || last_attempt?.ok === false || liveOk === false;
   setDot("overall-dot", anyErr ? "err" : allOk ? "ok" : "warn");
 }
 
@@ -198,3 +228,4 @@ document.getElementById("clear-logs-btn").addEventListener("click", async () => 
 });
 
 render();
+window.setInterval(render, 15_000);

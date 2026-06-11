@@ -529,11 +529,15 @@ async function runFetchViaTab() {
     });
 
 		const pushed = await pushTweetsToReceiver(tweets);
-		if (!pushed.ok) {
-			await log.error("push", "receiver rejected tweets", pushed.error || "unknown error");
-			throw new Error(pushed.error || "tweet ingest failed");
+		if (!pushed.targets?.live?.ok) {
+			await log.error("push", "live website rejected tweets", pushed.targets?.live?.error || pushed.error || "unknown error");
+			throw new Error(pushed.targets?.live?.error || pushed.error || "live tweet ingest failed");
 		}
-		await log.info("push", "receiver accepted tweets", { count: tweets.length });
+		if (!pushed.targets?.local?.ok) {
+			await log.warn("push", "live website updated but local archive failed", pushed.targets?.local?.error);
+		} else {
+			await log.info("push", "live website and local archive updated", { count: tweets.length });
+		}
 		return { ok: true, tweets, pushed };
   } catch (err) {
     await log.error("fetch", "fetch failed", err);
@@ -605,19 +609,36 @@ async function pushTweetsToReceiver(tweets) {
 		push(TWEETS_INGEST_URL),
 		push(LIVE_TWEETS_INGEST_URL),
 	]);
-	const failures = [];
+	const targets = {};
 	for (const [name, result] of [["local", local], ["live", live]]) {
-		if (result.status === "rejected") failures.push(`${name}: ${result.reason?.message ?? result.reason}`);
-		else if (!result.value.ok) failures.push(`${name}: ${result.value.status} ${await result.value.text()}`);
+		if (result.status === "rejected") {
+			targets[name] = { ok: false, error: result.reason?.message ?? String(result.reason) };
+		} else if (!result.value.ok) {
+			targets[name] = { ok: false, error: `${result.value.status} ${await result.value.text()}` };
+		} else {
+			targets[name] = { ok: true, error: null };
+		}
 	}
-	if (failures.length) throw new Error(failures.join(" · "));
-
-    await chrome.storage.local.set({ [PUSH_STATUS_KEY]: { ...status, ok: true, error: null } });
-    return { ok: true };
+	const failures = Object.entries(targets)
+		.filter(([, target]) => !target.ok)
+		.map(([name, target]) => `${name}: ${target.error}`);
+	const pushStatus = { ...status, ok: failures.length === 0, error: failures.join(" · ") || null, targets };
+	await chrome.storage.local.set({ [PUSH_STATUS_KEY]: pushStatus });
+	if (failures.length) await log.warn("push", "one or more tweet destinations failed", targets);
+	return pushStatus;
   } catch (err) {
     await log.error("push", "push to receiver failed", err);
-    await chrome.storage.local.set({ [PUSH_STATUS_KEY]: { ...status, ok: false, error: err.message } });
-    return { ok: false, error: err.message };
+	const pushStatus = {
+		...status,
+		ok: false,
+		error: err.message,
+		targets: {
+			local: { ok: false, error: err.message },
+			live: { ok: false, error: err.message },
+		},
+	};
+    await chrome.storage.local.set({ [PUSH_STATUS_KEY]: pushStatus });
+    return pushStatus;
   }
 }
 
