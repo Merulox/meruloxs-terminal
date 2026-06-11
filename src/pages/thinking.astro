@@ -19,6 +19,7 @@ type Tweet = {
 	replyTo?: string;
 	replyToUrl?: string;
 	replyThread?: ThreadPost[];
+	media?: string[];
 };
 
 function orchestrateTweets(input: Tweet[]) {
@@ -220,6 +221,21 @@ function externalReplyThread(tweet: Tweet) {
 		opacity: 0.35;
 		font-style: italic;
 	}
+	.tweet-media {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-top: 8px;
+	}
+	.tweet-content {
+		min-width: 0;
+	}
+	.tweet-img {
+		border: 1px solid #1d1d1d;
+		max-height: 240px;
+		max-width: 300px;
+		object-fit: cover;
+	}
 	@media (max-width: 600px) {
 		.tweets-viewport {
 			height: 55vh;
@@ -275,15 +291,26 @@ function externalReplyThread(tweet: Tweet) {
 										</div>
 									)}
 									<header class="item-header">
-										<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
-											{tweet.isReply && (
-												<p class="reply-context">
-													<span class="reply-author">{tweet.author ?? "@merulox"}</span>
-													{tweet.replyTo && <> → {tweet.replyTo}</>}
-												</p>
+										<div class="tweet-content">
+											<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
+												{tweet.isReply && (
+													<p class="reply-context">
+														<span class="reply-author">{tweet.author ?? "@merulox"}</span>
+														{tweet.replyTo && <> → {tweet.replyTo}</>}
+													</p>
+												)}
+												<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
+											</a>
+											{tweet.media && tweet.media.length > 0 && (
+												<div class="tweet-media">
+													{tweet.media.map((url) => (
+														<a href={tweet.url} target="_blank" rel="noopener">
+															<img src={url} alt="" loading="lazy" class="tweet-img" />
+														</a>
+													))}
+												</div>
 											)}
-											<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
-										</a>
+										</div>
 										<time class="date" datetime={tweet.timestamp}>{formatTweetTimestamp(tweet)}</time>
 									</header>
 								</article>
@@ -464,14 +491,24 @@ function externalReplyThread(tweet: Tweet) {
 						<span class="reply-author">${escapeHtml(tweet.author ?? "@merulox")}</span>
 						${tweet.replyTo ? ` → ${escapeHtml(tweet.replyTo)}` : ""}
 					</p>` : "";
+				const media = Array.isArray(tweet.media) && tweet.media.length ? `
+					<div class="tweet-media">
+						${tweet.media.map((url: string) => `
+							<a href="${escapeHtml(tweet.url)}" target="_blank" rel="noopener">
+								<img src="${escapeHtml(url)}" alt="" loading="lazy" class="tweet-img">
+							</a>`).join("")}
+					</div>` : "";
 				return `
 					<article class="work-item tweet-item${tweet.isReply ? " is-reply" : ""}${externalThread.length ? " has-external-thread" : ""}" data-tweet-index="${index}">
 						${thread}
 						<header class="item-header">
-							<a href="${escapeHtml(tweet.url)}" target="_blank" rel="noopener" style="text-decoration:none">
-								${reply}
-								<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">${escapeHtml(tweet.text)}</p>
-							</a>
+							<div class="tweet-content">
+								<a href="${escapeHtml(tweet.url)}" target="_blank" rel="noopener" style="text-decoration:none">
+									${reply}
+									<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">${escapeHtml(tweet.text)}</p>
+								</a>
+								${media}
+							</div>
 							<time class="date" datetime="${escapeHtml(tweet.timestamp ?? "")}">${escapeHtml(formatLiveTweetTimestamp(tweet))}</time>
 						</header>
 					</article>`;

@@ -36,6 +36,17 @@ function readArticle(article) {
 
 	const timestamp = timeEl.getAttribute("datetime");
 	const author = href.match(/^\/([^/]+)\/status\//)?.[1];
+	// Capture attached images while excluding avatars and profile photos.
+	const mediaImgs = Array.from(article.querySelectorAll('img[src*="pbs.twimg.com/media"]'));
+	const media = mediaImgs
+		.map((img) => {
+			const src = img.getAttribute("src") || "";
+			const url = new URL(src);
+			url.searchParams.set("format", "jpg");
+			url.searchParams.set("name", "medium");
+			return url.toString();
+		})
+		.filter((url, index, urls) => urls.indexOf(url) === index);
 	const replyContext = article.innerText
 		.split("\n")
 		.map((line) => line.trim())
@@ -48,6 +59,7 @@ function readArticle(article) {
 		url: `https://x.com${href}`,
 		author: author ? `@${author}` : `@${SCREEN_NAME}`,
 		observedAt: Date.now(),
+		...(media.length > 0 ? { media } : {}),
 		...(replyContext ? {
 			isReply: true,
 			replyTo: replyContext.replace(/^Replying to\s*/i, "").trim(),
@@ -93,7 +105,10 @@ function collectRenderedTweets() {
 			const tweet = readArticle(article);
 			if (!tweet) continue;
 			const prior = observed.get(tweet.url);
-			if (!prior || prior.text !== tweet.text || prior.replyTo !== tweet.replyTo) {
+			if (!prior
+				|| prior.text !== tweet.text
+				|| prior.replyTo !== tweet.replyTo
+				|| JSON.stringify(prior.media ?? []) !== JSON.stringify(tweet.media ?? [])) {
 				observed.set(tweet.url, tweet);
 				changed = true;
 			}
