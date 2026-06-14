@@ -1,21 +1,18 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { employerNavItems } from "../../data/employerNav";
 import { projects } from "../../data/projects";
 ---
 
 <Layout
-	title="projects for employers | MERULOX"
-	description="Selected systems built by Merulox."
-	navItems={employerNavItems}
-	homeHref="/employers"
-	noindex={true}
+	title="projects | MERULOX"
+	description="Selected projects built and operated by Merulox."
 >
 	<style>
 		.project-intro {
 			margin-bottom: 28px;
 			color: var(--muted);
 			font-size: 13px;
+			max-width: 58ch;
 		}
 
 		.project-fields {
@@ -59,14 +56,9 @@ import { projects } from "../../data/projects";
 		}
 
 		.project-proof li::before {
-			content: "[ ]";
-			color: var(--faint);
-			margin-right: 6px;
-		}
-
-		.project-proof li:first-child::before {
 			content: "[+]";
 			color: var(--accent);
+			margin-right: 6px;
 		}
 
 		.project-stack {
@@ -83,8 +75,8 @@ import { projects } from "../../data/projects";
 
 	<h1>Projects</h1>
 	<p class="project-intro">
-		Selected systems with the build, operational value, and available evidence made
-		explicit.
+		Selected public-safe work, with the build, operational value, and available
+		evidence made explicit.
 	</p>
 
 	<div class="proj-list">
@@ -127,13 +119,9 @@ import { projects } from "../../data/projects";
 									</ul>
 								</dd>
 							</div>
-							<div class="project-field">
-								<dt>Status</dt>
-								<dd>{p.state} / {p.date}</dd>
-							</div>
 						</dl>
 						<ul class="tag-list project-stack" aria-label={`${p.name} stack`}>
-							{p.tags.map((t) => <li>{t}</li>)}
+							{p.tags.map((tag) => <li>{tag}</li>)}
 						</ul>
 					</div>
 				</article>
@@ -144,8 +132,8 @@ import { projects } from "../../data/projects";
 	<script>
 		document.querySelectorAll<HTMLButtonElement>(".proj-head").forEach((head) => {
 			head.addEventListener("click", () => {
-				const proj = head.closest(".proj")!;
-				const open = proj.classList.toggle("open");
+				const project = head.closest(".proj")!;
+				const open = project.classList.toggle("open");
 				head.setAttribute("aria-expanded", open ? "true" : "false");
 			});
 		});
