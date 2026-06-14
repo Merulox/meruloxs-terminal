@@ -38,6 +38,7 @@ const projects = [
 		name: "Aperture",
 		state: "active",
 		date: "2026-06",
+		github: "https://github.com/Merulox/aperture",
 		description:
 			"The human-facing window into Realm. Aperture turns the hidden machinery of Genesis into an ambient control surface: health, mode, pending decisions, live state, vitals, agent activity, and operational memory made legible without opening the terminal.",
 		tags: ["Astro", "Node", "cloudflared", "systemd"],
@@ -46,6 +47,7 @@ const projects = [
 		name: "Agent Infra",
 		state: "active",
 		date: "2026-06",
+		github: "https://github.com/Merulox/meruloxs-kernel",
 		description:
 			"Operating protocol for AI-assisted work. Architect, Executor, Reviewer, and specialist agents coordinate through task briefs, verification gates, decision logs, recovery files, and project memory, so work can survive interruptions without dissolving back into chat history.",
 		tags: ["Claude", "Codex", "Markdown", "Git"],
@@ -54,6 +56,7 @@ const projects = [
 		name: "MERULOX",
 		state: "active",
 		date: "2026-06",
+		github: "https://github.com/Merulox/meruloxs-terminal",
 		description:
 			"Personal OS-style portfolio built to present projects, writing, and active experiments in a minimal terminal-inspired interface.",
 		tags: ["Astro", "CSS"],
@@ -76,6 +79,13 @@ const projects = [
 					</button>
 					<div class="proj-body">
 						<p>{p.description}</p>
+						{
+							p.github && (
+								<a class="project-repo" href={p.github} target="_blank" rel="noreferrer">
+									GitHub repository ↗
+								</a>
+							)
+						}
 						<ul class="tag-list">
 							{p.tags.map((t) => (
 								<li>{t}</li>

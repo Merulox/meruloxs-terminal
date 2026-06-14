@@ -343,6 +343,13 @@ h2 {
 	max-width: 56ch;
 }
 
+.project-repo {
+	display: inline-block;
+	margin-bottom: 12px;
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 11px;
+}
+
 /* ── Music page ───────────────────────────────────────────── */
 
 .period-bar {
