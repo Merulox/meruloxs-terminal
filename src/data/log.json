@@ -1,6 +1,31 @@
 {
-  "generated": "2026-06-06",
+  "generated": "2026-06-13",
   "entries": [
+    {
+      "date": "2026-06-13",
+      "kind": "ship",
+      "text": "Spent the day hardening Aperture, the task-execution layer that runs agent work. The recurring problem was jobs failing silently and finished tasks still showing as ready, so the work went into honest status reporting — capturing when an executor is actually blocked, recording real completion, and deriving each job's writable scope from its brief instead of guessing. Also added a live next-actions feed so the current state of the queue is visible at a glance."
+    },
+    {
+      "date": "2026-06-12",
+      "kind": "ship",
+      "text": "Resumed Boréal after a full ecosystem audit and restored its inbound lead pipeline end to end, including fixing two operations-control bugs that had made recovery impossible. A deeper audit then exposed conflicting CRM state, misclassified leads, overlapping follow-up systems, and no single outbound send gate, so automated sending stayed off while the remediation work was scoped. Also verified SYNTRA's path-based product routes live in production and cleared out obsolete project infrastructure."
+    },
+    {
+      "date": "2026-06-11",
+      "kind": "ship",
+      "text": "Most of the day went into Aperture, the task orchestration board: it moved to React, got live log streaming, dependency gates between tasks, and a proper failure badge when a job exits badly. The personal site also picked up a batch of fixes around the writing feed and music pages. On the SYNTRA side, a few delegated implementation tasks landed, including path-based routing with pre-rendering."
+    },
+    {
+      "date": "2026-06-10",
+      "kind": "ship",
+      "text": "Aperture's taskboard gained full brief previews, persistent controls, smoother polling, and live Codex launch and monitoring. SYNTRA moved to path-based routing with static pre-rendering and closed its remaining phase-one blockers. The personal site restored its complete X post history, streamed seeded posts into the writing feed, and improved music navigation."
+    },
+    {
+      "date": "2026-06-07",
+      "kind": "ship",
+      "text": "Reworked the personal site's reading page into collapsible learning paths, expanded the curriculum from the local ebook library, and organized it into a four-tier progression. Also added a Goodreads profile link and improved how expanded paths stay in view."
+    },
     {
       "date": "2026-06-06",
       "kind": "ship",
