@@ -25,6 +25,7 @@ const CHATGPT_STATUS_KEY = "chatgpt_status";
 const TWEETS_INGEST_URL = "http://localhost:47832/tweets";
 const LIVE_TWEETS_INGEST_URL = "https://merulox.com/api/tweets";
 const PUSH_STATUS_KEY = "push_status";
+const DELETE_STATUS_KEY = "delete_status";
 const EASTERN_TIME_ZONE = "America/New_York";
 const TWEET_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
 	timeZone: EASTERN_TIME_ZONE,
@@ -685,6 +686,80 @@ async function pushTweetsToReceiver(tweets) {
   }
 }
 
+function normalizeTweetUrl(value) {
+	const input = String(value ?? "").trim();
+	if (/^\d+$/.test(input)) return `https://x.com/merulox/status/${input}`;
+	const match = input.match(/^https:\/\/(?:x|twitter)\.com\/([^/]+)\/status\/(\d+)/);
+	return match ? `https://x.com/${match[1]}/status/${match[2]}` : null;
+}
+
+async function removeTweetFromCache(key, url) {
+	const stored = await chrome.storage.local.get(key);
+	const value = stored[key];
+	if (!Array.isArray(value?.tweets)) return;
+	await chrome.storage.local.set({
+		[key]: {
+			...value,
+			tweets: value.tweets.filter((tweet) => tweet.url !== url),
+			updatedAt: Date.now(),
+		},
+	});
+}
+
+async function tombstoneTweet(value, source = "manual") {
+	const url = normalizeTweetUrl(value);
+	const status = { time: Date.now(), url, source };
+	try {
+		if (!url) throw new Error("enter an X tweet URL or status ID");
+		if (!LOG_INGEST_TOKEN) throw new Error("no ingest token — add config.local.js");
+
+		const body = JSON.stringify({ url, source });
+		const remove = (endpoint) => fetch(endpoint, {
+			method: "DELETE",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${LOG_INGEST_TOKEN}`,
+			},
+			body,
+		});
+		const [local, live] = await Promise.allSettled([
+			remove(TWEETS_INGEST_URL),
+			remove(LIVE_TWEETS_INGEST_URL),
+		]);
+		const targets = {};
+		for (const [name, result] of [["local", local], ["live", live]]) {
+			if (result.status === "rejected") {
+				targets[name] = { ok: false, error: result.reason?.message ?? String(result.reason) };
+			} else if (!result.value.ok) {
+				targets[name] = { ok: false, error: `${result.value.status} ${await result.value.text()}` };
+			} else {
+				targets[name] = { ok: true, response: await result.value.json() };
+			}
+		}
+
+		await Promise.all([
+			removeTweetFromCache(CACHE_KEY, url),
+			removeTweetFromCache(OBSERVED_KEY, url),
+		]);
+		const failures = Object.entries(targets).filter(([, target]) => !target.ok);
+		const result = {
+			...status,
+			ok: failures.length === 0,
+			targets,
+			error: failures.map(([name, target]) => `${name}: ${target.error}`).join(" · ") || null,
+		};
+		await chrome.storage.local.set({ [DELETE_STATUS_KEY]: result });
+		if (result.ok) await log.info("delete", "tweet tombstoned", { url, source });
+		else await log.warn("delete", "tweet tombstone partially failed", result);
+		return result;
+	} catch (err) {
+		const result = { ...status, ok: false, error: err.message };
+		await chrome.storage.local.set({ [DELETE_STATUS_KEY]: result });
+		await log.error("delete", "tweet tombstone failed", result);
+		return result;
+	}
+}
+
 // Receive ChatGPT history harvested by the content script and push it to the bridge.
 async function pushChatgpt(msg) {
   const status = { time: Date.now(), count: msg.items?.length ?? 0 };
@@ -720,6 +795,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   if (msg.action === "pushTweets") {
     pushTweetsToReceiver(msg.tweets).then(sendResponse);
+    return true;
+  }
+  if (msg.action === "tombstoneTweet") {
+    tombstoneTweet(msg.url ?? msg.statusId, msg.source).then(sendResponse);
     return true;
   }
   if (msg.action === "chatgptHistory") {

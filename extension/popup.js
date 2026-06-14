@@ -181,6 +181,18 @@ async function render() {
   renderPushTarget("local", "archive");
   renderPushTarget("live", "public sync");
 
+  const { delete_status } = await chrome.storage.local.get("delete_status");
+  if (!delete_status) {
+    setDot("delete-dot", "warn");
+    setVal("delete-val", "none yet", "dim");
+  } else if (delete_status.ok) {
+    setDot("delete-dot", "ok");
+    setVal("delete-val", `${delete_status.url.split("/").at(-1)} · ${ago(delete_status.time)}`, "ok");
+  } else {
+    setDot("delete-dot", "err");
+    setVal("delete-val", `${delete_status.error} · ${ago(delete_status.time)}`, "err");
+  }
+
   /*
    * Legacy push_status records had only one combined result. The target renderer
    * above shows that state on both rows until the next extension push replaces it.
@@ -225,6 +237,22 @@ document.getElementById("refresh-btn").addEventListener("click", async () => {
 document.getElementById("clear-logs-btn").addEventListener("click", async () => {
   await chrome.storage.local.remove("tweet_seeder_logs");
   await render();
+});
+
+document.getElementById("delete-btn").addEventListener("click", async () => {
+  const input = document.getElementById("delete-input");
+  const btn = document.getElementById("delete-btn");
+  btn.disabled = true;
+  btn.textContent = "Removing…";
+  chrome.runtime.sendMessage(
+    { action: "tombstoneTweet", url: input.value, source: "extension-popup" },
+    async (response) => {
+      btn.disabled = false;
+      btn.textContent = "Remove from site";
+      if (response?.ok) input.value = "";
+      await render();
+    },
+  );
 });
 
 render();

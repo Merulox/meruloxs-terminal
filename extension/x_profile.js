@@ -8,6 +8,21 @@ const observed = new Map();
 let writeTimer = null;
 let pushTimer = null;
 let collecting = false;
+let pendingDeleteUrl = null;
+
+const markerStyle = document.createElement("style");
+markerStyle.textContent = `
+	.merulox-delete-sync {
+		margin-left: 8px;
+		padding: 1px 5px;
+		border: 1px solid rgb(29, 155, 240);
+		border-radius: 999px;
+		color: rgb(29, 155, 240);
+		font: 600 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+		white-space: nowrap;
+	}
+`;
+document.documentElement.appendChild(markerStyle);
 
 function easternDate(isoTimestamp) {
 	if (!isoTimestamp) return null;
@@ -120,7 +135,52 @@ function collectRenderedTweets() {
 	if (changed) scheduleWrite();
 }
 
-const observer = new MutationObserver(collectRenderedTweets);
+function ownTweetUrl(article) {
+	const links = Array.from(article?.querySelectorAll('a[href*="/status/"]') ?? []);
+	const href = links
+		.map((link) => link.getAttribute("href")?.split("?")[0])
+		.find((value) => value?.match(/^\/merulox\/status\/\d+$/i));
+	return href ? `https://x.com${href}` : null;
+}
+
+function addSyncMarker(control) {
+	if (!control || control.querySelector(".merulox-delete-sync")) return;
+	const marker = document.createElement("span");
+	marker.className = "merulox-delete-sync";
+	marker.textContent = "site sync";
+	control.appendChild(marker);
+}
+
+function augmentDeleteControls() {
+	if (!pendingDeleteUrl) return;
+	for (const item of document.querySelectorAll('[role="menuitem"]')) {
+		if (item.textContent?.trim().startsWith("Delete")) addSyncMarker(item);
+	}
+	for (const button of document.querySelectorAll('[data-testid="confirmationSheetConfirm"]')) {
+		if (!button.textContent?.trim().startsWith("Delete")) continue;
+		addSyncMarker(button);
+		if (button.dataset.meruloxDeleteBound === "true") continue;
+		button.dataset.meruloxDeleteBound = "true";
+		button.addEventListener("click", () => {
+			const url = pendingDeleteUrl;
+			pendingDeleteUrl = null;
+			chrome.runtime.sendMessage({ action: "tombstoneTweet", url, source: "x-delete-confirm" });
+		}, { capture: true, once: true });
+	}
+}
+
+document.addEventListener("click", (event) => {
+	const caret = event.target.closest?.('[data-testid="caret"]');
+	if (caret) {
+		pendingDeleteUrl = ownTweetUrl(caret.closest("article"));
+		queueMicrotask(augmentDeleteControls);
+	}
+}, { capture: true });
+
+const observer = new MutationObserver(() => {
+	collectRenderedTweets();
+	augmentDeleteControls();
+});
 observer.observe(document.documentElement, { childList: true, subtree: true });
 document.addEventListener("scroll", collectRenderedTweets, { passive: true });
 window.addEventListener("pagehide", writeObserved);

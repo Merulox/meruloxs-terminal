@@ -113,6 +113,19 @@ Click **Fetch now** in the extension popup to force an immediate refresh. The
 **tweets → site** row should go green after the receiver writes
 `src/data/tweets.json`.
 
+When deleting one of your posts on X, the extension marks X's delete controls
+with a blue `site sync` badge. Clicking X's final delete confirmation also
+tombstones the post in Cloudflare KV, removes it from the local archive, and
+clears it from extension caches so later scrapes cannot restore it.
+
+For a post that was already deleted on X, find its still-published link on
+`/thinking` and paste that URL (or only its numeric status ID) into the extension
+popup's **Remove from site** field. Tombstones are durable:
+
+- Live tombstones are stored alongside the `tweets` key in Cloudflare KV.
+- Local tombstones are stored at
+  `~/.local/share/tweet-seeder/tombstones.json`.
+
 Freshness is normally under 45 seconds after the extension observes a post:
 10-second extension debounce plus the writing page's 30-second polling interval.
 The Pages `LOG_KV_TOKEN` secret matches `extension/config.local.js` and the local

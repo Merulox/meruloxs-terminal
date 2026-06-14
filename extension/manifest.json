@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "merulox tweet seeder",
-  "version": "2.4",
+  "version": "2.5",
   "description": "Seeds the writing page with fresh X posts, and feeds the build-log with ChatGPT history",
   "permissions": ["alarms", "cookies", "storage", "scripting", "tabs"],
   "host_permissions": [
@@ -29,7 +29,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://x.com/merulox", "https://x.com/merulox/*"],
+      "matches": ["https://x.com/*"],
       "js": ["x_profile.js"],
       "run_at": "document_idle"
     }
