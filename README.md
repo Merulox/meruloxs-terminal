@@ -11,8 +11,7 @@ Personal site. Dark, monospace, no JavaScript frameworks.
 | `/thinking` | X posts and threads, scraped and rendered locally |
 | `/reading` | Book list reconciled with local Kobo ownership data |
 | `/music` | Last.fm listening data |
-| `/stack` | Operational systems running in the background |
-| `/log` | Session log (currently broken — pipeline under repair) |
+| `/log` | Session logs |
 | `/employers` | Separate section: approach, projects, momentum, contact |
 
 ## Stack
