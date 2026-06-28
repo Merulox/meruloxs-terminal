@@ -1,16 +1,37 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import paths from "../data/books.json";
-import shelf from "../data/reading.json";
+import goodreads from "../data/goodreads.json";
 
 type Book = { title: string; author: string; stars: number; read?: boolean; note: string };
 type Path = { path: string; desc: string; books: Book[] };
-type Shaped = { title: string; author: string; stars: number; note: string };
-type Recent = { title: string; author: string; note: string };
+type GoodreadsBook = {
+	id?: string;
+	title: string;
+	author: string;
+	url: string;
+	image?: string;
+	rating?: number;
+	averageRating?: string;
+	readAt?: string;
+	addedAt?: string;
+	updatedAt?: string;
+	published?: string;
+	pages?: number | null;
+	shelves?: string[];
+};
 
 const data = paths as Path[];
-const shaped = (shelf.shaped ?? []) as Shaped[];
-const recent = (shelf.recent ?? []) as Recent[];
+const liveShelves = goodreads.shelves as Record<string, GoodreadsBook[]>;
+const shelfStack = [
+	{ key: "favorites", label: "Favorites", empty: "No favorites marked.", books: liveShelves.favorites ?? [] },
+	{ key: "reading", label: "Reading", empty: "No active reads.", books: liveShelves.reading ?? [] },
+	{ key: "completed", label: "Completed", empty: "No completed books yet.", books: liveShelves.completed ?? [] },
+	{ key: "dropped", label: "Dropped", empty: "No dropped books.", books: liveShelves.dropped ?? [] },
+	{ key: "planToRead", label: "Plan to read", empty: "No plan-to-read entries.", books: liveShelves.planToRead ?? [] },
+];
+const hasLiveShelves = shelfStack.some((stack) => stack.books.length > 0);
+const liveBookCount = shelfStack.reduce((count, stack) => count + stack.books.length, 0);
 
 const totalBooks = new Set(data.flatMap((path) => path.books.map((book) => book.title))).size;
 const read = new Set(data.flatMap((path) => path.books.filter((book) => book.read).map((book) => book.title))).size;
@@ -20,6 +41,27 @@ const levels = [
 	{ stars: 3, name: "mastery" },
 	{ stars: 4, name: "frontiers" },
 ];
+
+function formatDate(value?: string): string {
+	if (!value) return "";
+	const date = new Date(`${value}T00:00:00`);
+	if (Number.isNaN(date.getTime())) return value;
+	return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+}
+
+function bookMeta(book: GoodreadsBook, shelfKey: string): string {
+	if (shelfKey === "completed" && book.readAt) return `read ${formatDate(book.readAt)}`;
+	if (shelfKey === "planToRead" && book.addedAt) return `added ${formatDate(book.addedAt)}`;
+	if (shelfKey === "reading" && book.updatedAt) return `updated ${formatDate(book.updatedAt)}`;
+	if (book.readAt) return `read ${formatDate(book.readAt)}`;
+	if (book.updatedAt) return formatDate(book.updatedAt);
+	if (book.addedAt) return formatDate(book.addedAt);
+	return "";
+}
+
+function ratingLabel(rating?: number): string {
+	return rating && rating > 0 ? "★".repeat(rating) : "";
+}
 ---
 
 <style>
@@ -122,12 +164,151 @@ const levels = [
 	.goodreads-link .email {
 		margin-top: 0;
 	}
+	.live-shelf-stack {
+		display: grid;
+		gap: 28px;
+		margin-bottom: 56px;
+	}
+	.live-shelf-section {
+		border-top: 1px solid var(--line);
+	}
+	.live-shelf-section summary {
+		cursor: pointer;
+		list-style: none;
+	}
+	.live-shelf-section summary::-webkit-details-marker {
+		display: none;
+	}
+	.live-shelf-heading {
+		align-items: baseline;
+		display: grid;
+		grid-template-columns: 16px minmax(0, 1fr) auto;
+		justify-content: space-between;
+		gap: 10px;
+		margin: 0 -8px 14px;
+		padding: 12px 8px;
+	}
+	.live-shelf-heading .shelf-head {
+		margin-bottom: 0;
+	}
+	.live-shelf-heading:focus-visible {
+		box-shadow: inset 0 0 0 1px var(--accent);
+		outline: 0;
+	}
+	.live-shelf-marker {
+		color: var(--accent);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+	}
+	.live-shelf-section[open] .live-shelf-marker::before {
+		content: "−";
+	}
+	.live-shelf-section:not([open]) .live-shelf-marker::before {
+		content: "+";
+	}
+	.live-shelf-section:not([open]) .live-shelf-heading {
+		margin-bottom: 0;
+	}
+	.live-book-list {
+		display: grid;
+		gap: 10px;
+		list-style: none;
+		max-height: 282px;
+		overflow-y: auto;
+		padding: 0;
+		scrollbar-width: none;
+		-webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
+		mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
+	}
+	.live-book-list::-webkit-scrollbar {
+		display: none;
+	}
+	.live-book {
+		display: grid;
+		grid-template-columns: 42px minmax(0, 1fr);
+		gap: 12px;
+		min-width: 0;
+	}
+	.live-book-cover,
+	.live-book-cover-fallback {
+		aspect-ratio: 2 / 3;
+		background: var(--line);
+		display: block;
+		width: 42px;
+	}
+	.live-book-cover {
+		object-fit: cover;
+	}
+	.live-book-cover-fallback {
+		border: 1px solid var(--line);
+	}
+	.live-book-copy {
+		min-width: 0;
+		padding-top: 1px;
+	}
+	.live-book-line {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 12px;
+		align-items: baseline;
+	}
+	.live-book-title {
+		color: var(--text);
+		font-size: 14px;
+		font-weight: 600;
+		line-height: 1.35;
+		text-decoration: none;
+	}
+	.live-book-title:hover {
+		color: var(--accent);
+	}
+	.live-book-date {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 10px;
+		white-space: nowrap;
+	}
+	.live-book-subline {
+		align-items: baseline;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-top: 2px;
+	}
+	.live-book-author,
+	.live-book-pages,
+	.live-book-average {
+		color: var(--muted);
+		font-size: 12px;
+	}
+	.live-book-rating {
+		color: var(--accent);
+		font-size: 10px;
+		letter-spacing: 1px;
+	}
+	.live-book-pages::before,
+	.live-book-average::before {
+		color: var(--faint);
+		content: "·";
+		margin-right: 6px;
+	}
+	.live-shelf-empty {
+		color: var(--muted);
+		font-size: 12px;
+	}
 	@media (max-width: 600px) {
 		.path-body {
 			padding-left: 20px;
 		}
 		.path-summary {
 			grid-template-columns: 16px minmax(0, 1fr) auto;
+		}
+		.live-book-line {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 2px;
+		}
+		.live-book-date {
+			white-space: normal;
 		}
 	}
 </style>
@@ -144,59 +325,71 @@ const levels = [
 		path, stars mark progression: foundation, models, mastery, then frontiers.
 		</p>
 
-		<p class="goodreads-link">
-			<a
-				class="email"
-				href="https://www.goodreads.com/user/show/158374147-merulox"
-				target="_blank"
-				rel="noopener"
-			>
-				→ goodreads.com/merulox
-			</a>
-		</p>
-
 	{
-		shaped.length > 0 && (
+		hasLiveShelves && (
 			<section class="shelf-section">
-				<h2 class="shelf-head">Shaped me</h2>
-				<ul class="book-list">
-					{shaped.map((b) => (
-						<li class="book">
-							<div class="book-line">
-								<span class="book-stars" aria-label={`${b.stars} of 5`}>
-									{"★".repeat(b.stars)}
-									<span class="book-stars-empty">{"★".repeat(Math.max(0, 5 - b.stars))}</span>
-								</span>
-								<span class="book-title">{b.title}</span>
-								<span class="book-author">{b.author}</span>
-							</div>
-							{b.note && <p class="book-note">{b.note}</p>}
-						</li>
+				<div class="shelf-head-row">
+					<h2 class="shelf-head">Goodreads shelf</h2>
+					<span class="date">{liveBookCount} recent</span>
+				</div>
+				<div class="live-shelf-stack">
+					{shelfStack.map((stack) => (
+						<details class="live-shelf-section" data-shelf={stack.key} {...(stack.key === "reading" ? { open: true } : {})}>
+							<summary class="live-shelf-heading">
+								<span class="live-shelf-marker" aria-hidden="true"></span>
+								<h3 class="shelf-head">{stack.label}</h3>
+								<span class="date">{stack.books.length}</span>
+							</summary>
+							{stack.books.length > 0 ? (
+								<ul class="live-book-list">
+									{stack.books.map((book) => (
+										<li class="live-book">
+											{book.image ? (
+												<img class="live-book-cover" src={book.image} alt="" loading="lazy" />
+											) : (
+												<span class="live-book-cover-fallback" aria-hidden="true"></span>
+											)}
+											<div class="live-book-copy">
+												<div class="live-book-line">
+													<a class="live-book-title" href={book.url} target="_blank" rel="noopener">
+														{book.title}
+													</a>
+													<span class="live-book-date">{bookMeta(book, stack.key)}</span>
+												</div>
+												<div class="live-book-subline">
+													<span class="live-book-author">{book.author}</span>
+													{ratingLabel(book.rating) && (
+														<span class="live-book-rating" aria-label={`${book.rating} of 5`}>
+															{ratingLabel(book.rating)}
+														</span>
+													)}
+													{book.pages && <span class="live-book-pages">{book.pages}p</span>}
+													{book.averageRating && <span class="live-book-average">avg {book.averageRating}</span>}
+												</div>
+											</div>
+										</li>
+									))}
+								</ul>
+							) : (
+								<p class="live-shelf-empty">{stack.empty}</p>
+							)}
+						</details>
 					))}
-				</ul>
+				</div>
 			</section>
 		)
 	}
 
-	{
-		recent.length > 0 && (
-			<section class="shelf-section">
-				<h2 class="shelf-head">Recently finished</h2>
-				<ul class="book-list">
-					{recent.map((b) => (
-						<li class="book">
-							<div class="book-line">
-								<span class="book-stars book-check" aria-hidden="true">✓</span>
-								<span class="book-title">{b.title}</span>
-								<span class="book-author">{b.author}</span>
-							</div>
-							{b.note && <p class="book-note">{b.note}</p>}
-						</li>
-					))}
-				</ul>
-			</section>
-		)
-	}
+	<p class="goodreads-link">
+		<a
+			class="email"
+			href="https://www.goodreads.com/user/show/158374147-merulox"
+			target="_blank"
+			rel="noopener"
+		>
+			→ goodreads.com/merulox
+		</a>
+	</p>
 
 	<section class="shelf-section">
 		<div class="shelf-head-row">
@@ -252,23 +445,29 @@ const levels = [
 	</section>
 
 	<script>
-			const summaries = Array.from(document.querySelectorAll<HTMLElement>(".path-summary"));
-			const pathDetails = summaries.map((summary) => summary.closest("details")!);
+			const summaries = Array.from(document.querySelectorAll<HTMLElement>(".live-shelf-heading, .path-summary"));
+			const details = summaries.map((summary) => summary.closest("details")!);
+			const pathSummaries = Array.from(document.querySelectorAll<HTMLElement>(".path-summary"));
+			const pathDetails = pathSummaries.map((summary) => summary.closest("details")!);
 			const headerItems = Array.from(document.querySelectorAll<HTMLElement>(".site-name, .site-nav a"));
 
-			function focusPath(index: number) {
+			function isPathSummary(summary: HTMLElement): boolean {
+				return summary.classList.contains("path-summary");
+			}
+
+			function focusItem(index: number) {
 				const target = summaries[(index + summaries.length) % summaries.length];
 				target.focus();
 				if (target.closest("details")?.open) {
-					requestAnimationFrame(() => revealPathContext(index));
+					requestAnimationFrame(() => revealItemContext(index));
 				} else {
 					target.scrollIntoView({ block: "nearest" });
 				}
 			}
 
-			function revealPathContext(index: number) {
-				const first = pathDetails[Math.max(0, index - 2)];
-				const last = pathDetails[Math.min(pathDetails.length - 1, index + 2)];
+			function revealItemContext(index: number) {
+				const first = details[Math.max(0, index - 2)];
+				const last = details[Math.min(details.length - 1, index + 2)];
 				const top = window.scrollY + first.getBoundingClientRect().top;
 				const bottom = window.scrollY + last.getBoundingClientRect().bottom;
 				const margin = 24;
@@ -290,25 +489,36 @@ const levels = [
 				target.focus({ preventScroll: true });
 			}
 
-			function openPath(index: number) {
-				for (const [pathIndex, details] of pathDetails.entries()) {
-					if (pathIndex !== index) details.open = false;
+			function closeOtherPaths(targetDetails: HTMLDetailsElement) {
+				for (const detail of pathDetails) {
+					if (detail !== targetDetails) detail.open = false;
 				}
-				pathDetails[index].open = true;
-				requestAnimationFrame(() => requestAnimationFrame(() => revealPathContext(index)));
+			}
+
+			function openItem(index: number) {
+				const targetSummary = summaries[index];
+				const targetDetails = details[index];
+				if (isPathSummary(targetSummary)) closeOtherPaths(targetDetails);
+				targetDetails.open = true;
+				requestAnimationFrame(() => requestAnimationFrame(() => revealItemContext(index)));
 			}
 
 			pathDetails.forEach((details, index) => {
 				details.addEventListener("toggle", () => {
-					if (details.open) openPath(index);
+					if (!details.open) return;
+					closeOtherPaths(details);
+					const summaryIndex = summaries.indexOf(pathSummaries[index]);
+					if (summaryIndex >= 0) requestAnimationFrame(() => revealItemContext(summaryIndex));
 				});
 			});
 
 			document.querySelectorAll<HTMLElement>("[data-path-link]").forEach((link) => {
 				link.addEventListener("click", () => {
 					const index = Number(link.dataset.pathLink);
-					openPath(index);
-					requestAnimationFrame(() => focusPath(index));
+					const summaryIndex = summaries.indexOf(pathSummaries[index]);
+					if (summaryIndex < 0) return;
+					openItem(summaryIndex);
+					requestAnimationFrame(() => focusItem(summaryIndex));
 				});
 			});
 
@@ -316,33 +526,34 @@ const levels = [
 			if (event.ctrlKey || event.metaKey || event.altKey) return;
 			const active = document.activeElement as HTMLElement;
 			const current = summaries.indexOf(active);
-			const isPathKey = ["j", "k", "h", "l", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key);
-			if (current < 0 && !isPathKey) return;
+			const isNavKey = ["j", "k", "h", "l", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key);
+			if (current < 0 && !isNavKey) return;
 
 			if (event.key === "j" || event.key === "ArrowDown") {
 				event.preventDefault();
 				event.stopImmediatePropagation();
-				focusPath(current < 0 ? 0 : current + 1);
+				focusItem(current < 0 ? 0 : current + 1);
 			} else if (event.key === "k" || event.key === "ArrowUp") {
 				event.preventDefault();
 				event.stopImmediatePropagation();
 				if (current <= 0) focusHeader();
-				else focusPath(current - 1);
+				else focusItem(current - 1);
 			} else if ((event.key === "l" || event.key === "ArrowRight") && current >= 0) {
 				event.preventDefault();
 				event.stopImmediatePropagation();
-				openPath(current);
+				openItem(current);
 			} else if ((event.key === "h" || event.key === "ArrowLeft") && current >= 0) {
 				event.preventDefault();
 				event.stopImmediatePropagation();
-				if (current === 0) focusHeader();
-				else active.closest("details")!.open = false;
+				const activeDetails = active.closest("details")!;
+				if (activeDetails.open) activeDetails.open = false;
+				else if (current === 0) focusHeader();
 			} else if ((event.key === "Enter" || event.key === " ") && current >= 0) {
 				event.preventDefault();
 				event.stopImmediatePropagation();
 				const details = active.closest("details")!;
 				if (details.open) details.open = false;
-				else openPath(current);
+				else openItem(current);
 			}
 		}, true);
 	</script>

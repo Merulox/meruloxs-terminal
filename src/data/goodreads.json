@@ -1,0 +1,391 @@
+{
+  "generatedAt": "2026-06-28T21:08:20.472Z",
+  "profileUrl": "https://www.goodreads.com/user/show/158374147-merulox",
+  "shelves": {
+    "reading": [
+      {
+        "id": "213731760",
+        "title": "Building LLMs for Production: Enhancing LLM Abilities and Reliability with Prompting, Fine-Tuning, and RAG",
+        "author": "Louis-François Bouchard",
+        "url": "https://www.goodreads.com/review/show/8723903501",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1716319425l/213731760._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.08",
+        "readAt": "",
+        "addedAt": "2026-06-28",
+        "updatedAt": "2026-06-28",
+        "published": "",
+        "pages": 463,
+        "shelves": [
+          "currently-reading"
+        ],
+        "sourceShelf": "currently-reading"
+      },
+      {
+        "id": "41444903",
+        "title": "전지적 독자 시점",
+        "author": "singNsong",
+        "url": "https://www.goodreads.com/review/show/6911371145",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1669345230l/41444903._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.75",
+        "readAt": "",
+        "addedAt": "2025-09-22",
+        "updatedAt": "2025-09-22",
+        "published": "",
+        "pages": null,
+        "shelves": [
+          "currently-reading"
+        ],
+        "sourceShelf": "currently-reading"
+      }
+    ],
+    "completed": [
+      {
+        "id": "710499",
+        "title": "Welcome to the N.H.K.",
+        "author": "Tatsuhiko Takimoto",
+        "url": "https://www.goodreads.com/review/show/8723892778",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1347750612l/710499._SX98_.jpg",
+        "rating": 5,
+        "averageRating": "4.08",
+        "readAt": "2026-01-01",
+        "addedAt": "2026-06-28",
+        "updatedAt": "2026-06-28",
+        "published": "2002",
+        "pages": 248,
+        "shelves": [
+          "favorites"
+        ],
+        "sourceShelf": "read"
+      },
+      {
+        "id": "63260494",
+        "title": "Azarinth Healer: Book One (Azarinth Healer, #1)",
+        "author": "Rhaegar",
+        "url": "https://www.goodreads.com/review/show/7145864215",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1667961181l/63260494._SX98_.jpg",
+        "rating": 5,
+        "averageRating": "4.45",
+        "readAt": "2024-12-30",
+        "addedAt": "2024-12-31",
+        "updatedAt": "2024-12-31",
+        "published": "2022",
+        "pages": 708,
+        "shelves": [],
+        "sourceShelf": "read"
+      },
+      {
+        "id": "27687576",
+        "title": "Narcissu",
+        "author": "Tomo Kataoka",
+        "url": "https://www.goodreads.com/review/show/6911297211",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1446998893l/27687576._SX98_.jpg",
+        "rating": 4,
+        "averageRating": "3.83",
+        "readAt": "2024-10-08",
+        "addedAt": "2024-10-08",
+        "updatedAt": "2024-10-08",
+        "published": "2008",
+        "pages": 259,
+        "shelves": [],
+        "sourceShelf": "read"
+      }
+    ],
+    "dropped": [
+      {
+        "id": "242413603",
+        "title": "The Forbidden Laws of Reality",
+        "author": "Kalen Junior",
+        "url": "https://www.goodreads.com/review/show/8407044238",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1759634797l/242413603._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "5.00",
+        "readAt": "",
+        "addedAt": "2026-06-28",
+        "updatedAt": "2026-06-28",
+        "published": "",
+        "pages": 239,
+        "shelves": [
+          "did-not-finish"
+        ],
+        "sourceShelf": "didnotfinish"
+      },
+      {
+        "id": "1404609",
+        "title": "The Problem of the Puer Aeternus (Studies in Jungian Psychology by Jungian Analysts, 87)",
+        "author": "Marie-Louise von Franz",
+        "url": "https://www.goodreads.com/review/show/8245553754",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1389237037l/1404609._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.24",
+        "readAt": "",
+        "addedAt": "2026-06-28",
+        "updatedAt": "2026-06-28",
+        "published": "1970",
+        "pages": 286,
+        "shelves": [
+          "did-not-finish"
+        ],
+        "sourceShelf": "didnotfinish"
+      },
+      {
+        "id": "27362503",
+        "title": "It Ends with Us (It Ends with Us, #1)",
+        "author": "Colleen Hoover",
+        "url": "https://www.goodreads.com/review/show/6293338230",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1688011813l/27362503._SX98_.jpg",
+        "rating": 2,
+        "averageRating": "4.10",
+        "readAt": "2024-06-29",
+        "addedAt": "2024-06-29",
+        "updatedAt": "2024-06-29",
+        "published": "2016",
+        "pages": 386,
+        "shelves": [
+          "dropped"
+        ],
+        "sourceShelf": "dropped"
+      },
+      {
+        "id": "57883892",
+        "title": "The Great Demon System Vol 1",
+        "author": "Drip",
+        "url": "https://www.goodreads.com/review/show/5895135586",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1619620482l/57883892._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.07",
+        "readAt": "2021-01-08",
+        "addedAt": "2023-10-08",
+        "updatedAt": "2023-10-08",
+        "published": "",
+        "pages": 450,
+        "shelves": [
+          "dropped"
+        ],
+        "sourceShelf": "dropped"
+      }
+    ],
+    "planToRead": [
+      {
+        "id": "62586003",
+        "title": "Ultra-Processed People: The Science Behind Food That Isn't Food",
+        "author": "Chris van Tulleken",
+        "url": "https://www.goodreads.com/review/show/6420468790",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1679715862l/62586003._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.39",
+        "readAt": "",
+        "addedAt": "2024-04-11",
+        "updatedAt": "2024-04-11",
+        "published": "2023",
+        "pages": 384,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "55447191",
+        "title": "The Ragged Trousered Philanthropists",
+        "author": "Sophie Rickard",
+        "url": "https://www.goodreads.com/review/show/6420467612",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1600988757l/55447191._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.42",
+        "readAt": "",
+        "addedAt": "2024-04-11",
+        "updatedAt": "2024-04-11",
+        "published": "1914",
+        "pages": 336,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "166997",
+        "title": "Stoner",
+        "author": "John  Williams",
+        "url": "https://www.goodreads.com/review/show/6293342128",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1742326950l/166997._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.36",
+        "readAt": "",
+        "addedAt": "2024-02-25",
+        "updatedAt": "2024-02-25",
+        "published": "1965",
+        "pages": 292,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "4865",
+        "title": "How to Win Friends & Influence People",
+        "author": "Dale Carnegie",
+        "url": "https://www.goodreads.com/review/show/6293322175",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1442726934l/4865._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.21",
+        "readAt": "",
+        "addedAt": "2024-02-25",
+        "updatedAt": "2024-02-25",
+        "published": "1936",
+        "pages": 288,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "7604",
+        "title": "Lolita",
+        "author": "Vladimir Nabokov",
+        "url": "https://www.goodreads.com/review/show/6293320720",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1377756377l/7604._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "3.87",
+        "readAt": "",
+        "addedAt": "2024-02-25",
+        "updatedAt": "2024-02-25",
+        "published": "1955",
+        "pages": 368,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "11297",
+        "title": "Norwegian Wood",
+        "author": "Haruki Murakami",
+        "url": "https://www.goodreads.com/review/show/6293294750",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1713542603l/11297._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "3.99",
+        "readAt": "",
+        "addedAt": "2024-02-25",
+        "updatedAt": "2024-02-25",
+        "published": "1987",
+        "pages": 296,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "43566091",
+        "title": "Lessons in Stoicism: What Ancient Philosophers Teach Us About How to Live",
+        "author": "John   Sellars",
+        "url": "https://www.goodreads.com/review/show/5943524986",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1567186405l/43566091._SY160_.jpg",
+        "rating": 0,
+        "averageRating": "4.19",
+        "readAt": "",
+        "addedAt": "2023-10-30",
+        "updatedAt": "2023-10-30",
+        "published": "2019",
+        "pages": 96,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "6748375",
+        "title": "Winter's Awakening (Seasons of Sugarcreek, #1)",
+        "author": "Shelley Shepard Gray",
+        "url": "https://www.goodreads.com/review/show/5906638771",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1439777067l/6748375._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.18",
+        "readAt": "",
+        "addedAt": "2023-10-13",
+        "updatedAt": "2023-10-13",
+        "published": "2010",
+        "pages": 294,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "33597976",
+        "title": "The Snow Child",
+        "author": "Eowyn Ivey",
+        "url": "https://www.goodreads.com/review/show/5896890615",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1482781736l/33597976._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.10",
+        "readAt": "",
+        "addedAt": "2023-10-09",
+        "updatedAt": "2023-10-09",
+        "published": "2012",
+        "pages": 423,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "119322",
+        "title": "The Golden Compass (His Dark Materials, #1)",
+        "author": "Philip Pullman",
+        "url": "https://www.goodreads.com/review/show/5896886988",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1505766203l/119322._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.02",
+        "readAt": "",
+        "addedAt": "2023-10-09",
+        "updatedAt": "2023-10-09",
+        "published": "1995",
+        "pages": 399,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      }
+    ],
+    "favorites": [
+      {
+        "id": "710499",
+        "title": "Welcome to the N.H.K.",
+        "author": "Tatsuhiko Takimoto",
+        "url": "https://www.goodreads.com/review/show/8723892778",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1347750612l/710499._SX98_.jpg",
+        "rating": 5,
+        "averageRating": "4.08",
+        "readAt": "2026-01-01",
+        "addedAt": "2026-06-28",
+        "updatedAt": "2026-06-28",
+        "published": "2002",
+        "pages": 248,
+        "shelves": [
+          "favorites"
+        ],
+        "sourceShelf": "favorites"
+      },
+      {
+        "id": "39892810",
+        "title": "Reverend Insanity",
+        "author": "Gu Zhen Re",
+        "url": "https://www.goodreads.com/review/show/5167341084",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1524131925l/39892810._SX98_.jpg",
+        "rating": 5,
+        "averageRating": "4.56",
+        "readAt": "2023-10-08",
+        "addedAt": "2023-10-08",
+        "updatedAt": "2023-10-08",
+        "published": "",
+        "pages": 1568,
+        "shelves": [
+          "favorites"
+        ],
+        "sourceShelf": "favorites"
+      }
+    ]
+  },
+  "errors": []
+}

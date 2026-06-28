@@ -1,0 +1,227 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const groups = [
+	{
+		label: "dev",
+		links: [
+			{ label: "Github", href: "https://github.com/merulox" },
+			{ label: "Hugging Face", href: "https://huggingface.co/merulox" },
+			{ label: "Codeberg", href: "https://codeberg.org/merulox", dead: true },
+		],
+	},
+	{
+		label: "socials",
+		links: [
+			{ label: "Twitter", href: "https://twitter.com/merulox" },
+			{ label: "Substack", href: "https://substack.com/@merulox" },
+			{ label: "Guilded", href: "https://guilded.gg/u/merulox", dead: true },
+			{ label: "Pleroma", href: "https://bae.st/merulox", dead: true },
+		],
+	},
+	{
+		label: "media",
+		links: [
+			{ label: "Lastfm", href: "https://www.last.fm/user/merulox" },
+			{ label: "MyAnimeList", href: "https://myanimelist.net/profile/merulox" },
+			{ label: "Anilist", href: "https://anilist.co/user/Merulox/" },
+			{ label: "VNDB", href: "https://vndb.org/u182651/ulist?vnlist=1" },
+			{ label: "Goodreads", href: "https://www.goodreads.com/user/show/158374147-merulox" },
+			{ label: "StoryGraph", href: "https://app.thestorygraph.com/profile/merulox" },
+			{ label: "Spotify", href: "https://open.spotify.com/user/qdjljqisvx98ik2rgvp25lrgh" },
+			{ label: "Bandlab", href: "https://www.bandlab.com/merulox" },
+			{ label: "Youtube", href: "https://youtube.com/@merulox" },
+		],
+	},
+	{
+		label: "forums",
+		links: [
+			{ label: "Reddit", href: "https://reddit.com/u/merulox" },
+			{ label: "Lemmy", href: "https://lemmy.world/u/merulox" },
+			{ label: "Sharkey", href: "https://sakurajima.social/@merulox" },
+			{ label: "MangaDex", href: "https://forums.mangadex.org/members/merulox.622459/" },
+			{ label: "RobloxForum", href: "https://www.robloxforum.com/members/43998/", dead: true },
+		],
+	},
+];
+---
+
+<style>
+	.contact-block {
+		display: grid;
+		gap: 4px;
+		margin-bottom: 40px;
+	}
+	.contact-line {
+		display: grid;
+		grid-template-columns: 74px minmax(0, 1fr);
+		gap: 12px;
+		font-size: 13px;
+	}
+	.contact-label {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+		text-transform: lowercase;
+	}
+	.links-list {
+		border-bottom: 1px solid var(--line);
+		display: grid;
+	}
+	.link-group + .link-group {
+		margin-top: 34px;
+	}
+	.links-list a {
+		align-items: baseline;
+		border-top: 1px solid var(--line);
+		display: grid;
+		grid-template-columns: 16px minmax(0, 1fr) auto;
+		gap: 10px;
+		padding: 12px 0;
+		text-decoration: none;
+	}
+	.links-list a::before {
+		color: var(--accent);
+		content: ">";
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+	}
+	.link-host {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+		white-space: nowrap;
+	}
+	.links-list a.dead {
+		opacity: 0.45;
+	}
+	.links-list a:hover .link-label {
+		color: var(--accent);
+	}
+	.links-list a.kbd-cursor {
+		background: rgba(78, 184, 196, 0.08);
+		box-shadow: inset 2px 0 0 var(--accent);
+	}
+	.links-list a.kbd-cursor .link-label {
+		color: var(--accent);
+	}
+	.links-empty {
+		border-top: 1px solid var(--line);
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 11px;
+		padding: 12px 0;
+	}
+	@media (max-width: 600px) {
+		.contact-line,
+		.links-list a {
+			grid-template-columns: 16px minmax(0, 1fr);
+		}
+		.contact-label {
+			grid-column: 1 / -1;
+		}
+		.link-host {
+			grid-column: 2;
+			white-space: normal;
+		}
+	}
+</style>
+
+<Layout title="links | MERULOX" description="Where to find merulox.">
+	<div class="page-head">
+		<h1>Links</h1>
+		<span class="date">profiles and contact</span>
+	</div>
+
+	<section class="section">
+		<h2 class="eyebrow">contact</h2>
+		<div class="contact-block">
+			<p class="contact-line"><span class="contact-label">Matrix</span><span>@merulox:nitro.chat</span></p>
+			<p class="contact-line"><span class="contact-label">XMPP</span><span>merulox@xmpp.jp</span></p>
+			<p class="contact-line"><span class="contact-label">Discord</span><span>@merulox</span></p>
+			<p class="contact-line">
+				<span class="contact-label">email</span>
+				<a href="mailto:web@merulox.com">web@merulox.com</a>
+			</p>
+		</div>
+	</section>
+
+	<section class="section">
+		{groups.map((group) => (
+			<section class="link-group">
+				<h2 class="eyebrow">{group.label}</h2>
+				<nav class="links-list" aria-label={`${group.label} links`}>
+					{group.links.length > 0 ? (
+						group.links.map((link) => {
+							const host = new URL(link.href).hostname.replace(/^www\./, "");
+							return (
+								<a class={link.dead ? "dead" : undefined} href={link.href} target="_blank" rel="noopener">
+									<span class="link-label">{link.label}</span>
+									<span class="link-host">{host}</span>
+								</a>
+							);
+						})
+					) : (
+						<span class="links-empty">empty</span>
+					)}
+				</nav>
+			</section>
+		))}
+	</section>
+
+	<script>
+		const linkItems = Array.from(document.querySelectorAll<HTMLElement>(".links-list a"));
+		const headerItems = Array.from(document.querySelectorAll<HTMLElement>(".site-name, .site-nav a"));
+		const CURSOR = "kbd-cursor";
+		let activeIndex = 0;
+
+		function paint(index: number) {
+			if (!linkItems.length) return;
+			activeIndex = Math.max(0, Math.min(index, linkItems.length - 1));
+			linkItems.forEach((item, itemIndex) => item.classList.toggle(CURSOR, itemIndex === activeIndex));
+		}
+
+		function focusLink(index: number) {
+			paint(index);
+			const target = linkItems[activeIndex];
+			target.focus({ preventScroll: true });
+			target.scrollIntoView({ block: "nearest" });
+		}
+
+		function focusHeader() {
+			const target =
+				headerItems.find((item) => item.getAttribute("aria-current") === "page") ??
+				headerItems[0];
+			if (!target) return;
+			window.scrollTo({ top: 0, behavior: "smooth" });
+			target.focus({ preventScroll: true });
+		}
+
+		linkItems.forEach((item, index) => {
+			item.addEventListener("mouseenter", () => paint(index));
+			item.addEventListener("focus", () => paint(index));
+		});
+
+		paint(0);
+
+		document.addEventListener("keydown", (event) => {
+			if (event.ctrlKey || event.metaKey || event.altKey) return;
+			const target = event.target as HTMLElement;
+			if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+			if (headerItems.includes(document.activeElement as HTMLElement)) return;
+			if (!linkItems.length) return;
+
+			if (event.key === "j" || event.key === "ArrowDown") {
+				event.preventDefault();
+				if (activeIndex < linkItems.length - 1) focusLink(activeIndex + 1);
+			} else if (event.key === "k" || event.key === "ArrowUp") {
+				event.preventDefault();
+				if (document.activeElement === linkItems[0]) focusHeader();
+				else focusLink(activeIndex - 1);
+			} else if (event.key === "Enter" && linkItems.includes(document.activeElement as HTMLElement)) {
+				event.preventDefault();
+				(document.activeElement as HTMLElement).click();
+			}
+		});
+	</script>
+</Layout>
