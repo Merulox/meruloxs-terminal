@@ -50,7 +50,33 @@ const groups = [
 	.contact-block {
 		display: grid;
 		gap: 4px;
-		margin-bottom: 40px;
+		margin-bottom: 18px;
+	}
+	.guestbook-button {
+		align-items: center;
+		border: 1px solid var(--line);
+		display: inline-flex;
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 12px;
+		gap: 8px;
+		padding: 8px 12px;
+		text-decoration: none;
+	}
+	.guestbook-button::before {
+		content: "🪐";
+		font-size: 13px;
+		line-height: 1;
+	}
+	.guestbook-button:hover,
+	.guestbook-button:focus-visible {
+		border-color: var(--accent);
+		color: var(--accent);
+		outline: none;
+	}
+	.guestbook-button.kbd-cursor {
+		border-color: var(--accent);
+		box-shadow: inset 2px 0 0 var(--accent);
+		color: var(--accent);
 	}
 	.contact-line {
 		display: grid;
@@ -144,6 +170,7 @@ const groups = [
 				<a href="mailto:web@merulox.com">web@merulox.com</a>
 			</p>
 		</div>
+		<a class="guestbook-button" href="https://merulox.atabook.org" target="_blank" rel="noopener">guestbook</a>
 	</section>
 
 	<section class="section">
@@ -170,7 +197,7 @@ const groups = [
 	</section>
 
 	<script>
-		const linkItems = Array.from(document.querySelectorAll<HTMLElement>(".links-list a"));
+		const linkItems = Array.from(document.querySelectorAll<HTMLElement>(".guestbook-button, .links-list a"));
 		const headerItems = Array.from(document.querySelectorAll<HTMLElement>(".site-name, .site-nav a"));
 		const CURSOR = "kbd-cursor";
 		let activeIndex = 0;
@@ -179,6 +206,10 @@ const groups = [
 			if (!linkItems.length) return;
 			activeIndex = Math.max(0, Math.min(index, linkItems.length - 1));
 			linkItems.forEach((item, itemIndex) => item.classList.toggle(CURSOR, itemIndex === activeIndex));
+		}
+
+		function clearLinks() {
+			linkItems.forEach((item) => item.classList.remove(CURSOR));
 		}
 
 		function focusLink(index: number) {
@@ -194,6 +225,7 @@ const groups = [
 				headerItems[0];
 			if (!target) return;
 			window.scrollTo({ top: 0, behavior: "smooth" });
+			clearLinks();
 			target.focus({ preventScroll: true });
 		}
 
@@ -201,27 +233,38 @@ const groups = [
 			item.addEventListener("mouseenter", () => paint(index));
 			item.addEventListener("focus", () => paint(index));
 		});
-
-		paint(0);
+		headerItems.forEach((item) => {
+			item.addEventListener("focus", clearLinks);
+		});
 
 		document.addEventListener("keydown", (event) => {
 			if (event.ctrlKey || event.metaKey || event.altKey) return;
 			const target = event.target as HTMLElement;
 			if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
-			if (headerItems.includes(document.activeElement as HTMLElement)) return;
 			if (!linkItems.length) return;
 
 			if (event.key === "j" || event.key === "ArrowDown") {
 				event.preventDefault();
-				if (activeIndex < linkItems.length - 1) focusLink(activeIndex + 1);
+				event.stopImmediatePropagation();
+				if (
+					headerItems.includes(document.activeElement as HTMLElement) ||
+					!linkItems.includes(document.activeElement as HTMLElement)
+				) focusLink(0);
+				else if (activeIndex < linkItems.length - 1) focusLink(activeIndex + 1);
 			} else if (event.key === "k" || event.key === "ArrowUp") {
 				event.preventDefault();
-				if (document.activeElement === linkItems[0]) focusHeader();
+				event.stopImmediatePropagation();
+				if (
+					headerItems.includes(document.activeElement as HTMLElement) ||
+					!linkItems.includes(document.activeElement as HTMLElement) ||
+					document.activeElement === linkItems[0]
+				) focusHeader();
 				else focusLink(activeIndex - 1);
 			} else if (event.key === "Enter" && linkItems.includes(document.activeElement as HTMLElement)) {
 				event.preventDefault();
+				event.stopImmediatePropagation();
 				(document.activeElement as HTMLElement).click();
 			}
-		});
+		}, { capture: true });
 	</script>
 </Layout>
