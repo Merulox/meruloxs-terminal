@@ -4,10 +4,18 @@ const OBSERVED_KEY = "tweets_observed";
 const PROFILE_URL = "https://x.com/merulox/with_replies";
 const AUTO_FETCH_ALARM = "tweet-auto-fetch";
 const AUTO_FETCH_MINUTES = 60;
-const THREAD_RESOLVER_VERSION = 5;
+const DELETE_RETRY_ALARM = "tweet-delete-retry";
+const DELETE_RETRY_MINUTES = 5;
+const THREAD_RESOLVER_VERSION = 6;
+const DELETE_QUEUE_KEY = "tweet_delete_queue";
+const RECONCILE_KEY = "tweet_reconcile_evidence";
+const RECENT_RECONCILE_DAYS = 7;
+const MAX_RECONCILE_PER_FETCH = 5;
 const LOG_KEY = "tweet_seeder_logs";
 const LOG_LIMIT = 60;
 let activeFetch = null;
+let activeMutation = Promise.resolve();
+let activeDeleteProcess = null;
 
 // Shared ingest secret for the local receiver. Lives in config.local.js (gitignored)
 // so it never lands in the repo.
@@ -110,7 +118,6 @@ const log = {
 async function scrapeAndStore() {
 	const SCREEN_NAME = "merulox";
 	const TARGET_COUNT = 30;
-	const THREAD_VERSION = 5;
 	const tweets = new Map();
 	const debug = {
 		url: location.href,
@@ -157,6 +164,15 @@ async function scrapeAndStore() {
 				const timestamp = timeEl?.getAttribute("datetime") ?? null;
 				const author = href.match(/^\/([^/]+)\/status\//)?.[1];
 				const url = `https://x.com${href}`;
+				const media = Array.from(article.querySelectorAll('img[src*="pbs.twimg.com/media"]'))
+					.map((img) => {
+						const src = img.getAttribute("src") || "";
+						const mediaUrl = new URL(src);
+						mediaUrl.searchParams.set("format", "jpg");
+						mediaUrl.searchParams.set("name", "medium");
+						return mediaUrl.toString();
+					})
+					.filter((value, index, values) => values.indexOf(value) === index);
 				const replyContext = article.innerText
 					.split("\n")
 					.map((line) => line.trim())
@@ -167,6 +183,7 @@ async function scrapeAndStore() {
 					timestamp,
 					url,
 					author: author ? `@${author}` : `@${SCREEN_NAME}`,
+					...(media.length ? { media } : {}),
 					...(replyContext ? {
 						isReply: true,
 						replyTo: replyContext.replace(/^Replying to\s*/i, "").trim(),
@@ -195,26 +212,7 @@ async function scrapeAndStore() {
 	collectVisibleTweets();
 	debug.lastSample = captureDomStats();
 
-	const timeline = Array.from(tweets.values()).slice(0, TARGET_COUNT);
-	for (let index = 1; index < timeline.length; index += 1) {
-		const parent = timeline[index - 1];
-		const current = timeline[index];
-		const parentTime = Date.parse(parent.timestamp);
-		const currentTime = Date.parse(current.timestamp);
-		const elapsed = currentTime - parentTime;
-
-		// X displays self-thread continuations directly after their parent in
-		// ascending time order. Normal timeline rows remain newest-first.
-		if (elapsed > 0 && elapsed <= 24 * 60 * 60 * 1000) {
-			current.threadResolved = true;
-			current.threadVersion = THREAD_VERSION;
-			current.isReply = true;
-			current.replyTo = parent.author;
-			current.replyToUrl = parent.url;
-		}
-	}
-
-	return { tweets: timeline, debug };
+	return { tweets: Array.from(tweets.values()).slice(0, TARGET_COUNT), debug };
 }
 
 function inspectThread(currentUrl) {
@@ -249,7 +247,10 @@ function inspectThread(currentUrl) {
 		.split("\n")
 		.map((line) => line.trim())
 		.find((line) => line.startsWith("Replying to"));
+	if (!context) return { threadResolved: true, threadVersion: 6 };
+
 	const replyThread = articles
+		.slice(0, focalIndex)
 		.map((article) => {
 			const timeEl = article.querySelector("time");
 			const textEl = article.querySelector('[data-testid="tweetText"], div[lang], span[lang]');
@@ -270,17 +271,34 @@ function inspectThread(currentUrl) {
 		.slice(-5);
 	const parent = replyThread.at(-1);
 
-	if (!parent && !context) return { threadResolved: true, threadVersion: 5 };
+	if (!parent) return { threadResolved: false };
 
 	return {
 		threadResolved: true,
-		threadVersion: 5,
+		threadVersion: 6,
 		isReply: true,
-		...(parent?.author ? { replyTo: parent.author } : {}),
-		...(context && !parent?.author ? { replyTo: context.replace(/^Replying to\s*/i, "").trim() } : {}),
-		...(parent?.url ? { replyToUrl: parent.url } : {}),
+		replyTo: parent.author ?? context.replace(/^Replying to\s*/i, "").trim(),
+		replyToUrl: parent.url,
 		...(replyThread.length ? { replyThread } : {}),
 	};
+}
+
+function inspectPostAvailability(currentUrl) {
+	const currentPath = new URL(currentUrl).pathname;
+	const focalExists = Array.from(document.querySelectorAll("article")).some((article) => {
+		const href = article.querySelector("time")?.closest('a[href*="/status/"]')?.getAttribute("href")?.split("?")[0];
+		return href === currentPath;
+	});
+	if (focalExists) return { available: true, unavailable: false };
+
+	const text = document.body?.innerText ?? "";
+	const unavailable = [
+		"This Post was deleted by the Post author",
+		"This post was deleted by the post author",
+		"Hmm...this page doesn’t exist",
+		"Hmm...this page doesn't exist",
+	].some((message) => text.includes(message));
+	return { available: false, unavailable };
 }
 
 function probeProfilePage(screenName) {
@@ -310,7 +328,14 @@ async function resolveThreadViaApi(tweetUrl) {
 
   const current = (await response.json()).tweet;
   if (!current?.replying_to_status) {
-    return { threadResolved: true, threadVersion: THREAD_RESOLVER_VERSION };
+    return {
+      threadResolved: true,
+      threadVersion: THREAD_RESOLVER_VERSION,
+      isReply: false,
+      replyTo: null,
+      replyToUrl: null,
+      replyThread: null,
+    };
   }
 
   const replyThread = [];
@@ -332,12 +357,16 @@ async function resolveThreadViaApi(tweetUrl) {
   }
 
   const immediateParent = replyThread.at(-1);
+  const replyTo = immediateParent?.author ?? (current.replying_to ? `@${current.replying_to}` : null);
+  const replyToUrl = immediateParent?.url
+    ?? (current.replying_to ? `https://x.com/${current.replying_to}/status/${current.replying_to_status}` : null);
+  if (!replyToUrl) return null;
   return {
     threadResolved: true,
     threadVersion: THREAD_RESOLVER_VERSION,
     isReply: true,
-    replyTo: immediateParent?.author ?? `@${current.replying_to}`,
-    ...(immediateParent?.url ? { replyToUrl: immediateParent.url } : {}),
+    ...(replyTo ? { replyTo } : {}),
+    replyToUrl,
     ...(replyThread.length ? { replyThread } : {}),
   };
 }
@@ -356,6 +385,54 @@ function waitForTabLoad(tabId, timeoutMs = 15000) {
       resolve();
     }, timeoutMs);
   });
+}
+
+function serializeMutation(task) {
+	const run = activeMutation.then(task, task);
+	activeMutation = run.catch(() => {});
+	return run;
+}
+
+async function reconcileMissingTweets(tabId, scrapedTweets) {
+	const cached = await chrome.storage.local.get([CACHE_KEY, RECONCILE_KEY]);
+	const scrapedUrls = new Set(scrapedTweets.map((tweet) => tweet.url));
+	const cutoff = Date.now() - RECENT_RECONCILE_DAYS * 24 * 60 * 60 * 1000;
+	const evidence = { ...(cached[RECONCILE_KEY] ?? {}) };
+	for (const [url, item] of Object.entries(evidence)) {
+		if ((item?.lastObservedAt ?? 0) < Date.now() - 14 * 24 * 60 * 60 * 1000) delete evidence[url];
+	}
+	const candidates = (cached[CACHE_KEY]?.tweets ?? [])
+		.filter((tweet) => !scrapedUrls.has(tweet.url) && Date.parse(tweet.timestamp ?? 0) >= cutoff)
+		.slice(0, MAX_RECONCILE_PER_FETCH);
+	const removed = [];
+
+	for (const tweet of candidates) {
+		const loaded = waitForTabLoad(tabId);
+		await chrome.tabs.update(tabId, { url: tweet.url });
+		await loaded;
+		await new Promise((resolve) => setTimeout(resolve, 1800));
+		const result = await chrome.scripting.executeScript({
+			target: { tabId },
+			func: inspectPostAvailability,
+			args: [tweet.url],
+		});
+		const availability = result?.[0]?.result;
+		if (availability?.available) {
+			delete evidence[tweet.url];
+			continue;
+		}
+		if (!availability?.unavailable) continue;
+		const observations = (evidence[tweet.url]?.observations ?? 0) + 1;
+		evidence[tweet.url] = { observations, lastObservedAt: Date.now() };
+		if (observations >= 3) {
+			await enqueueTombstone(tweet.url, "x-reconcile");
+			removed.push(tweet.url);
+			delete evidence[tweet.url];
+		}
+	}
+	await chrome.storage.local.set({ [RECONCILE_KEY]: evidence });
+	if (removed.length) await processDeleteQueue();
+	return removed;
 }
 
 async function resolveThreads(tabId, tweets) {
@@ -380,7 +457,12 @@ async function resolveThreads(tabId, tweets) {
 					replyTo: prior.replyTo,
 					replyToUrl: prior.replyToUrl,
 					replyThread: prior.replyThread,
-				} : {}),
+				} : {
+					isReply: false,
+					replyTo: null,
+					replyToUrl: null,
+					replyThread: null,
+				}),
 			});
 			continue;
 		}
@@ -498,13 +580,16 @@ async function runFetchViaTab() {
 		const injectionResult = results?.[0] ?? null;
 		const scrapeResult = injectionResult?.result ?? {};
 		const scrapedTweets = Array.isArray(scrapeResult) ? scrapeResult : scrapeResult.tweets ?? [];
+		const reconciledDeletes = await reconcileMissingTweets(tabId, scrapedTweets);
 		const mergedTimeline = await mergeObservedTweets(scrapedTweets);
-		const timelineTweets = mergedTimeline.tweets;
+		const deletedUrls = new Set(reconciledDeletes);
+		const timelineTweets = mergedTimeline.tweets.filter((tweet) => !deletedUrls.has(tweet.url));
 		await log.info("scrape", "completed DOM scrape", {
 			count: timelineTweets.length,
 			scrapedCount: scrapedTweets.length,
 			observedCount: mergedTimeline.observedCount,
 			observedAt: mergedTimeline.observedAt,
+			reconciledDeletes,
 			debug: scrapeResult.debug ?? null,
 			probe,
 			injectionKeys: injectionResult ? Object.keys(injectionResult) : [],
@@ -575,6 +660,13 @@ async function ensureAutoFetchAlarm() {
       periodInMinutes: AUTO_FETCH_MINUTES,
     });
   }
+  const deleteAlarm = await chrome.alarms.get(DELETE_RETRY_ALARM);
+  if (!deleteAlarm) {
+    chrome.alarms.create(DELETE_RETRY_ALARM, {
+      delayInMinutes: 1,
+      periodInMinutes: DELETE_RETRY_MINUTES,
+    });
+  }
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -587,6 +679,7 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === AUTO_FETCH_ALARM) fetchViaTab();
+  if (alarm.name === DELETE_RETRY_ALARM) processDeleteQueue();
 });
 
 ensureAutoFetchAlarm();
@@ -607,7 +700,14 @@ async function pushTweetsToReceiver(tweets) {
 			continue;
 		}
 		if (prior?.threadResolved && prior.threadVersion === THREAD_RESOLVER_VERSION) {
-			ready.push({ ...tweet, ...prior, text: tweet.text, timestamp: tweet.timestamp, date: tweet.date });
+			ready.push({
+				...tweet,
+				...prior,
+				text: tweet.text,
+				timestamp: tweet.timestamp,
+				date: tweet.date,
+				...(prior.isReply ? {} : { isReply: false, replyTo: null, replyToUrl: null, replyThread: null }),
+			});
 			continue;
 		}
 
@@ -642,10 +742,10 @@ async function pushTweetsToReceiver(tweets) {
 		},
 		body,
 	});
-	const [local, live] = await Promise.allSettled([
+	const [local, live] = await serializeMutation(() => Promise.allSettled([
 		push(TWEETS_INGEST_URL),
 		push(LIVE_TWEETS_INGEST_URL),
-	]);
+	]));
 	const targets = {};
 	for (const [name, result] of [["local", local], ["live", live]]) {
 		if (result.status === "rejected") {
@@ -706,50 +806,99 @@ async function removeTweetFromCache(key, url) {
 	});
 }
 
-async function tombstoneTweet(value, source = "manual") {
+async function enqueueTombstone(value, source = "manual") {
 	const url = normalizeTweetUrl(value);
-	const status = { time: Date.now(), url, source };
-	try {
-		if (!url) throw new Error("enter an X tweet URL or status ID");
-		if (!LOG_INGEST_TOKEN) throw new Error("no ingest token — add config.local.js");
+	if (!url) throw new Error("enter an X tweet URL or status ID");
+	const stored = await chrome.storage.local.get(DELETE_QUEUE_KEY);
+	const queue = Array.isArray(stored[DELETE_QUEUE_KEY]) ? stored[DELETE_QUEUE_KEY] : [];
+	const prior = queue.find((item) => item.url === url);
+	const item = prior ?? {
+		url,
+		source,
+		createdAt: Date.now(),
+		attempts: 0,
+		targets: { local: false, live: false },
+	};
+	await chrome.storage.local.set({
+		[DELETE_QUEUE_KEY]: [item, ...queue.filter((entry) => entry.url !== url)],
+	});
+	return item;
+}
 
-		const body = JSON.stringify({ url, source });
-		const remove = (endpoint) => fetch(endpoint, {
-			method: "DELETE",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${LOG_INGEST_TOKEN}`,
-			},
-			body,
-		});
-		const [local, live] = await Promise.allSettled([
-			remove(TWEETS_INGEST_URL),
-			remove(LIVE_TWEETS_INGEST_URL),
-		]);
-		const targets = {};
-		for (const [name, result] of [["local", local], ["live", live]]) {
-			if (result.status === "rejected") {
-				targets[name] = { ok: false, error: result.reason?.message ?? String(result.reason) };
-			} else if (!result.value.ok) {
-				targets[name] = { ok: false, error: `${result.value.status} ${await result.value.text()}` };
-			} else {
-				targets[name] = { ok: true, response: await result.value.json() };
+async function runDeleteQueue() {
+	const stored = await chrome.storage.local.get(DELETE_QUEUE_KEY);
+	const queue = Array.isArray(stored[DELETE_QUEUE_KEY]) ? stored[DELETE_QUEUE_KEY] : [];
+	const remaining = [];
+	let latest = null;
+
+	for (const item of queue) {
+		const targets = { ...(item.targets ?? { local: false, live: false }) };
+		const errors = [];
+		for (const [name, endpoint] of [["local", TWEETS_INGEST_URL], ["live", LIVE_TWEETS_INGEST_URL]]) {
+			if (targets[name]) continue;
+			try {
+				const response = await serializeMutation(() => fetch(endpoint, {
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${LOG_INGEST_TOKEN}`,
+					},
+					body: JSON.stringify({ url: item.url, source: item.source }),
+				}));
+				if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
+				targets[name] = true;
+			} catch (error) {
+				errors.push(`${name}: ${error?.message ?? error}`);
 			}
 		}
 
 		await Promise.all([
-			removeTweetFromCache(CACHE_KEY, url),
-			removeTweetFromCache(OBSERVED_KEY, url),
+			removeTweetFromCache(CACHE_KEY, item.url),
+			removeTweetFromCache(OBSERVED_KEY, item.url),
 		]);
-		const failures = Object.entries(targets).filter(([, target]) => !target.ok);
-		const result = {
-			...status,
-			ok: failures.length === 0,
+		const complete = targets.local && targets.live;
+		latest = {
+			time: Date.now(),
+			url: item.url,
+			source: item.source,
+			ok: complete,
 			targets,
-			error: failures.map(([name, target]) => `${name}: ${target.error}`).join(" · ") || null,
+			error: errors.join(" · ") || null,
 		};
-		await chrome.storage.local.set({ [DELETE_STATUS_KEY]: result });
-		if (result.ok) await log.info("delete", "tweet tombstoned", { url, source });
+		if (!complete) {
+			remaining.push({
+				...item,
+				targets,
+				attempts: (item.attempts ?? 0) + 1,
+				lastAttemptAt: Date.now(),
+				lastError: latest.error,
+			});
+		}
+	}
+
+	await chrome.storage.local.set({
+		[DELETE_QUEUE_KEY]: remaining,
+		...(latest ? { [DELETE_STATUS_KEY]: latest } : {}),
+	});
+	return latest ?? { ok: true, pending: 0 };
+}
+
+function processDeleteQueue() {
+	if (!activeDeleteProcess) {
+		activeDeleteProcess = runDeleteQueue().finally(() => {
+			activeDeleteProcess = null;
+		});
+	}
+	return activeDeleteProcess;
+}
+
+async function tombstoneTweet(value, source = "manual") {
+	const status = { time: Date.now(), url: normalizeTweetUrl(value), source };
+	try {
+		if (!LOG_INGEST_TOKEN) throw new Error("no ingest token — add config.local.js");
+		await enqueueTombstone(value, source);
+		const result = await processDeleteQueue();
+		if (result.ok) await log.info("delete", "tweet tombstoned", { url: status.url, source });
 		else await log.warn("delete", "tweet tombstone partially failed", result);
 		return result;
 	} catch (err) {

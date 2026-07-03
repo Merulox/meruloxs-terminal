@@ -136,6 +136,8 @@ function collectRenderedTweets() {
 }
 
 function ownTweetUrl(article) {
+	const timeHref = article?.querySelector("time")?.closest('a[href*="/status/"]')?.getAttribute("href")?.split("?")[0];
+	if (timeHref?.match(/^\/merulox\/status\/\d+$/i)) return `https://x.com${timeHref}`;
 	const links = Array.from(article?.querySelectorAll('a[href*="/status/"]') ?? []);
 	const href = links
 		.map((link) => link.getAttribute("href")?.split("?")[0])
@@ -159,13 +161,6 @@ function augmentDeleteControls() {
 	for (const button of document.querySelectorAll('[data-testid="confirmationSheetConfirm"]')) {
 		if (!button.textContent?.trim().startsWith("Delete")) continue;
 		addSyncMarker(button);
-		if (button.dataset.meruloxDeleteBound === "true") continue;
-		button.dataset.meruloxDeleteBound = "true";
-		button.addEventListener("click", () => {
-			const url = pendingDeleteUrl;
-			pendingDeleteUrl = null;
-			chrome.runtime.sendMessage({ action: "tombstoneTweet", url, source: "x-delete-confirm" });
-		}, { capture: true, once: true });
 	}
 }
 
@@ -174,6 +169,12 @@ document.addEventListener("click", (event) => {
 	if (caret) {
 		pendingDeleteUrl = ownTweetUrl(caret.closest("article"));
 		queueMicrotask(augmentDeleteControls);
+	}
+	const confirm = event.target.closest?.('[data-testid="confirmationSheetConfirm"]');
+	if (confirm?.textContent?.trim().startsWith("Delete") && pendingDeleteUrl) {
+		const url = pendingDeleteUrl;
+		pendingDeleteUrl = null;
+		chrome.runtime.sendMessage({ action: "tombstoneTweet", url, source: "x-delete-confirm" });
 	}
 }, { capture: true });
 

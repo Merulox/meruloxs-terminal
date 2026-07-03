@@ -84,6 +84,10 @@ function formatTweetTimestamp(tweet: Tweet) {
 function externalReplyThread(tweet: Tweet) {
 	return (tweet.replyThread ?? []).filter((post) => !ownTweetUrls.has(post.url));
 }
+
+function hasReplyContext(tweet: Tweet) {
+	return tweet.isReply === true && Boolean(tweet.replyToUrl);
+}
 ---
 
 <style is:global>
@@ -130,6 +134,28 @@ function externalReplyThread(tweet: Tweet) {
 		justify-content: space-between;
 		margin-top: 12px;
 		padding-top: 10px;
+	}
+	.tweet-section-controls {
+		align-items: center;
+		display: flex;
+		gap: 10px;
+		margin-left: auto;
+	}
+	.tweet-visibility-toggle {
+		background: transparent;
+		border: 1px solid var(--faint);
+		color: var(--muted);
+		cursor: pointer;
+		font: 10px/1 "SFMono-Regular", Consolas, monospace;
+		padding: 5px 7px;
+	}
+	.tweet-visibility-toggle:hover:not(:disabled) {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+	.tweet-visibility-toggle:disabled {
+		cursor: wait;
+		opacity: 0.45;
 	}
 	.tweet-pagination[hidden] {
 		display: none;
@@ -249,6 +275,28 @@ function externalReplyThread(tweet: Tweet) {
 	.tweet-content {
 		min-width: 0;
 	}
+	.tweet-actions {
+		align-items: flex-end;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.tweet-delete {
+		background: transparent;
+		border: 0;
+		color: var(--muted);
+		cursor: pointer;
+		font: 10px/1 "SFMono-Regular", Consolas, monospace;
+		padding: 2px 0;
+		text-transform: uppercase;
+	}
+	.tweet-delete:hover:not(:disabled) {
+		color: #ef4444;
+	}
+	.tweet-delete:disabled {
+		cursor: wait;
+		opacity: 0.35;
+	}
 	.tweet-img {
 		border: 1px solid #1d1d1d;
 		max-height: 240px;
@@ -274,13 +322,18 @@ function externalReplyThread(tweet: Tweet) {
 <Layout title="writing | MERULOX" description="Writing by Merulox.">
 	<h1>Writing</h1>
 
-	<section class="section writing-section">
-		<h2 class="eyebrow" style="display:flex;align-items:center;gap:6px">
-			<svg width="11" height="11" viewBox="0 0 1200 1227" fill="currentColor" aria-label="X" style="flex-shrink:0;position:relative;top:0.5px">
-				<path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"/>
-			</svg>
-			posts
-		</h2>
+	<section class="section writing-section" id="x-posts-section">
+		<div style="display:flex;align-items:center">
+			<h2 class="eyebrow" style="display:flex;align-items:center;gap:6px;margin:0">
+				<svg width="11" height="11" viewBox="0 0 1200 1227" fill="currentColor" aria-label="X" style="flex-shrink:0;position:relative;top:0.5px">
+					<path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"/>
+				</svg>
+				posts
+			</h2>
+			<div class="tweet-section-controls">
+				<button class="tweet-visibility-toggle" id="tweet-visibility-toggle" type="button" hidden>hide on public site</button>
+			</div>
+		</div>
 		<div class="tweets-scroll-frame" id="tweets-scroll-frame">
 			<div class="tweets-viewport" id="tweets-viewport">
 				<div id="tweets-container" data-static-updated-at={tweetData.updatedAt ?? 0}>
@@ -292,7 +345,7 @@ function externalReplyThread(tweet: Tweet) {
 										"work-item",
 										"tweet-item",
 										{
-											"is-reply": tweet.isReply,
+											"is-reply": hasReplyContext(tweet),
 											"has-external-thread": externalReplyThread(tweet).length > 0,
 										},
 									]}
@@ -312,7 +365,7 @@ function externalReplyThread(tweet: Tweet) {
 									<header class="item-header">
 										<div class="tweet-content">
 											<a href={tweet.url} target="_blank" rel="noopener" style="text-decoration:none">
-												{tweet.isReply && (
+												{hasReplyContext(tweet) && (
 													<p class="reply-context">
 														<span class="reply-author">{tweet.author ?? "@merulox"}</span>
 														{tweet.replyTo && <> → {tweet.replyTo}</>}
@@ -330,7 +383,10 @@ function externalReplyThread(tweet: Tweet) {
 												</div>
 											)}
 										</div>
-										<time class="date" datetime={tweet.timestamp}>{formatTweetTimestamp(tweet)}</time>
+										<div class="tweet-actions">
+											<time class="date" datetime={tweet.timestamp}>{formatTweetTimestamp(tweet)}</time>
+											<button class="tweet-delete" type="button" data-tweet-url={tweet.url} hidden>delete</button>
+										</div>
 									</header>
 								</article>
 							))
@@ -451,7 +507,9 @@ function externalReplyThread(tweet: Tweet) {
 		const TWEET_PAGE_SIZE = 100;
 		const LIVE_TWEETS_API = "/api/tweets";
 		const LIVE_TWEETS_POLL_MS = 30_000;
+		const IS_DEV_HOST = window.location.hostname === "dev.merulox.com";
 		let currentTweetPage = 0;
+		let tweetsVisible = true;
 		let latestTweetUpdate = Number(document.getElementById("tweets-container")?.dataset.staticUpdatedAt ?? 0) * 1000;
 
 		function escapeHtml(value: unknown) {
@@ -515,6 +573,7 @@ function externalReplyThread(tweet: Tweet) {
 			const container = document.getElementById("tweets-container")!;
 			container.innerHTML = tweets.map((tweet, index) => {
 				const externalThread = (tweet.replyThread ?? []).filter((post: any) => !ownUrls.has(post.url));
+				const hasReplyContext = tweet.isReply === true && Boolean(tweet.replyToUrl);
 				const thread = externalThread.length ? `
 					<div class="reply-thread">
 						${externalThread.map((post: any) => `
@@ -523,7 +582,7 @@ function externalReplyThread(tweet: Tweet) {
 								<p class="thread-post-text">${escapeHtml(post.text)}</p>
 							</a>`).join("")}
 					</div>` : "";
-				const reply = tweet.isReply ? `
+				const reply = hasReplyContext ? `
 					<p class="reply-context">
 						<span class="reply-author">${escapeHtml(tweet.author ?? "@merulox")}</span>
 						${tweet.replyTo ? ` → ${escapeHtml(tweet.replyTo)}` : ""}
@@ -536,7 +595,7 @@ function externalReplyThread(tweet: Tweet) {
 							</a>`).join("")}
 					</div>` : "";
 				return `
-					<article class="work-item tweet-item${tweet.isReply ? " is-reply" : ""}${externalThread.length ? " has-external-thread" : ""}" data-tweet-index="${index}">
+					<article class="work-item tweet-item${hasReplyContext ? " is-reply" : ""}${externalThread.length ? " has-external-thread" : ""}" data-tweet-index="${index}">
 						${thread}
 						<header class="item-header">
 							<div class="tweet-content">
@@ -546,10 +605,14 @@ function externalReplyThread(tweet: Tweet) {
 								</a>
 								${media}
 							</div>
-							<time class="date" datetime="${escapeHtml(tweet.timestamp ?? "")}">${escapeHtml(formatLiveTweetTimestamp(tweet))}</time>
+							<div class="tweet-actions">
+								<time class="date" datetime="${escapeHtml(tweet.timestamp ?? "")}">${escapeHtml(formatLiveTweetTimestamp(tweet))}</time>
+								<button class="tweet-delete" type="button" data-tweet-url="${escapeHtml(tweet.url)}"${IS_DEV_HOST ? "" : " hidden"}>delete</button>
+							</div>
 						</header>
 					</article>`;
 			}).join("") || '<p class="muted">Nothing here yet.</p>';
+			bindTweetDeleteButtons(container);
 			currentTweetPage = 0;
 			setupTweetPagination(container);
 		}
@@ -559,9 +622,12 @@ function externalReplyThread(tweet: Tweet) {
 				const response = await fetch(LIVE_TWEETS_API, { cache: "no-store" });
 				if (!response.ok) return;
 				const data = await response.json();
-				if (!Array.isArray(data.tweets) || !data.tweets.length || Number(data.updatedAt) <= latestTweetUpdate) return;
-				renderLiveTweets(data.tweets);
-				latestTweetUpdate = Number(data.updatedAt);
+				tweetsVisible = data.visible !== false;
+				applyTweetVisibility();
+				if (Array.isArray(data.tweets) && Number(data.updatedAt) > latestTweetUpdate) {
+					renderLiveTweets(data.tweets);
+					latestTweetUpdate = Number(data.updatedAt);
+				}
 			} catch {
 				// Keep the deployed static list as the offline/error fallback.
 			}
@@ -597,8 +663,67 @@ function externalReplyThread(tweet: Tweet) {
 			frame.classList.toggle("at-bottom", remaining <= 2);
 		}
 
+		function applyTweetVisibility() {
+			const section = document.getElementById("x-posts-section")!;
+			section.hidden = !IS_DEV_HOST && !tweetsVisible;
+			const toggle = document.getElementById("tweet-visibility-toggle") as HTMLButtonElement;
+			toggle.hidden = !IS_DEV_HOST;
+			toggle.textContent = tweetsVisible ? "hide on public site" : "show on public site";
+		}
+
+		function bindTweetDeleteButtons(container: HTMLElement) {
+			for (const button of container.querySelectorAll<HTMLButtonElement>(".tweet-delete")) {
+				button.hidden = !IS_DEV_HOST;
+			}
+		}
+
+		async function deleteTweet(button: HTMLButtonElement) {
+			const url = button.dataset.tweetUrl;
+			if (!IS_DEV_HOST || !url || !window.confirm("Delete this post from the site?")) return;
+			button.disabled = true;
+			button.textContent = "deleting…";
+			try {
+				const response = await fetch(LIVE_TWEETS_API, {
+					method: "DELETE",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ url, source: "dev-site" }),
+				});
+				const data = await response.json().catch(() => ({}));
+				if (!response.ok) throw new Error(data.error ?? `delete failed (${response.status})`);
+				latestTweetUpdate = 0;
+				await refreshLiveTweets();
+			} catch (error) {
+				window.alert(error instanceof Error ? error.message : "Unable to delete post.");
+				button.disabled = false;
+				button.textContent = "delete";
+			}
+		}
+
+		async function toggleTweetVisibility(button: HTMLButtonElement) {
+			button.disabled = true;
+			try {
+				const response = await fetch(LIVE_TWEETS_API, {
+					method: "PATCH",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ visible: !tweetsVisible }),
+				});
+				const data = await response.json().catch(() => ({}));
+				if (!response.ok) throw new Error(data.error ?? `update failed (${response.status})`);
+				tweetsVisible = data.visible !== false;
+				latestTweetUpdate = Number(data.updatedAt ?? latestTweetUpdate);
+				applyTweetVisibility();
+			} catch (error) {
+				window.alert(error instanceof Error ? error.message : "Unable to update visibility.");
+			} finally {
+				button.disabled = false;
+			}
+		}
+
 		loadPosts();
-		setupTweetPagination(document.getElementById("tweets-container")!);
+		const tweetsContainer = document.getElementById("tweets-container")!;
+		bindTweetDeleteButtons(tweetsContainer);
+		applyTweetVisibility();
+		setupTweetPagination(tweetsContainer);
 		refreshLiveTweets();
 		window.setInterval(refreshLiveTweets, LIVE_TWEETS_POLL_MS);
 
@@ -611,6 +736,13 @@ function externalReplyThread(tweet: Tweet) {
 			setupTweetPagination(document.getElementById("tweets-container")!);
 		});
 		document.getElementById("tweets-viewport")?.addEventListener("scroll", updateTweetScrollHint, { passive: true });
+		document.getElementById("tweets-container")?.addEventListener("click", (event) => {
+			const button = (event.target as Element).closest<HTMLButtonElement>(".tweet-delete");
+			if (button) deleteTweet(button);
+		});
+		document.getElementById("tweet-visibility-toggle")?.addEventListener("click", (event) => {
+			toggleTweetVisibility(event.currentTarget as HTMLButtonElement);
+		});
 		window.addEventListener("resize", updateTweetScrollHint);
 		</script>
 </Layout>

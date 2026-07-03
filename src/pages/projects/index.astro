@@ -5,79 +5,9 @@ import { projects } from "../../data/projects";
 
 <Layout
 	title="projects | MERULOX"
-	description="Selected projects built and operated by Merulox."
+	description="Projects built by Merulox."
 >
-	<style>
-		.project-intro {
-			margin-bottom: 28px;
-			color: var(--muted);
-			font-size: 13px;
-			max-width: 58ch;
-		}
-
-		.project-fields {
-			display: grid;
-			gap: 13px;
-		}
-
-		.project-field {
-			display: grid;
-			grid-template-columns: 72px minmax(0, 1fr);
-			gap: 12px;
-			align-items: baseline;
-		}
-
-		.project-field dt {
-			color: var(--accent);
-			font-family: "SFMono-Regular", Consolas, monospace;
-			font-size: 10px;
-			text-transform: uppercase;
-		}
-
-		.project-field dd {
-			margin: 0;
-			color: var(--muted);
-			font-size: 13px;
-			max-width: 58ch;
-		}
-
-		.project-proof {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 7px 14px;
-			list-style: none;
-			padding: 0;
-		}
-
-		.project-proof li {
-			color: var(--muted);
-			font-family: "SFMono-Regular", Consolas, monospace;
-			font-size: 10px;
-		}
-
-		.project-proof li::before {
-			content: "[+]";
-			color: var(--accent);
-			margin-right: 6px;
-		}
-
-		.project-stack {
-			margin-top: 15px;
-		}
-
-		@media (max-width: 600px) {
-			.project-field {
-				grid-template-columns: 1fr;
-				gap: 2px;
-			}
-		}
-	</style>
-
 	<h1>Projects</h1>
-	<p class="project-intro">
-		Selected public-safe work, with the build, operational value, and available
-		evidence made explicit.
-	</p>
 
 	<div class="proj-list">
 		{
@@ -90,38 +20,18 @@ import { projects } from "../../data/projects";
 						<span class="proj-date">{p.date}</span>
 					</button>
 					<div class="proj-body">
-						<dl class="project-fields">
-							<div class="project-field">
-								<dt>What</dt>
-								<dd>{p.description}</dd>
-							</div>
-							<div class="project-field">
-								<dt>Built</dt>
-								<dd>{p.role}</dd>
-							</div>
-							<div class="project-field">
-								<dt>Impact</dt>
-								<dd>{p.impact}</dd>
-							</div>
-							<div class="project-field">
-								<dt>Proof</dt>
-								<dd>
-									<ul class="project-proof">
-										{
-											p.proof.map((item) => (
-												<li>
-													{item.href ? (
-														<a href={item.href} target="_blank" rel="noreferrer">{item.label}</a>
-													) : item.label}
-												</li>
-											))
-										}
-									</ul>
-								</dd>
-							</div>
-						</dl>
-						<ul class="tag-list project-stack" aria-label={`${p.name} stack`}>
-							{p.tags.map((tag) => <li>{tag}</li>)}
+						<p>{p.description}</p>
+						{
+							p.github && (
+								<a class="project-repo" href={p.github} target="_blank" rel="noreferrer">
+									GitHub ↗
+								</a>
+							)
+						}
+						<ul class="tag-list">
+							{p.tags.map((tag) => (
+								<li>{tag}</li>
+							))}
 						</ul>
 					</div>
 				</article>

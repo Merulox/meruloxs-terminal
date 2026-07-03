@@ -11,7 +11,8 @@
     "preview": "astro preview",
     "deploy": "astro build && wrangler pages deploy dist --project-name merulox --branch main --commit-dirty=true",
     "astro": "astro",
-    "update:goodreads": "node scripts/update-goodreads.mjs"
+    "update:goodreads": "node scripts/update-goodreads.mjs",
+    "test:x": "node --test tests/x-workflow.test.mjs tests/dev-auth.test.mjs"
   },
   "dependencies": {
     "astro": "^6.4.4"

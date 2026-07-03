@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "merulox tweet seeder",
-  "version": "2.5",
+  "version": "2.6",
   "description": "Seeds the writing page with fresh X posts, and feeds the build-log with ChatGPT history",
   "permissions": ["alarms", "cookies", "storage", "scripting", "tabs"],
   "host_permissions": [

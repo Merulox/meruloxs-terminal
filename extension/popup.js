@@ -148,9 +148,16 @@ async function render() {
   // Tweet destinations: durable local archive and public live API.
   const { push_status } = await chrome.storage.local.get("push_status");
   let liveState = null;
+  let localState = null;
   try {
     const response = await fetch("https://merulox.com/api/tweets", { cache: "no-store" });
     if (response.ok) liveState = await response.json();
+  } catch {
+    // The last push result below still reports whether the extension can sync.
+  }
+  try {
+    const response = await fetch("http://localhost:47832/tweets", { cache: "no-store" });
+    if (response.ok) localState = await response.json();
   } catch {
     // The last push result below still reports whether the extension can sync.
   }
@@ -170,6 +177,17 @@ async function render() {
       setDot(dotId, "ok");
       if (name === "live" && Array.isArray(liveState?.tweets)) {
         setVal(valueId, `${liveState.tweets.length} stored · updated ${ago(liveState.updatedAt)}`, "ok");
+      } else if (name === "local" && Number.isInteger(localState?.stored)) {
+        const comparableLocal = Number.isInteger(localState.publishable) ? localState.publishable : localState.stored;
+        const drift = Array.isArray(liveState?.tweets) ? comparableLocal - liveState.tweets.length : 0;
+        const detail = [
+          `${localState.stored} archived`,
+          `${comparableLocal} publishable`,
+          localState.unresolved ? `${localState.unresolved} unresolved` : "",
+          localState.invalidReply ? `${localState.invalidReply} invalid reply` : "",
+          drift ? `drift ${drift > 0 ? "+" : ""}${drift}` : "",
+        ].filter(Boolean).join(" · ");
+        setVal(valueId, `${detail} · updated ${ago(Number(localState.updatedAt) * 1000)}`, drift || localState.invalidReply ? "warn" : "ok");
       } else {
         setVal(valueId, `sent ${push_status.count} · ${ago(push_status.time)}`, "ok");
       }
@@ -181,13 +199,14 @@ async function render() {
   renderPushTarget("local", "archive");
   renderPushTarget("live", "public sync");
 
-  const { delete_status } = await chrome.storage.local.get("delete_status");
+  const { delete_status, tweet_delete_queue } = await chrome.storage.local.get(["delete_status", "tweet_delete_queue"]);
+  const pendingDeletes = Array.isArray(tweet_delete_queue) ? tweet_delete_queue.length : 0;
   if (!delete_status) {
     setDot("delete-dot", "warn");
-    setVal("delete-val", "none yet", "dim");
+    setVal("delete-val", pendingDeletes ? `${pendingDeletes} pending retry` : "none yet", pendingDeletes ? "warn" : "dim");
   } else if (delete_status.ok) {
     setDot("delete-dot", "ok");
-    setVal("delete-val", `${delete_status.url.split("/").at(-1)} · ${ago(delete_status.time)}`, "ok");
+    setVal("delete-val", `${delete_status.url.split("/").at(-1)} · ${ago(delete_status.time)}${pendingDeletes ? ` · ${pendingDeletes} pending` : ""}`, pendingDeletes ? "warn" : "ok");
   } else {
     setDot("delete-dot", "err");
     setVal("delete-val", `${delete_status.error} · ${ago(delete_status.time)}`, "err");

@@ -2,17 +2,30 @@ const STORE_KEY = "tweets";
 const MAX_TWEETS = 1000;
 const MAX_TOMBSTONES = 2000;
 const MAX_BODY = 1_000_000;
+const SCHEMA_VERSION = 6;
 
 const headers = {
 	"Content-Type": "application/json",
 	"Access-Control-Allow-Origin": "*",
 	"Access-Control-Allow-Headers": "Authorization, Content-Type",
-	"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+	"Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
 	"Cache-Control": "no-store",
 };
 
 function response(payload, status = 200) {
 	return new Response(JSON.stringify(payload), { status, headers });
+}
+
+async function mutateStore(context, transform, attempts = 4) {
+	for (let attempt = 0; attempt < attempts; attempt += 1) {
+		const current = await context.env.LIVE_TWEETS.get(STORE_KEY, "json") ?? {};
+		const mutationId = crypto.randomUUID();
+		const payload = { ...transform(current), mutationId };
+		await context.env.LIVE_TWEETS.put(STORE_KEY, JSON.stringify(payload));
+		const confirmed = await context.env.LIVE_TWEETS.get(STORE_KEY, "json");
+		if (confirmed?.mutationId === mutationId) return payload;
+	}
+	throw new Error("live tweet store changed concurrently; retry the request");
 }
 
 function cleanString(value, maxLength) {
@@ -53,6 +66,13 @@ function normalizePost(post) {
 		...(cleanString(post.replyToUrl, 500) ? { replyToUrl: cleanString(post.replyToUrl, 500) } : {}),
 	};
 
+	if (Array.isArray(post.media)) {
+		const media = post.media
+			.slice(0, 4)
+			.map((url) => cleanString(url, 1000))
+			.filter((url) => /^https:\/\/pbs\.twimg\.com\/media\//.test(url));
+		if (media.length) normalized.media = [...new Set(media)];
+	}
 	if (Array.isArray(post.replyThread)) {
 		const replyThread = post.replyThread.slice(0, 5).map(normalizePost).filter(Boolean);
 		if (replyThread.length) normalized.replyThread = replyThread;
@@ -60,8 +80,17 @@ function normalizePost(post) {
 	return normalized;
 }
 
+function standalonePost(post) {
+	const { isReply, replyTo, replyToUrl, replyThread, ...standalone } = post;
+	return { ...standalone, threadResolved: true, threadVersion: 6 };
+}
+
+function isPublishable(post) {
+	return post.threadResolved === true && (!post.isReply || Boolean(post.replyToUrl));
+}
+
 async function resolveThread(post) {
-	if (post.threadResolved === true) return post;
+	if (post.threadResolved === true && (!post.isReply || post.replyToUrl)) return post;
 	const statusId = post.url.match(/\/status\/(\d+)/)?.[1];
 	if (!statusId) return post;
 
@@ -71,17 +100,21 @@ async function resolveThread(post) {
 		const current = (await apiResponse.json()).tweet;
 		if (!current) return post;
 		if (!current.replying_to_status) {
-			return { ...post, threadResolved: true, threadVersion: 5 };
+			return standalonePost(post);
 		}
 
 		const replyTo = cleanString(current.replying_to, 100);
+		const replyToUrl = replyTo
+			? `https://x.com/${replyTo.replace(/^@/, "")}/status/${current.replying_to_status}`
+			: undefined;
+		if (!replyToUrl) return post;
 		return {
 			...post,
 			threadResolved: true,
-			threadVersion: 5,
+			threadVersion: 6,
 			isReply: true,
 			...(replyTo ? { replyTo: `@${replyTo.replace(/^@/, "")}` } : {}),
-			...(replyTo ? { replyToUrl: `https://x.com/${replyTo.replace(/^@/, "")}/status/${current.replying_to_status}` } : {}),
+			replyToUrl,
 		};
 	} catch {
 		return post;
@@ -92,8 +125,11 @@ function mergeTweets(existing, incoming) {
 	const byUrl = new Map(existing.map((tweet) => [tweet.url, tweet]));
 	for (const tweet of incoming) {
 		const prior = byUrl.get(tweet.url) ?? {};
+		const base = tweet.threadResolved === true && tweet.isReply !== true
+			? standalonePost(prior)
+			: prior;
 		byUrl.set(tweet.url, {
-			...prior,
+			...base,
 			...tweet,
 			...(prior.threadResolved === true && tweet.threadResolved !== true ? prior : {}),
 		});
@@ -112,7 +148,10 @@ export async function onRequestGet(context) {
 	return response({
 		tweets: stored?.tweets ?? [],
 		updatedAt: stored?.updatedAt ?? 0,
+		visible: stored?.visible !== false,
 		tombstoneCount: stored?.tombstones?.length ?? 0,
+		schemaVersion: SCHEMA_VERSION,
+		postLimit: MAX_TWEETS,
 	});
 }
 
@@ -121,7 +160,10 @@ export async function onRequestPost(context) {
 		return response({ error: "live tweet store is not configured" }, 503);
 	}
 	const token = context.request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim();
-	if (!token || token !== context.env.LOG_KV_TOKEN) return response({ error: "unauthorized" }, 401);
+	const bearerAuthorized = Boolean(token && token === context.env.LOG_KV_TOKEN);
+	if (!bearerAuthorized && context.data?.devAuthenticated !== true) {
+		return response({ error: "unauthorized" }, 401);
+	}
 
 	const length = Number(context.request.headers.get("Content-Length") ?? 0);
 	if (length > MAX_BODY) return response({ error: "payload too large" }, 413);
@@ -135,29 +177,56 @@ export async function onRequestPost(context) {
 	const incoming = Array.isArray(body?.tweets) ? body.tweets.map(normalizePost).filter(Boolean) : [];
 	if (!incoming.length) return response({ error: "tweets must contain valid posts" }, 400);
 
-	const stored = await context.env.LIVE_TWEETS.get(STORE_KEY, "json");
-	const existing = Array.isArray(stored?.tweets) ? stored.tweets : [];
-	const tombstones = Array.isArray(stored?.tombstones) ? stored.tombstones : [];
-	const deletedUrls = tombstoneUrls(stored);
-	const existingByUrl = new Map(existing.map((tweet) => [tweet.url, tweet]));
-	const resolvedIncoming = await Promise.all(incoming.map(async (tweet) => {
-		const prior = existingByUrl.get(tweet.url);
-		if (prior?.threadResolved === true && tweet.threadResolved !== true) return prior;
-		return resolveThread(tweet);
-	}));
-	const publishable = resolvedIncoming.filter((tweet) => tweet.threadResolved === true && !deletedUrls.has(tweet.url));
-	const tweets = mergeTweets(
-		existing.filter((tweet) => tweet.threadResolved === true && !deletedUrls.has(tweet.url)),
-		publishable,
-	);
-	const payload = { tweets, tombstones, updatedAt: Date.now() };
-	await context.env.LIVE_TWEETS.put(STORE_KEY, JSON.stringify(payload));
+	const resolvedIncoming = await Promise.all(incoming.map(resolveThread));
+	let publishableCount = 0;
+	const payload = await mutateStore(context, (stored) => {
+		const existing = Array.isArray(stored?.tweets) ? stored.tweets : [];
+		const tombstones = Array.isArray(stored?.tombstones) ? stored.tombstones : [];
+		const deletedUrls = tombstoneUrls(stored);
+		const existingByUrl = new Map(existing.map((tweet) => [tweet.url, tweet]));
+		const authoritativeIncoming = resolvedIncoming.map((tweet) => {
+			const prior = existingByUrl.get(tweet.url);
+			return prior?.threadResolved === true && tweet.threadResolved !== true ? prior : tweet;
+		});
+		const publishable = authoritativeIncoming.filter((tweet) => isPublishable(tweet) && !deletedUrls.has(tweet.url));
+		publishableCount = publishable.length;
+		return {
+			tweets: mergeTweets(existing.filter((tweet) => isPublishable(tweet) && !deletedUrls.has(tweet.url)), publishable),
+			tombstones,
+			visible: stored?.visible !== false,
+			updatedAt: Date.now(),
+		};
+	});
 	return response({
 		status: "ok",
-		stored: tweets.length,
-		pending: resolvedIncoming.length - publishable.length,
+		stored: payload.tweets.length,
+		pending: resolvedIncoming.length - publishableCount,
 		updatedAt: payload.updatedAt,
+		schemaVersion: SCHEMA_VERSION,
 	});
+}
+
+export async function onRequestPatch(context) {
+	if (!context.env.LIVE_TWEETS || context.data?.devAuthenticated !== true) {
+		return response({ error: "unauthorized" }, 401);
+	}
+
+	let body;
+	try {
+		body = await context.request.json();
+	} catch {
+		return response({ error: "invalid JSON" }, 400);
+	}
+	if (typeof body?.visible !== "boolean") {
+		return response({ error: "visible must be a boolean" }, 400);
+	}
+
+	const payload = await mutateStore(context, (stored) => ({
+		...stored,
+		visible: body.visible,
+		updatedAt: Date.now(),
+	}));
+	return response({ status: "ok", visible: payload.visible, updatedAt: payload.updatedAt });
 }
 
 export async function onRequestDelete(context) {
@@ -165,7 +234,10 @@ export async function onRequestDelete(context) {
 		return response({ error: "live tweet store is not configured" }, 503);
 	}
 	const token = context.request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim();
-	if (!token || token !== context.env.LOG_KV_TOKEN) return response({ error: "unauthorized" }, 401);
+	const bearerAuthorized = Boolean(token && token === context.env.LOG_KV_TOKEN);
+	if (!bearerAuthorized && context.data?.devAuthenticated !== true) {
+		return response({ error: "unauthorized" }, 401);
+	}
 
 	let body;
 	try {
@@ -176,21 +248,27 @@ export async function onRequestDelete(context) {
 	const url = normalizeTweetUrl(body?.url ?? body?.statusId);
 	if (!url) return response({ error: "url or statusId must identify an X post" }, 400);
 
-	const stored = await context.env.LIVE_TWEETS.get(STORE_KEY, "json");
-	const existing = Array.isArray(stored?.tweets) ? stored.tweets : [];
-	const tombstones = Array.isArray(stored?.tombstones) ? stored.tombstones : [];
-	const nextTombstones = [
-		{ url, deletedAt: new Date().toISOString(), source: cleanString(body?.source, 100) ?? "manual" },
-		...tombstones.filter((item) => item?.url !== url),
-	].slice(0, MAX_TOMBSTONES);
-	const tweets = existing.filter((tweet) => tweet.url !== url);
-	const payload = { tweets, tombstones: nextTombstones, updatedAt: Date.now() };
-	await context.env.LIVE_TWEETS.put(STORE_KEY, JSON.stringify(payload));
+	let removed = 0;
+	const payload = await mutateStore(context, (stored) => {
+		const existing = Array.isArray(stored?.tweets) ? stored.tweets : [];
+		const tombstones = Array.isArray(stored?.tombstones) ? stored.tombstones : [];
+		const tweets = existing.filter((tweet) => tweet.url !== url);
+		removed = existing.length - tweets.length;
+		return {
+			tweets,
+			visible: stored?.visible !== false,
+			tombstones: [
+				{ url, deletedAt: new Date().toISOString(), source: cleanString(body?.source, 100) ?? "manual" },
+				...tombstones.filter((item) => item?.url !== url),
+			].slice(0, MAX_TOMBSTONES),
+			updatedAt: Date.now(),
+		};
+	});
 	return response({
 		status: "ok",
 		url,
-		removed: existing.length - tweets.length,
-		tombstoneCount: nextTombstones.length,
+		removed,
+		tombstoneCount: payload.tombstones.length,
 		updatedAt: payload.updatedAt,
 	});
 }

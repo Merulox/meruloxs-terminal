@@ -99,11 +99,11 @@ collects each rendered post before X virtualizes it out of the DOM. Manual and
 hourly fetches merge those observations with the automated background scrape,
 deduplicate by post URL, and keep the newest 100.
 For replies to posts outside the profile timeline, up to five preceding
-conversation posts are retained as display context. Self-thread continuations are
-resolved from X's ascending adjacent timeline grouping. External replies keep
-polling their permalink after the `Replying to` label appears so the asynchronously
-loaded parent post is captured too. If X does not render the parent chain, the
-extension falls back to public FxTwitter metadata.
+conversation posts are retained as display context. A post is classified as a
+reply only when X renders an explicit `Replying to` signal with a real parent URL,
+or FxTwitter returns an explicit reply status ID. Timeline adjacency is never
+treated as thread evidence. If X does not render the parent chain, the extension
+falls back to public FxTwitter metadata.
 
 While you browse the X profile, newly observed posts are pushed after a short
 debounce. Manual and hourly full scrapes also push to both destinations. The
@@ -118,6 +118,13 @@ with a blue `site sync` badge. Clicking X's final delete confirmation also
 tombstones the post in Cloudflare KV, removes it from the local archive, and
 clears it from extension caches so later scrapes cannot restore it.
 
+Deletion jobs are durable in extension storage. If either the local receiver or
+live API is unavailable, the failed target retries every five minutes. Each
+hourly fetch also checks a bounded set of recent cached posts missing from the
+profile scrape; a post is tombstoned only after X explicitly renders a deleted or
+nonexistent message on three separate hourly runs. This covers deletions made from mobile or
+another browser without treating a partial profile scrape as deletion evidence.
+
 For a post that was already deleted on X, find its still-published link on
 `/thinking` and paste that URL (or only its numeric status ID) into the extension
 popup's **Remove from site** field. Tombstones are durable:
@@ -130,6 +137,10 @@ Freshness is normally under 45 seconds after the extension observes a post:
 10-second extension debounce plus the writing page's 30-second polling interval.
 The Pages `LOG_KV_TOKEN` secret matches `extension/config.local.js` and the local
 receiver token.
+
+The local receiver and live API use schema version 6 and retain up to 1000 posts.
+Both preserve up to four `pbs.twimg.com/media` attachment URLs per post. The
+extension popup reports local/live stored counts and flags count drift.
 
 ## Troubleshooting
 

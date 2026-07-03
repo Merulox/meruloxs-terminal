@@ -27,6 +27,10 @@ npm run build
 npm run deploy
 ```
 
+`dev.merulox.com` is protected by HTTP Basic authentication. Configure the
+Cloudflare Pages secrets `DEV_AUTH_USER` and `DEV_AUTH_PASSWORD` for preview
+deployments; production hosts remain public.
+
 ## Repo layout
 
 - `src/pages/` — all routes
