@@ -137,12 +137,22 @@ function isRecentCompleted(book) {
 
 const shelves = {};
 const errors = [];
+let fetchedAny = false;
+let existing = null;
+
+try {
+  existing = JSON.parse(fs.readFileSync(outPath, "utf8"));
+} catch {
+  existing = null;
+}
 
 for (const [key, group] of Object.entries(shelfGroups)) {
   const lists = [];
+  const previousErrorCount = errors.length;
   for (const shelf of group) {
     try {
       const books = await fetchShelf(shelf);
+      fetchedAny = true;
       lists.push(key === "completed"
         ? books.filter(isRecentCompleted)
         : books.filter((book) => book.shelves.some((userShelf) => group.includes(userShelf))));
@@ -150,11 +160,16 @@ for (const [key, group] of Object.entries(shelfGroups)) {
       errors.push({ shelf, message: error.message });
     }
   }
-  shelves[key] = mergeUnique(lists);
+  const merged = mergeUnique(lists);
+  const groupFailed = errors.length > previousErrorCount && lists.length === 0;
+  const existingShelf = existing?.shelves?.[key];
+  shelves[key] = groupFailed && Array.isArray(existingShelf) ? existingShelf : merged;
 }
 
 const data = {
-  generatedAt: new Date().toISOString(),
+  generatedAt: fetchedAny ? new Date().toISOString() : (existing?.generatedAt ?? new Date().toISOString()),
+  attemptedAt: errors.length ? new Date().toISOString() : undefined,
+  source: "goodreads",
   profileUrl: PROFILE_URL,
   shelves,
   errors,

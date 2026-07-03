@@ -1,8 +1,45 @@
 {
-  "generatedAt": "2026-06-28T21:08:20.472Z",
+  "generatedAt": "2026-07-03T00:53:13.846Z",
+  "source": "goodreads",
   "profileUrl": "https://www.goodreads.com/user/show/158374147-merulox",
   "shelves": {
     "reading": [
+      {
+        "id": "120776251",
+        "title": "Hacking: The Art of Exploitation",
+        "author": "Jon Erickson",
+        "url": "https://www.goodreads.com/review/show/8737101829",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1681554052l/120776251._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "3.89",
+        "readAt": "",
+        "addedAt": "2026-07-03",
+        "updatedAt": "2026-07-03",
+        "published": "2003",
+        "pages": 482,
+        "shelves": [
+          "currently-reading"
+        ],
+        "sourceShelf": "currently-reading"
+      },
+      {
+        "id": "18886405",
+        "title": "The Secret Teachings of All Ages",
+        "author": "Manly P. Hall",
+        "url": "https://www.goodreads.com/review/show/8724444696",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1385141384l/18886405._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.47",
+        "readAt": "",
+        "addedAt": "2026-06-28",
+        "updatedAt": "2026-06-28",
+        "published": "1928",
+        "pages": 578,
+        "shelves": [
+          "currently-reading"
+        ],
+        "sourceShelf": "currently-reading"
+      },
       {
         "id": "213731760",
         "title": "Building LLMs for Production: Enhancing LLM Abilities and Reliability with Prompting, Fine-Tuning, and RAG",
@@ -10,7 +47,7 @@
         "url": "https://www.goodreads.com/review/show/8723903501",
         "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1716319425l/213731760._SX98_.jpg",
         "rating": 0,
-        "averageRating": "4.08",
+        "averageRating": "4.07",
         "readAt": "",
         "addedAt": "2026-06-28",
         "updatedAt": "2026-06-28",
@@ -342,6 +379,186 @@
         "updatedAt": "2023-10-09",
         "published": "1995",
         "pages": 399,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "100915",
+        "title": "The Lion, the Witch and the Wardrobe (Chronicles of Narnia, #1)",
+        "author": "C.S. Lewis",
+        "url": "https://www.goodreads.com/review/show/5896883592",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1353029077l/100915._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.24",
+        "readAt": "",
+        "addedAt": "2023-10-09",
+        "updatedAt": "2023-10-09",
+        "published": "1950",
+        "pages": 206,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "25489134",
+        "title": "The Bear and the Nightingale (The Winternight Trilogy, #1)",
+        "author": "Katherine Arden",
+        "url": "https://www.goodreads.com/review/show/5896866101",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1611440212l/25489134._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.06",
+        "readAt": "",
+        "addedAt": "2023-10-09",
+        "updatedAt": "2023-10-09",
+        "published": "2017",
+        "pages": 319,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "40969531",
+        "title": "A Winter's Promise (The Mirror Visitor, #1)",
+        "author": "Christelle Dabos",
+        "url": "https://www.goodreads.com/review/show/5896862698",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1532807526l/40969531._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "3.89",
+        "readAt": "",
+        "addedAt": "2023-10-09",
+        "updatedAt": "2023-10-09",
+        "published": "2013",
+        "pages": 446,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "122765395",
+        "title": "Elon Musk",
+        "author": "Walter Isaacson",
+        "url": "https://www.goodreads.com/review/show/5895603692",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1692288251l/122765395._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.25",
+        "readAt": "",
+        "addedAt": "2023-10-08",
+        "updatedAt": "2023-10-08",
+        "published": "2023",
+        "pages": 688,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "54112943",
+        "title": "Lord of the Mysteries",
+        "author": "Ai Qianshui de Wuzei",
+        "url": "https://www.goodreads.com/review/show/5895090935",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1592282508l/54112943._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.73",
+        "readAt": "",
+        "addedAt": "2023-10-08",
+        "updatedAt": "2023-10-08",
+        "published": "2020",
+        "pages": null,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "52990973",
+        "title": "Replacing Guilt: Minding Our Way",
+        "author": "Nate Soares",
+        "url": "https://www.goodreads.com/review/show/5895086018",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1586227860l/52990973._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.32",
+        "readAt": "",
+        "addedAt": "2023-10-08",
+        "updatedAt": "2023-10-08",
+        "published": "",
+        "pages": 213,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "34671430",
+        "title": "Dungeon Defense Vol. 1",
+        "author": "Yoo Heonhwa",
+        "url": "https://www.goodreads.com/review/show/5895083845",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1490308240l/34671430._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.27",
+        "readAt": "",
+        "addedAt": "2023-10-08",
+        "updatedAt": "2023-10-08",
+        "published": "2016",
+        "pages": 480,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "32595771",
+        "title": "World of Cultivation (World of Cultivation, #1)",
+        "author": "Fang Xiang",
+        "url": "https://www.goodreads.com/review/show/5895079145",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1476277300l/32595771._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "3.98",
+        "readAt": "",
+        "addedAt": "2023-10-08",
+        "updatedAt": "2023-10-08",
+        "published": "",
+        "pages": null,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "53972440",
+        "title": "Three Days of Happiness",
+        "author": "Sugaru Miaki",
+        "url": "https://www.goodreads.com/review/show/5895065928",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1591954433l/53972440._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.39",
+        "readAt": "",
+        "addedAt": "2023-10-08",
+        "updatedAt": "2023-10-08",
+        "published": "2013",
+        "pages": 223,
+        "shelves": [
+          "to-read"
+        ],
+        "sourceShelf": "to-read"
+      },
+      {
+        "id": "10016013",
+        "title": "Harry Potter and the Methods of Rationality",
+        "author": "Eliezer Yudkowsky",
+        "url": "https://www.goodreads.com/review/show/5895059652",
+        "image": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1659761696l/10016013._SX98_.jpg",
+        "rating": 0,
+        "averageRating": "4.38",
+        "readAt": "",
+        "addedAt": "2023-10-08",
+        "updatedAt": "2023-10-08",
+        "published": "2015",
+        "pages": 2184,
         "shelves": [
           "to-read"
         ],

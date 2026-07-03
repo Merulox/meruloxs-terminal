@@ -32,6 +32,12 @@ const shelfStack = [
 ];
 const hasLiveShelves = shelfStack.some((stack) => stack.books.length > 0);
 const liveBookCount = shelfStack.reduce((count, stack) => count + stack.books.length, 0);
+const liveSource = goodreads.source === "goodreads" ? "Goodreads" : "reading";
+const liveGeneratedAt = typeof goodreads.generatedAt === "string" ? goodreads.generatedAt : "";
+const liveSyncDate = liveGeneratedAt ? new Date(liveGeneratedAt) : null;
+const liveSyncLabel = liveSyncDate && !Number.isNaN(liveSyncDate.getTime())
+	? liveSyncDate.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+	: "";
 
 const totalBooks = new Set(data.flatMap((path) => path.books.map((book) => book.title))).size;
 const read = new Set(data.flatMap((path) => path.books.filter((book) => book.read).map((book) => book.title))).size;
@@ -296,6 +302,12 @@ function ratingLabel(rating?: number): string {
 		color: var(--muted);
 		font-size: 12px;
 	}
+	.live-shelf-meta {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 10px;
+		margin: -8px 0 20px;
+	}
 	@media (max-width: 600px) {
 		.path-body {
 			padding-left: 20px;
@@ -329,9 +341,10 @@ function ratingLabel(rating?: number): string {
 		hasLiveShelves && (
 			<section class="shelf-section">
 				<div class="shelf-head-row">
-					<h2 class="shelf-head">Goodreads shelf</h2>
+					<h2 class="shelf-head">Live shelf</h2>
 					<span class="date">{liveBookCount} recent</span>
 				</div>
+				{liveSyncLabel && <p class="live-shelf-meta">synced from {liveSource.toLowerCase()} · {liveSyncLabel}</p>}
 				<div class="live-shelf-stack">
 					{shelfStack.map((stack) => (
 						<details class="live-shelf-section" data-shelf={stack.key} {...(stack.key === "reading" ? { open: true } : {})}>
