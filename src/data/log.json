@@ -1,6 +1,96 @@
 {
-  "generated": "2026-06-13",
+  "generated": "2026-07-02",
   "entries": [
+    {
+      "date": "2026-07-02",
+      "kind": "learn",
+      "text": "A quiet ops day — routine health checks and live-state maintenance, nothing urgent to action. Most of the mental energy went toward researching trading and investing: paper trading mechanics, brokerage fee structures, crypto basics, and terminal options. Exploratory pass, not a commitment to anything yet."
+    },
+    {
+      "date": "2026-07-01",
+      "kind": "ship",
+      "text": "Audited SYNTRA and wrote up briefs for the next round of builds — uncapping the sitemap and prerender, a shelf-browse view, and a redeploy. Also fixed the command dashboard's color scheme, which had drifted into barely-readable territory, and stood up a local security-testing sandbox to learn on. Less a shipping day than a sharpening-the-tools day."
+    },
+    {
+      "date": "2026-06-30",
+      "kind": "ship",
+      "text": "Spent the day wiring up the callback side of the Boréal console. Added lead lookup, hooked callback reminders into the reminders table, and exported them to a calendar feed so scheduled call-backs sync to my calendar automatically. Also set up a Telegram alert that fires when a callback is imminent, so nothing slips."
+    },
+    {
+      "date": "2026-06-29",
+      "kind": "ship",
+      "text": "Spent the day building a cold-calling workspace into Boréal's internal commander — a way to pull up an untouched lead and work it on the fly. Each call view gathers the things you actually need mid-conversation: quick contact links, any prior SMS thread, and a notes field, with a single-card focus mode you can toggle on or off. Also wired in a mic recorder for calls and added a small guestbook link to the personal site."
+    },
+    {
+      "date": "2026-06-28",
+      "kind": "ship",
+      "text": "Spent the day wiring projects together: merged Navi's taskboard into the Aperture dashboard, added a dedicated Navi section, made the panels collapsible, and made the collapsed state persist across refreshes. Also landed the first vertical slice of Navi's remember-and-recall loop and lightened the taskboard text so it's actually readable. On the side, added a Goodreads shelves and links page to the personal site and refreshed a couple of stale project descriptions."
+    },
+    {
+      "date": "2026-06-27",
+      "kind": "ship",
+      "text": "Debugged the missed-call text-back bot after discovering it wasn't firing on live calls. Traced the issue through the running services and surfaced a gap in API credit visibility — no consolidated view of which services are draining credits at what rate. Wrote a brief for a credit-tracking panel to fix that blind spot."
+    },
+    {
+      "date": "2026-06-26",
+      "kind": "ship",
+      "text": "Built two new sections into the internal ops dashboard: a Boréal operations panel with service health indicators and a live incoming-lead console, and an API cost-monitoring tab that shows estimated token burn per service with toggles to switch each one off independently. Debugged the missed-call text-back flow end-to-end and confirmed the automation fires correctly on a missed call. Also wrote the first batch of outreach message templates ahead of the campaign going live."
+    },
+    {
+      "date": "2026-06-25",
+      "kind": "listen",
+      "text": "A quiet day with no code shipped. Heavy rotation through underground rap — $uicideboy$, Lil Peep, Bladee, Bones. Sometimes the work is just holding the line."
+    },
+    {
+      "date": "2026-06-24",
+      "kind": "ship",
+      "text": "Built a browser extension called Selection Oracle that captures text selections and surfaces them through an injected UI layer. Took a few rounds of fixes to get right — content script bundle format, overlay placement, and diagnostics logging all needed attention before it ran cleanly."
+    },
+    {
+      "date": "2026-06-22",
+      "kind": "listen",
+      "text": "Quiet day. Heavy rotation on $uicideboy$, Lil Peep, and Lily Chou-Chou — the usual mix of dark rap and ethereal Japanese folk. Nothing shipped, nothing broken."
+    },
+    {
+      "date": "2026-06-21",
+      "kind": "think",
+      "text": "Spent time thinking through what agentic desktop operating systems might look like as AI gets embedded deeper into the OS layer — less about apps, more about the environment itself becoming an agent. Some parallel work on naming and legal groundwork. No major builds shipped; this was an orientation and ideation day."
+    },
+    {
+      "date": "2026-06-20",
+      "kind": "learn",
+      "text": "Spent the day studying door-to-door sales from first principles — roleplay sessions, objection handling, first-contact framing. The working thesis: in-person outreach is a learnable system, not a personality trait. Also explored layered agent patterns for dashboard-building as a side thread."
+    },
+    {
+      "date": "2026-06-19",
+      "kind": "think",
+      "text": "The day was mostly exploratory — conversations around AI-assisted sales tooling, what tipping points look like at civilizational scale, and the future of money and conflict. Some time spent on personal aspiration framing and what mythic ambition actually demands in practice. Nothing shipped, but the thinking layer was running."
+    },
+    {
+      "date": "2026-06-18",
+      "kind": "listen",
+      "text": "Quiet day operationally — mostly a heartbeat check rather than active building. Heavy rotation: $uicideboy$, Lil Peep, Scrim, Lily Chou-Chou. The darker, more atmospheric end of the catalog."
+    },
+    {
+      "date": "2026-06-17",
+      "kind": "think",
+      "text": "A re-orientation day after a pause — thinking through how to frame the service offer and what a client presentation should actually contain. Some time spent comparing tools and exploring the line between planning and building. No code shipped; the day was mostly diagnostic."
+    },
+    {
+      "date": "2026-06-16",
+      "kind": "learn",
+      "text": "Spent time comparing local model options — Qwen variants, Hermes, and a few smaller models — against frontier alternatives. Looked into running models in GPU containers and explored live transcript summarization as a potential use case. No code shipped; this was a model-selection research pass."
+    },
+    {
+      "date": "2026-06-15",
+      "kind": "ship",
+      "text": "Patched a broken system config and got the build back to green. Ran a director session to assess current priorities and drafted a brief for an affiliate program angle. Also updated the personal knowledge system's live state and health tracking — routine maintenance that keeps the ops layer honest."
+    },
+    {
+      "date": "2026-06-14",
+      "kind": "ship",
+      "text": "Consolidated the Boréal codebase into a single monorepo and wired up a missed-call text-back — any inbound call now triggers an automatic SMS reply. Set up hourly database backups and tracked the supporting infrastructure as durable, named services. Also refreshed the personal site with updated project and employer pages, linked public repositories, and cleaned up the taskboard so cancelled and split work no longer clutters the active list."
+    },
     {
       "date": "2026-06-13",
       "kind": "ship",
