@@ -1,6 +1,26 @@
 {
-  "generated": "2026-07-02",
+  "generated": "2026-07-06",
   "entries": [
+    {
+      "date": "2026-07-06",
+      "kind": "ship",
+      "text": "Worked through a backlog of design issues flagged in a prior review for SYNTRA — layout and style corrections across the landing page, product detail, shelf, and header components. Built an automated price-refresh pipeline (a background service and timer) so the product catalog stays current without manual upkeep. Extended the design-review tooling to cover every page in the app, including the catalog, and wired in a screenshot step to verify output."
+    },
+    {
+      "date": "2026-07-05",
+      "kind": "ship",
+      "text": "Built the visual review loop for SYNTRA: a design panel in the internal dashboard that pulls live site screenshots, shows AI review output, and keeps the evidence close to the task queue. The point is not just prettier screenshots; it is a faster aesthetic and SEO iteration system where active design work can move from capture to critique to confirmed build without losing context. This sets SYNTRA up for sustained refinement instead of one-off landing-page fixes."
+    },
+    {
+      "date": "2026-07-04",
+      "kind": "ship",
+      "text": "Shipped executor completion notifications in Aperture — jobs now push a Telegram alert when they finish. Also cleaned up a server-side guard that was causing spurious rejection responses on executor commits. On the side, reorganized a local music library by sorting tracks into per-album folders named by release year. A few task specs were drafted and live state was reviewed."
+    },
+    {
+      "date": "2026-07-03",
+      "kind": "ship",
+      "text": "Restored the personal site's project pages, log routes, and writing controls after a recovery pass, and refreshed an archived tweet snapshot. On the automation side, added launch gates and a required-inputs form for SYNTRA, and sketched a small architect agent that reviews each completed executor task and reports back over Telegram."
+    },
     {
       "date": "2026-07-02",
       "kind": "learn",

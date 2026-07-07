@@ -5,7 +5,7 @@ export interface ProjectProof {
 
 export interface Project {
 	name: string;
-	state: "active" | "stagnant";
+	state?: "active" | "stagnant";
 	date: string;
 	description: string;
 	role: string;
@@ -30,7 +30,6 @@ export const projects: Project[] = [
 	},
 	{
 		name: "Boréal Numérique",
-		state: "stagnant",
 		date: "2026-04",
 		description:
 			"AI automation for Quebec tradespeople. Missed-call text-back, lead capture triage, quote follow-up. Currently paused.",

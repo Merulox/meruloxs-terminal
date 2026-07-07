@@ -94,7 +94,7 @@ import { projects } from "../../data/projects";
 					<button class="proj-head list-item" aria-expanded={i === 0 ? "true" : "false"}>
 						<span class="proj-caret" aria-hidden="true">›</span>
 						<span class="proj-name">{p.name}</span>
-						<span class={`proj-state ${p.state}`}>{p.state}</span>
+						{p.state && <span class={`proj-state ${p.state}`}>{p.state}</span>}
 						<span class="proj-date">{p.date}</span>
 					</button>
 					<div class="proj-body">
@@ -129,7 +129,7 @@ import { projects } from "../../data/projects";
 							</div>
 							<div class="project-field">
 								<dt>Status</dt>
-								<dd>{p.state} / {p.date}</dd>
+								<dd>{p.state ? `${p.state} / ${p.date}` : p.date}</dd>
 							</div>
 						</dl>
 						<ul class="tag-list project-stack" aria-label={`${p.name} stack`}>
