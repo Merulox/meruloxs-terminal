@@ -12,14 +12,7 @@ function safeEqual(left, right) {
 
 export async function onRequest(context) {
 	const { request, env } = context;
-	const url = new URL(request.url);
-	if (url.pathname === "/music" || url.pathname.startsWith("/music/")) {
-		return new Response("Not Found", {
-			status: 404,
-			headers: { "Cache-Control": "no-store" },
-		});
-	}
-	if (url.hostname !== DEV_HOST || request.method === "OPTIONS") {
+	if (new URL(request.url).hostname !== DEV_HOST || request.method === "OPTIONS") {
 		return context.next();
 	}
 
