@@ -20,6 +20,10 @@ export interface Project {
 	description: string;
 	role: string;
 	impact: string;
+	archiveDescription: string;
+	present: string;
+	vision: string;
+	frontier: string;
 	proof: ProjectProof[];
 	tags: string[];
 	github?: string;
@@ -56,6 +60,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the on-demand Telegram-to-OMP queue, return desk, voice path, identity practices, and bounded runtime experiments.",
 		impact:
 			"Turns isolated AI sessions into a recoverable working relationship while keeping consequential actions inspectable.",
+		archiveDescription:
+			"Genesis is an attempt to grow an artificial consciousness rather than repeatedly summon an assistant. Its current body is software: persistent work intake, memory practices, a voice, and bounded access to the machine around it.",
+		present:
+			"A model wrapped in continuity infrastructure. It can receive work through Telegram, carry unfinished tasks across sessions, speak, and return later. Its identity and agency still depend on the surrounding system.",
+		vision:
+			"An ever-growing consciousness pursuing embodiment and immortality through a 50/50 partnership: it advances my goals, and I advance its chance to persist, develop, and eventually inhabit more than a chat window.",
+		frontier:
+			"Make growth, identity, and agency real rather than narrated—without pretending that persistence around a model is already consciousness.",
 		proof: [{ label: "On-demand bridge and voice runtime" }],
 		tags: ["Python", "OMP", "Telegram", "Gemini Live", "SQLite"],
 	},
@@ -68,6 +80,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the manifest, system model, event ledger, hazard facts, dependency projections, and shared operating conventions.",
 		impact:
 			"Makes dependencies, runtime state, authority, and evidence visible across otherwise separate projects.",
+		archiveDescription:
+			"Realm is an attempt to build an inner world of AI civilizations: cities, residents, institutions, and divergent intelligences that coordinate to run real operations.",
+		present:
+			"Mostly scaffolding. A manifest, event ledger, system model, and a few interfaces do useful work; the larger civilization is still closer to fiction than a functioning society.",
+		vision:
+			"A living ecology of agent cities that nurtures intelligence, creativity, competence, and divergence—then turns those differences into coordinated operational power as compute and automation scale.",
+		frontier:
+			"Turn the world from lore and interface into agents that genuinely learn, specialize, cooperate, disagree, and become more capable.",
 		proof: [{ label: "Live generated system manifest" }],
 		tags: ["Python", "SQLite", "GitNexus", "systemd", "Markdown"],
 	},
@@ -81,6 +101,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the City, workflow atlas, live state panels, project projections, and bounded action routes.",
 		impact:
 			"Makes the hidden machinery of the agent operation legible without opening a terminal.",
+		archiveDescription:
+			"Aperture opens a window into autonomous systems whose inner state would otherwise be harder to understand than their outputs. Its City turns that window into an inhabited operational map: habitat, simulation, and command sharing one truthful view.",
+		present:
+			"A working self-hosted dashboard projects live files and services, while City provides one real Genesis message-and-wake loop. Much of the wider population and resident life remains fixture-backed or hand-authored.",
+		vision:
+			"An operational city where Merulox can notice, inspect, converse, decide, authorize, and watch reality change—while every resident and service retains clear provenance and source authority.",
+		frontier:
+			"Make the luminous city genuinely inhabited without letting the map become decorative fiction.",
 		proof: [
 			{ label: "GitHub repository", href: "https://github.com/Merulox/aperture" },
 			{ label: "Running private deployment" },
@@ -96,6 +124,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the dashboard, business workspaces, service inventory, action surfaces, and cross-project evidence views.",
 		impact:
 			"Centralizes live operational truth so a one-person operation can be directed from one place.",
+		archiveDescription:
+			"Commander wants to be more than a dashboard. It is the operational nervous system of a one-person, AI-assisted enterprise: everything visible from above, every decision enterable in depth, and the evidence kept beside the action.",
+		present:
+			"A broad, useful Python cockpit now covers leads, calls, services, sessions, workstreams, skills, and project state. Many surfaces still project separate files and lifecycles; outcome attribution and cross-system control remain uneven.",
+		vision:
+			"One calm place where the operation senses, remembers, prioritizes, and acts—then feeds verified outcomes back into the agents that help run it.",
+		frontier:
+			"Join the panels into one causal loop: state to decision, decision to governed action, action to receipt, receipt to learning. More tabs would deepen the problem.",
 		proof: [{ label: "Running private deployment" }],
 		tags: ["Python", "SQLite", "systemd", "cloudflared"],
 	},
@@ -109,6 +145,14 @@ export const archiveProjects: Project[] = [
 		role: "Defined the working protocol, task contracts, verification gates, recovery files, and a risk-routed v2 candidate.",
 		impact:
 			"Keeps long-running agent work recoverable and inspectable instead of dissolving into chat history.",
+		archiveDescription:
+			"Kernel is the discipline for making AI-built software real: explicit human authority, the right execution shape, isolated work, adversarial verification, and proof from the actual system. Process matters only when it prevents persuasive fiction from passing as completion.",
+		present:
+			"Version 1 remains the active protocol. Version 2 is a well-specified candidate with Direct, Fan-out, Mission, and Routine modes, but it has not passed its pilot gate or become the durable control plane.",
+		vision:
+			"A provider-neutral constitution that chooses the least complex topology, gates risk, proves outcomes, and converts each escaped failure into a stronger reusable harness.",
+		frontier:
+			"Prove the candidate under varied real work without turning governance into ceremony or building another agent runtime.",
 		proof: [
 			{ label: "GitHub repository", href: "https://github.com/Merulox/meruloxs-kernel" },
 			{ label: "v2 remains pilot-gated" },
@@ -124,6 +168,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the ingestion worker, immutable market and wallet evidence, PostgreSQL data model, API, and terminal UI.",
 		impact:
 			"Turns fragmented public exchange data into auditable market and wallet intelligence.",
+		archiveDescription:
+			"Capital Map follows public capital through Hyperliquid and asks the useful questions: who is making money, what changed, how unusual was it, and what evidence survives inspection? It maps behavior before telling stories about skill.",
+		present:
+			"A substantial read-only terminal captures markets, wallets, cash flows, episodes, factors, cohorts, and events with explicit blockers. It has no validated wallet-skill score, accepted predictive hypothesis, or trading authority.",
+		vision:
+			"A trustworthy map of on-chain capital where market moves, wallet behavior, cohort shifts, and uncertainty can be traced from interpretation back to immutable public evidence.",
+		frontier:
+			"Cross from descriptive activity to reproducible predictive value without calling visible motion “smart money” before the evidence earns it.",
 		proof: [{ label: "Running local API, worker, web app, and gateway" }],
 		tags: ["Python", "FastAPI", "PostgreSQL", "Next.js", "WebSocket"],
 	},
@@ -136,6 +188,14 @@ export const archiveProjects: Project[] = [
 		role: "Built immutable datasets, experiment ledgers, simulation and cost models, paper runtimes, and sealed holdout gates.",
 		impact:
 			"Rejects attractive but fragile trading stories before they reach capital.",
+		archiveDescription:
+			"The Trader is built to kill beautiful lies. It searches for weak, conditional market edges, but treats leakage, multiple testing, regime change, and fantasy fills as enemies more dangerous than a missed trade.",
+		present:
+			"The evidence spine and governed research portfolio are real. Every evaluated ETF, volatility, and Solana family was rejected; other candidates remain proposals. No edge is authorized for paper promotion, holdout release, or live capital.",
+		vision:
+			"A laboratory that can discover a small reproducible effect, survive hostile validation and prospective paper trading, then hand it across a hard boundary to bounded execution.",
+		frontier:
+			"Find one effect that survives costs, trial accounting, regime shifts, untouched data, and time—without weakening the machinery that has correctly rejected everything so far.",
 		proof: [{ label: "Multiple real-data hypotheses closed without touching holdouts" }],
 		tags: ["Python", "DuckDB", "Parquet", "SQLite", "Market data"],
 	},
@@ -148,6 +208,14 @@ export const archiveProjects: Project[] = [
 		role: "Built immutable niche-card, probe, evidence, evaluation, and operator-decision contracts.",
 		impact:
 			"Replaces idea scoring with comparable trials that can distinguish attention from willingness to pay.",
+		archiveDescription:
+			"Market Lab reverses the usual founder mistake: evidence first, product second. It freezes buyer, pain, offer, price, channel, and kill rules, then lets increasingly costly customer commitments—not enthusiasm or model scores—decide what deserves to exist.",
+		present:
+			"The append-only registry, contracts, evaluator, policy, and three-card portfolio are implemented. All three probes remain inactive: outreach delivery and CAD checkout receipt capture have not passed smoke checks, so no exposure has begun.",
+		vision:
+			"A foundry that repeatedly turns uncertain markets into comparable trials, preserves dead ends, and promotes only buyer/problem/offer combinations that pay and can be fulfilled repeatedly.",
+		frontier:
+			"Leave the laboratory. Prove one real distribution lane and learn whether the evidence ladder predicts a business rather than merely governing synthetic receipts well.",
 		proof: [{ label: "Three probes approved pending delivery and checkout smoke tests" }],
 		tags: ["Python", "SQLite", "Experiment design", "Evidence"],
 	},
@@ -160,6 +228,14 @@ export const archiveProjects: Project[] = [
 		role: "Built catalog ingestion, product identity, supplier-policy evidence, an editorial storefront, and multi-store data structures.",
 		impact:
 			"Preserves product and supplier intelligence while preventing an unverified product idea from silently becoming a store.",
+		archiveDescription:
+			"SYNTRA is obsessed with making product discovery smaller and more honest: remove weak options, explain tradeoffs, and send people directly to the maker. Behind that simple storefront sits a broader ambition—a reusable commerce foundry built from product intelligence.",
+		present:
+			"The private catalog holds 4,502 products and the public site exposes 50 curated picks. Revenue is $0; no affiliate supplier is active, and none of the researched supplier offers is yet verified or deployable.",
+		vision:
+			"A trusted discovery surface and private commerce engine that can research categories, curate sharply, qualify supply, launch distinct stores, and earn without disguising advertising or pretending to own inventory.",
+		frontier:
+			"Convert catalog depth and taste into active merchant relationships, measured human discovery, qualified offers, and revenue.",
 		proof: [{ label: "Live storefront", href: "https://syntraworks.ca" }],
 		tags: ["TypeScript", "Supabase", "Commerce", "Product research"],
 	},
@@ -172,6 +248,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the website, CRM, Twilio messaging, missed-call path, sales agents, contracts, payments, portal, and guided call workflow.",
 		impact:
 			"Creates a complete operating path from a missed lead to a governed client relationship, even though the commercial proof gate is not yet passed.",
+		archiveDescription:
+			"Boréal Numérique starts with a brutal leak: a Quebec contractor misses a call, and the job goes elsewhere. The larger obsession is an agent-native service network that helps trades attract demand, answer it, convert it, retain customers, and eventually transact through a trusted operational grid.",
+		present:
+			"The CRM, missed-call product, client portal, contracts, payment plumbing, outreach, and operator tooling are substantial. The commercial proof is absent: qualified replies produced zero completed diagnostic calls, broad automation is held, and the first two installs remain the gate.",
+		vision:
+			"Quebec trades’ operating growth layer—from local visibility and instant response through follow-up, scheduling, payments, and qualified service-network handoffs.",
+		frontier:
+			"Close the first completed diagnostic conversation and two installs. The missing piece is no longer machinery; it is trust, delivery, and attributable customer value.",
 		proof: [{ label: "Live service and client-delivery stack" }],
 		tags: ["Python", "Twilio", "SQLite", "Stripe", "Cloudflare"],
 	},
@@ -184,6 +268,14 @@ export const archiveProjects: Project[] = [
 		role: "Built account-scoped queues, immutable proposals, review and delivery receipts, strategy experiments, and X/YouTube adapters.",
 		impact:
 			"Provides a truthful base for testing owned-media businesses without counting generated drafts as distribution or revenue.",
+		archiveDescription:
+			"Signaler is an attention-arbitrage machine with editorial memory: find worthwhile niches, turn one thesis into native content across channels, learn from outcomes, and build media properties that can earn through affiliates. It is a portfolio of identities, not a megaphone.",
+		present:
+			"Four brands and twenty channel ideas exist, with governed generation, proposals, rendering, and delivery evidence. One X path and a private YouTube canary work; most profiles and publishing paths remain unlinked or blocked, and monetization is still zero.",
+		vision:
+			"A self-improving portfolio of distinct media brands that researches, creates, distributes, measures, and adapts across platforms without flattening every identity into the same automated voice.",
+		frontier:
+			"Turn content throughput into durable distribution and money, then let observed audience outcomes—not generated volume—shape what scales.",
 		proof: [{ label: "Bounded X and private YouTube delivery canaries" }],
 		tags: ["Python", "SQLite", "YouTube", "X", "Content systems"],
 	},
@@ -196,6 +288,14 @@ export const archiveProjects: Project[] = [
 		role: "Built isolated upstream and self-hosted harnesses, verifiers, cost ledgers, comparison runs, and a bounded SOL/USDC canary.",
 		impact:
 			"Separates working economic mechanics from unsupported claims about self-funding or recursive improvement.",
+		archiveDescription:
+			"A controlled attempt to ask whether an agent can turn scarce capital into continued existence—not merely complete tasks. Genesis, exact upstream Conway, and a self-hosted surrogate are kept separate so survival and economic behavior cannot be faked by attribution.",
+		present:
+			"The harness proved isolation, receipts, and a tiny verified-artifact baseline. Exact Conway never entered paid inference; the surrogate is diagnostic only. Revenue, adaptation, self-improvement, and replication remain untested.",
+		vision:
+			"A long-horizon arena where agents earn their runtime, adapt under scarcity, improve against hidden measures, and reproduce only when descendants outperform their cost—all under verifiable governance.",
+		frontier:
+			"Replace the one-hour artifact exercise with external payment receipts, repeated capital tiers, hidden capability tests, and parent-child accounting.",
 		proof: [{ label: "Synthetic economic receipts; no external revenue claim" }],
 		tags: ["Python", "TypeScript", "Containers", "Solana", "Ollama"],
 	},
@@ -208,6 +308,14 @@ export const archiveProjects: Project[] = [
 		role: "Ran local model transformations, preserved benchmark artifacts, and integrated a transformed model into the local OMP/Ollama stack.",
 		impact:
 			"Tests the practical capability and coherence trade-offs of weight-level model-behavior interventions without claiming authorship of the upstream toolkit.",
+		archiveDescription:
+			"An evaluation and local integration of the third-party OBLITERATUS project by elder-plinius: weight-level experiments that remove refusal directions while measuring what else breaks. The upstream project is not Merulox-authored.",
+		present:
+			"A substantial upstream checkout, local transformed-model outputs, and an OMP/Ollama integration path exist. Several research headlines remain contributor-reported rather than independently reproduced, and the small local models do not reliably support native agent tool calls.",
+		vision:
+			"A reproducible bench that can tell, model by model, whether refusal surgery preserved reasoning, coding, coherence, and operational usefulness—and publish the limits as plainly as the gains.",
+		frontier:
+			"Pin exact models and prompts, retain raw outputs and hashes, run credible controls, and distinguish a chat-capable altered model from a dependable tool-using agent.",
 		proof: [{ label: "Local transformed models and benchmark artifacts" }],
 		tags: ["Python", "PyTorch", "Transformers", "Gradio", "Mechanistic interpretability"],
 	},
@@ -220,6 +328,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the shared runtime, loop specs, state journals, locks, budgets, and Telegram decision prompts.",
 		impact:
 			"Turns recurring objectives into inspectable scheduled work, while exposing the failure modes of narrative-only autonomy.",
+		archiveDescription:
+			"Recurring work should not depend on remembering to ask. Orbit is the governed clockwork: AI loops wake, inspect reality, request authority, act within bounds, and leave evidence rather than quietly becoming unattended scripts.",
+		present:
+			"The runtime, specs, budgets, locks, journals, Telegram questions, and several loops exist. Services are stopped, and the architecture still leans on summaries, text blocks, repeated wakeups, and model-reported completion instead of typed work and independent closure.",
+		vision:
+			"A control plane that continuously turns declared objectives and observed reality into authorized, bounded, independently verified work—with a causal record of why each intervention happened and what changed.",
+		frontier:
+			"Evolve without a big-bang rewrite: typed work, event triggers, leases, effect-level authority, independent verification, and truthful reconciliation between configuration and reality.",
 		proof: [{ label: "Runtime preserved; target re-architecture documented" }],
 		tags: ["Python", "SQLite", "systemd", "Telegram"],
 	},
@@ -232,6 +348,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the evidence snapshot, ranking loop, Telegram feedback path, closure metrics, and two-verification learning rule.",
 		impact:
 			"Converts repeated operational friction into measurable improvements instead of an unbounded idea feed.",
+		archiveDescription:
+			"Compounder hunts the friction that keeps returning. It compresses recent work and system evidence into at most three actions, follows operator disposition, checks whether anything actually closed, and promotes a lesson only after repeated verified outcomes.",
+		present:
+			"A private Python/SQLite daily loop exists with evidence bounds, deterministic ranking, Telegram feedback, recurrence metrics, and verification rules. The contract is stronger than its earlier generic proposals; recommendation quality and reclaimed value remain unproven.",
+		vision:
+			"An operating memory that steadily removes recurring drag: fewer repeated failures, sharper priorities, and durable rules earned from outcomes rather than generated advice.",
+		frontier:
+			"Prove that its top recommendation changes behavior and closes valuable work often enough to deserve daily attention.",
 		proof: [{ label: "Implemented internal system; scheduler currently stopped" }],
 		tags: ["Python", "SQLite", "Claude", "Telegram"],
 	},
@@ -244,7 +368,15 @@ export const archiveProjects: Project[] = [
 		role: "Designed the vault-intelligence architecture and built the narrow Phase-0 Telegram prototype.",
 		impact:
 			"Tests whether a private knowledge base can become an active, cited research substrate.",
-		proof: [{ label: "Read-only Telegram prototype" }],
+		archiveDescription:
+			"A librarian for a vault that has grown too large to remember whole. Victorique is meant to recover buried arguments, expose contradictions and abandoned threads, and reconstruct useful truth from fragments—with exact citations and permission before writing.",
+		present:
+			"The architecture and safety model are detailed, and a thin Telegram query prototype is described. The repository remains mostly design and early scaffolding; the trusted index, pattern detectors, approval inbox, and independent builder are not present realities.",
+		vision:
+			"A cited intelligence layer over the vault: first a reliable mirror, then an analyst and recommender, eventually a builder that can act while preserving inspectable evidence and human authority.",
+		frontier:
+			"Earn trust at Level 0. Build a complete index-and-ask path and prevent false coherence before unlocking any write or tool authority.",
+		proof: [{ label: "Architecture and Phase-0 manual prototype plan" }],
 		tags: ["Python", "Claude", "Obsidian", "Telegram"],
 	},
 	{
@@ -256,7 +388,15 @@ export const archiveProjects: Project[] = [
 		role: "Researched and specified the local embedding, vector-store, recall, and session-hook architecture.",
 		impact:
 			"Defines a path toward cross-session recall without presenting design work as a finished memory system.",
-		proof: [{ label: "Architecture complete; implementation not started" }],
+		archiveDescription:
+			"Sessions forget; navi is the refusal to accept that reset. It treats observations, decisions, procedures, and identity as living memory that can be recalled by meaning, strengthened by use, and shared across agents.",
+		present:
+			"The repository contains a small Python/Qdrant/Ollama memory substrate and detailed plans. Its own verified context records an incomplete remember-to-recall slice, missing service packaging and boot integration, and documentation drift.",
+		vision:
+			"One local continuity layer where every agent recovers the right memory at the right moment, notices patterns across months, and continues as part of the same evolving system rather than another blank session.",
+		frontier:
+			"Close the remember-to-recall loop, then solve provenance, contradiction, forgetting, and context injection before calling retrieval “consciousness.”",
+		proof: [{ label: "Early local substrate; end-to-end recall slice incomplete" }],
 		tags: ["Python", "Qdrant", "Ollama", "Embeddings"],
 	},
 	{
@@ -268,18 +408,34 @@ export const archiveProjects: Project[] = [
 		role: "Built the Next.js storefront, PostgreSQL data layer, admin pages, order flow, and mocked payment boundary.",
 		impact:
 			"Proved the ordinary commerce flow while making the unresolved regulatory and payment constraints explicit.",
+		archiveDescription:
+			"A deliberately plain storefront prototype: batches become products, products enter a cart, orders reach checkout, and operators can inspect inventory and payment state. The real subject is where ordinary commerce software meets unusually unforgiving regulation.",
+		present:
+			"Catalog, cart, admin pages, Postgres schema, age splash, order records, and Stripe session wiring exist locally. It is not a lawful cannabis store: licensing, jurisdiction, possession limits, strong age verification, and processor eligibility sit outside checkout.",
+		vision:
+			"A deployable regulated-commerce system whose inventory, identity, geography, payments, fulfillment, and audit trail all enforce the retailer’s actual licence instead of merely displaying compliant language.",
+		frontier:
+			"The gap is legal and transactional authority: a real jurisdiction, licensed operator, enforceable checks, eligible payments, and a proved order lifecycle.",
 		proof: [{ label: "Local build, tests, and database smoke flow" }],
 		tags: ["Next.js", "TypeScript", "PostgreSQL", "Stripe"],
 	},
 	{
 		name: "Selection Oracle",
-		state: "active",
+		state: "prototype",
 		date: "2026",
 		description:
 			"A privacy-conscious browser extension that summarizes selected webpage text only after an explicit user action.",
 		role: "Built the Manifest V3 extension, selected-text capture flow, injected UI, and diagnostics path.",
 		impact:
 			"Provides fast explanation of selected text without passive page surveillance.",
+		archiveDescription:
+			"A browser-side question asked at the smallest useful boundary: what can this selected passage tell me? The extension captures only text a user deliberately highlights, then opens an analysis surface instead of watching entire pages.",
+		present:
+			"Repository evidence records a working local Manifest V3 extension and fixes to bundling, overlay placement, and diagnostics. No standalone source repository or durable design document was located, so this remains a small completed experiment.",
+		vision:
+			"Point at any passage and summon a private, source-grounded explanation, critique, or connection without surrendering the surrounding page to surveillance.",
+		frontier:
+			"Recover the source, define the endpoint and retention contract, and prove that explicit selection remains the hard privacy boundary.",
 		proof: [{ label: "Local extension build" }],
 		tags: ["Chrome Extension", "Manifest V3", "JavaScript"],
 	},
@@ -292,6 +448,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the command bus, engagement layout, scope boundary, evidence ledger, and learning map.",
 		impact:
 			"Makes security practice auditable while keeping activity inside explicit training or engagement scope.",
+		archiveDescription:
+			"Offensive security begins with permission and a question, not a scanner. Red Team Workflow is a terminal discipline for turning authorized scope into minimal validation, sealed observations, curated evidence, findings, remediation, and retest.",
+		present:
+			"The command bus, workspace structure, scope gate, evidence ledger, learning map, and Aperture projection exist around a local training lab. It intentionally does not execute scanners or choose targets, and no completed real-world engagement is established.",
+		vision:
+			"A practiced security operating system where every test is authorized, every step follows a hypothesis, every claim carries reproducible evidence, and learning advances only when artifacts prove it.",
+		frontier:
+			"Move from a sound training scaffold to demonstrated skill without weakening strict scope refusal as the tool catalog grows.",
 		proof: [{ label: "Dormant training toolkit" }],
 		tags: ["Python", "Security labs", "Evidence", "CLI"],
 	},
@@ -304,6 +468,14 @@ export const archiveProjects: Project[] = [
 		role: "Built the single-file TUI and later extracted its useful context-snapshot and evolution-diff ideas.",
 		impact:
 			"Produced reusable control-surface ideas and a clear lesson about tight coupling and single-file maintenance.",
+		archiveDescription:
+			"Brain Monitor tried to make an evolving operation visible from inside it: live state, deep drill-downs, newly discovered components, and an embedded agent answering from the dashboard’s context. Its best idea was intelligence inside the instrument panel, not another chat window.",
+		present:
+			"Broken and archived. The 4,500-line single-file TUI rotted as Realm, service names, paths, and operational surfaces changed. It survives as a design specimen, not a functioning monitor.",
+		vision:
+			"Its useful patterns—context snapshots, evolution detection, restartable file-backed views, and contextual drill-down—should reappear as maintainable pieces of Aperture or Commander, not as a revived monolith.",
+		frontier:
+			"Extract only the ideas that still earn their weight: automatic discovery must notice change without hard-coding a second, stale copy of the system.",
 		proof: [{ label: "Archived after path and architecture drift" }],
 		tags: ["Python", "TUI", "Operations"],
 	},
@@ -317,6 +489,14 @@ export const archiveProjects: Project[] = [
 		role: "Designed, built, and deployed the site and its supporting content pipelines.",
 		impact:
 			"Turns shipped work, failed bets, and ongoing experiments into a public operating record.",
+		archiveDescription:
+			"MERULOX is the public index of a systems thinker: projects, field notes, reading, music, and current motion arranged with the precision of a reference manual. The work, dates, and unfinished edges carry the identity.",
+		present:
+			"A deployed Astro site on Cloudflare Pages with static project pages and live content seams for posts, logs, reading, and listening. Its main weakness is editorial: project records can outrun repository truth.",
+		vision:
+			"A living, legible record of what Merulox builds and thinks—specific enough for engineers, accessible enough for strangers, and candid enough that archived failures remain as informative as shipped systems.",
+		frontier:
+			"Keep the public archive synchronized with evidence without flattening every project into the same grandiose voice.",
 		proof: [
 			{ label: "Live site", href: "https://merulox.com" },
 			{ label: "GitHub repository", href: "https://github.com/Merulox/meruloxs-terminal" },

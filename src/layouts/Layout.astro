@@ -100,9 +100,12 @@ const navItems = customNavItems ?? defaultNavItems;
 				);
 				if (!navEls.length) return;
 
-				const listEls = Array.from(
+				const allListEls = Array.from(
 					document.querySelectorAll<HTMLElement>(".list-item"),
 				);
+				const visibleListEls = () =>
+					allListEls.filter((el) => !el.closest<HTMLElement>("[hidden]"));
+				let listEls = visibleListEls();
 				const rowGroups = Array.from(
 					document.querySelectorAll<HTMLElement>(".kbd-row"),
 				);
@@ -122,10 +125,17 @@ const navItems = customNavItems ?? defaultNavItems;
 					navEls.findIndex((el) => el.getAttribute("aria-current") === "page"),
 				);
 				const skipTarget = (e: KeyboardEvent) => {
-					// Let browser/OS shortcuts (Ctrl+L, Cmd+L, etc.) through untouched.
+					// Let browser/OS shortcuts and unmanaged native controls behave normally.
 					if (e.ctrlKey || e.metaKey || e.altKey) return true;
-					const tag = (e.target as HTMLElement).tagName;
-					return tag === "INPUT" || tag === "TEXTAREA";
+					const target = e.target as HTMLElement;
+					const interactive = target.closest<HTMLElement>(
+						'a, button, input, textarea, select, summary, [contenteditable="true"]',
+					);
+					return Boolean(
+						interactive &&
+							!navEls.includes(interactive) &&
+							!listEls.includes(interactive),
+					);
 				};
 
 				if (listEls.length) {
@@ -134,6 +144,14 @@ const navItems = customNavItems ?? defaultNavItems;
 					let navIdx = navStart;
 					let listIdx = 0;
 					let last: "nav" | "list" = "list";
+					const refreshListEls = (reset = false) => {
+						const next = visibleListEls();
+						if (!next.length) return;
+						clear(allListEls);
+						listEls = next;
+						listIdx = reset ? 0 : Math.min(listIdx, listEls.length - 1);
+						paint(listEls, listIdx);
+					};
 					paint(navEls, navIdx);
 					paint(listEls, listIdx);
 
@@ -145,8 +163,13 @@ const navItems = customNavItems ?? defaultNavItems;
 						if (l !== -1) { listIdx = l; paint(listEls, l); last = "list"; }
 					});
 
+					document.addEventListener("archive-panel-change", () => {
+						refreshListEls(true);
+					});
+
 					document.addEventListener("keydown", (e) => {
 						if (skipTarget(e)) return;
+						refreshListEls();
 						switch (e.key) {
 							case "ArrowLeft": case "h":
 								e.preventDefault();

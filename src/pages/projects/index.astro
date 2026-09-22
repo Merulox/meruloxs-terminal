@@ -14,13 +14,36 @@ import { archiveProjects, moneySchemes } from "../../data/projects";
 			what I tried, what I actually did, how it went, where it stands, and what
 			stopped it.
 		</p>
-		<nav class="archive-index" aria-label="Archive sections">
-			<a href="#projects">Projects <span>{archiveProjects.length}</span></a>
-			<a href="#money-schemes">Money schemes <span>{moneySchemes.length}</span></a>
-		</nav>
+		<div class="archive-index" role="group" aria-label="Archive view">
+			<button
+				type="button"
+				class="archive-switch"
+				data-archive-target="projects"
+				aria-pressed="true"
+			>
+				<span class="archive-switch-marker" aria-hidden="true">›</span>
+				<span>Projects</span>
+				<span class="archive-count">{archiveProjects.length}</span>
+			</button>
+			<button
+				type="button"
+				class="archive-switch"
+				data-archive-target="money-schemes"
+				aria-pressed="false"
+			>
+				<span class="archive-switch-marker" aria-hidden="true">›</span>
+				<span>Money schemes</span>
+				<span class="archive-count">{moneySchemes.length}</span>
+			</button>
+		</div>
 	</header>
 
-	<section id="projects" class="section archive-section" aria-labelledby="projects-heading">
+	<section
+		id="projects"
+		class="section archive-section"
+		aria-labelledby="projects-heading"
+		data-archive-panel
+	>
 		<h2 id="projects-heading" class="eyebrow">Projects</h2>
 		<p class="archive-section-note">
 			Systems, products, prototypes, and retired builds. A status describes what is
@@ -46,38 +69,39 @@ import { archiveProjects, moneySchemes } from "../../data/projects";
 								<span class="proj-date">{project.date}</span>
 							</button>
 							<div id={bodyId} class="proj-body" hidden={!isOpen}>
-								<dl class="archive-fields">
-									<div class="archive-field">
-										<dt>What</dt>
-										<dd>{project.description}</dd>
-									</div>
-									<div class="archive-field">
-										<dt>Built</dt>
-										<dd>{project.role}</dd>
-									</div>
-									<div class="archive-field">
-										<dt>Why</dt>
-										<dd>{project.impact}</dd>
-									</div>
-									<div class="archive-field">
-										<dt>Proof</dt>
-										<dd>
-											<ul class="archive-proof">
-												{
-													project.proof.map((item) => (
-														<li>
-															{item.href ? (
-																<a href={item.href} target="_blank" rel="noreferrer">
-																	{item.label} ↗
-																</a>
-															) : item.label}
-														</li>
-													))
-												}
-											</ul>
-										</dd>
-									</div>
-								</dl>
+								<p class="project-description">{project.archiveDescription}</p>
+
+								<div class="living-thesis">
+									<section class="thesis-block">
+										<h3>Present</h3>
+										<p>{project.present}</p>
+									</section>
+									<section class="thesis-block">
+										<h3>Vision</h3>
+										<p>{project.vision}</p>
+									</section>
+									<section class="thesis-block">
+										<h3>Frontier</h3>
+										<p>{project.frontier}</p>
+									</section>
+									<section class="thesis-block project-receipts">
+										<h3>Receipts</h3>
+										<ul class="archive-proof">
+											{
+												project.proof.map((item) => (
+													<li>
+														{item.href ? (
+															<a href={item.href} target="_blank" rel="noreferrer">
+																{item.label} ↗
+															</a>
+														) : item.label}
+													</li>
+												))
+											}
+										</ul>
+									</section>
+								</div>
+
 								<ul class="tag-list archive-tags" aria-label={`${project.name} stack`}>
 									{project.tags.map((tag) => <li>{tag}</li>)}
 								</ul>
@@ -93,6 +117,7 @@ import { archiveProjects, moneySchemes } from "../../data/projects";
 		id="money-schemes"
 		class="section archive-section"
 		aria-labelledby="money-schemes-heading"
+		data-archive-panel
 	>
 		<h2 id="money-schemes-heading" class="eyebrow">Money schemes</h2>
 		<p class="archive-section-note">
@@ -199,6 +224,46 @@ import { archiveProjects, moneySchemes } from "../../data/projects";
 	</section>
 
 	<script>
+		const archiveSwitches = Array.from(
+			document.querySelectorAll<HTMLButtonElement>("[data-archive-target]"),
+		);
+		const archivePanels = Array.from(
+			document.querySelectorAll<HTMLElement>("[data-archive-panel]"),
+		);
+
+		const activateArchivePanel = (panelId: string, updateUrl = true) => {
+			archiveSwitches.forEach((control) => {
+				control.setAttribute(
+					"aria-pressed",
+					control.dataset.archiveTarget === panelId ? "true" : "false",
+				);
+			});
+			archivePanels.forEach((panel) => {
+				panel.hidden = panel.id !== panelId;
+			});
+			if (updateUrl) history.replaceState(null, "", `#${panelId}`);
+			document.dispatchEvent(
+				new CustomEvent("archive-panel-change", { detail: { panelId } }),
+			);
+		};
+
+		archiveSwitches.forEach((control) => {
+			control.addEventListener("keydown", (event) => event.stopPropagation());
+			control.addEventListener("click", () => {
+				activateArchivePanel(control.dataset.archiveTarget ?? "projects");
+			});
+		});
+
+		const initialPanel =
+			window.location.hash === "#money-schemes" ? "money-schemes" : "projects";
+		activateArchivePanel(initialPanel, false);
+
+		window.addEventListener("hashchange", () => {
+			const panel =
+				window.location.hash === "#money-schemes" ? "money-schemes" : "projects";
+			activateArchivePanel(panel, false);
+		});
+
 		document.querySelectorAll<HTMLButtonElement>(".proj-head").forEach((head) => {
 			const bodyId = head.getAttribute("aria-controls");
 			const body = bodyId ? document.getElementById(bodyId) : null;
