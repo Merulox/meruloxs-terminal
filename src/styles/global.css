@@ -84,9 +84,12 @@ ul {
 
 .kbd-item:focus,
 .kbd-item:focus-visible,
-.list-item:focus,
-.list-item:focus-visible {
+.list-item:focus {
 	outline: none;
+}
+
+.list-item:focus-visible {
+	box-shadow: inset 0 0 0 1px rgba(78, 184, 196, 0.55);
 }
 
 .site-nav {
@@ -315,9 +318,25 @@ h2 {
 	white-space: nowrap;
 }
 
-.proj-state.stagnant,
+.proj-state.active {
+	color: #63b38a;
+}
+
+.proj-state.prototype,
+.proj-state.research {
+	color: var(--accent);
+}
+
 .proj-state.paused {
 	color: #b08c3e;
+}
+
+.proj-state.failed {
+	color: #bd6b6b;
+}
+
+.proj-state.archived {
+	color: var(--muted);
 }
 
 .proj-date {
@@ -336,6 +355,10 @@ h2 {
 	display: block;
 }
 
+.proj-body[hidden] {
+	display: none;
+}
+
 .proj-body p {
 	margin: 0 0 12px;
 	color: var(--muted);
@@ -348,6 +371,180 @@ h2 {
 	margin-bottom: 12px;
 	font-family: "SFMono-Regular", Consolas, monospace;
 	font-size: 11px;
+}
+
+.archive-intro {
+	margin-bottom: 48px;
+}
+
+.archive-intro h1 {
+	margin-bottom: 12px;
+}
+
+.archive-intro p {
+	color: var(--muted);
+	font-size: 13px;
+	max-width: 60ch;
+}
+
+.archive-index {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 22px;
+	margin-top: 20px;
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 11px;
+}
+
+.archive-index a {
+	color: var(--text);
+	text-decoration: none;
+}
+
+.archive-index a::before {
+	content: ">";
+	margin-right: 7px;
+	color: var(--accent);
+}
+
+.archive-index span {
+	margin-left: 5px;
+	color: var(--muted);
+}
+
+.archive-section {
+	scroll-margin-top: 24px;
+}
+
+.archive-section .eyebrow {
+	margin-bottom: 8px;
+}
+
+.archive-section-note {
+	margin-bottom: 22px;
+	color: var(--muted);
+	font-size: 13px;
+	max-width: 60ch;
+}
+
+.archive-fields,
+.scheme-history-fields {
+	display: grid;
+	gap: 12px;
+	margin: 0;
+}
+
+.archive-field,
+.scheme-history-field {
+	display: grid;
+	grid-template-columns: 72px minmax(0, 1fr);
+	gap: 12px;
+	align-items: baseline;
+}
+
+.archive-field dt,
+.scheme-history-field dt {
+	color: var(--accent);
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 10px;
+	text-transform: uppercase;
+}
+
+.archive-field dd,
+.scheme-history-field dd {
+	margin: 0;
+	color: var(--muted);
+	font-size: 13px;
+	max-width: 58ch;
+}
+
+.archive-proof {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px 14px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.archive-proof li {
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 10px;
+}
+
+.archive-proof li::before {
+	content: "[+]";
+	margin-right: 6px;
+	color: var(--faint);
+}
+
+.archive-proof li:first-child::before {
+	color: var(--accent);
+}
+
+.archive-tags {
+	margin-top: 16px;
+}
+
+.scheme-summary {
+	padding-bottom: 18px;
+}
+
+.scheme-decision {
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 10px;
+	text-transform: uppercase;
+}
+
+.scheme-decision.pursue {
+	color: #63b38a;
+}
+
+.scheme-decision.hold {
+	color: #b08c3e;
+}
+
+.scheme-decision.drop {
+	color: #bd6b6b;
+}
+
+.scheme-history {
+	margin: 0;
+	padding: 0;
+	border-top: 1px solid var(--line);
+	list-style: none;
+}
+
+.scheme-history-item {
+	padding: 17px 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.scheme-history-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.scheme-history-head time {
+	color: var(--text);
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.scheme-history-fields {
+	gap: 9px;
+}
+
+.scheme-history-field {
+	grid-template-columns: 62px minmax(0, 1fr);
+}
+
+.scheme-list .proj-body {
+	padding-bottom: 20px;
 }
 
 /* ── Music page ───────────────────────────────────────────── */
@@ -898,10 +1095,51 @@ h2 {
 
 	.site-nav {
 		justify-content: flex-start;
+		gap: 13px;
+	}
+
+	.site-nav a {
+		position: relative;
+		gap: 0;
+	}
+
+	.site-nav .sel-arrow {
+		position: absolute;
+		left: -10px;
 	}
 
 	.item-header {
 		grid-template-columns: 1fr;
 		gap: 2px;
+	}
+
+	.proj-head {
+		grid-template-columns: 16px minmax(0, 1fr) auto;
+		gap: 8px;
+	}
+
+	.proj-name {
+		overflow: visible;
+		text-overflow: clip;
+		white-space: normal;
+		line-height: 1.35;
+	}
+
+	.proj-date {
+		grid-column: 2 / -1;
+	}
+
+	.proj-body {
+		padding-left: 24px;
+	}
+
+	.archive-field,
+	.scheme-history-field {
+		grid-template-columns: 1fr;
+		gap: 2px;
+	}
+
+	.archive-index {
+		gap: 8px 18px;
 	}
 }

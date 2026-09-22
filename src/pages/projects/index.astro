@@ -1,50 +1,214 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { projects } from "../../data/projects";
+import { archiveProjects, moneySchemes } from "../../data/projects";
 ---
 
 <Layout
-	title="projects | MERULOX"
-	description="Projects built by Merulox."
+	title="archive | MERULOX"
+	description="Projects and money-making experiments built, tested, pursued, paused, and rejected by Merulox."
 >
-	<h1>Projects</h1>
+	<header class="archive-intro">
+		<h1>Archive</h1>
+		<p>
+			The projects are what I built, adapted, or tested. The money schemes are the honest ledger:
+			what I tried, what I actually did, how it went, where it stands, and what
+			stopped it.
+		</p>
+		<nav class="archive-index" aria-label="Archive sections">
+			<a href="#projects">Projects <span>{archiveProjects.length}</span></a>
+			<a href="#money-schemes">Money schemes <span>{moneySchemes.length}</span></a>
+		</nav>
+	</header>
 
-	<div class="proj-list">
-		{
-			projects.map((p, i) => (
-				<article class={`proj${i === 0 ? " open" : ""}`}>
-					<button class="proj-head list-item" aria-expanded={i === 0 ? "true" : "false"}>
-						<span class="proj-caret" aria-hidden="true">›</span>
-						<span class="proj-name">{p.name}</span>
-						{p.state && <span class={`proj-state ${p.state}`}>{p.state}</span>}
-						<span class="proj-date">{p.date}</span>
-					</button>
-					<div class="proj-body">
-						<p>{p.description}</p>
-						{
-							p.github && (
-								<a class="project-repo" href={p.github} target="_blank" rel="noreferrer">
-									GitHub ↗
-								</a>
-							)
-						}
-						<ul class="tag-list">
-							{p.tags.map((tag) => (
-								<li>{tag}</li>
-							))}
-						</ul>
-					</div>
-				</article>
-			))
-		}
-	</div>
+	<section id="projects" class="section archive-section" aria-labelledby="projects-heading">
+		<h2 id="projects-heading" class="eyebrow">Projects</h2>
+		<p class="archive-section-note">
+			Systems, products, prototypes, and retired builds. A status describes what is
+			true now—not how ambitious the original idea was.
+		</p>
+
+		<div class="proj-list">
+			{
+				archiveProjects.map((project, index) => {
+					const isOpen = index === 0;
+					const bodyId = `project-body-${index}`;
+
+					return (
+						<article class={`proj${isOpen ? " open" : ""}`}>
+							<button
+								class="proj-head list-item"
+								aria-expanded={isOpen ? "true" : "false"}
+								aria-controls={bodyId}
+							>
+								<span class="proj-caret" aria-hidden="true">›</span>
+								<span class="proj-name">{project.name}</span>
+								<span class={`proj-state ${project.state}`}>{project.state}</span>
+								<span class="proj-date">{project.date}</span>
+							</button>
+							<div id={bodyId} class="proj-body" hidden={!isOpen}>
+								<dl class="archive-fields">
+									<div class="archive-field">
+										<dt>What</dt>
+										<dd>{project.description}</dd>
+									</div>
+									<div class="archive-field">
+										<dt>Built</dt>
+										<dd>{project.role}</dd>
+									</div>
+									<div class="archive-field">
+										<dt>Why</dt>
+										<dd>{project.impact}</dd>
+									</div>
+									<div class="archive-field">
+										<dt>Proof</dt>
+										<dd>
+											<ul class="archive-proof">
+												{
+													project.proof.map((item) => (
+														<li>
+															{item.href ? (
+																<a href={item.href} target="_blank" rel="noreferrer">
+																	{item.label} ↗
+																</a>
+															) : item.label}
+														</li>
+													))
+												}
+											</ul>
+										</dd>
+									</div>
+								</dl>
+								<ul class="tag-list archive-tags" aria-label={`${project.name} stack`}>
+									{project.tags.map((tag) => <li>{tag}</li>)}
+								</ul>
+							</div>
+						</article>
+					);
+				})
+			}
+		</div>
+	</section>
+
+	<section
+		id="money-schemes"
+		class="section archive-section"
+		aria-labelledby="money-schemes-heading"
+	>
+		<h2 id="money-schemes-heading" class="eyebrow">Money schemes</h2>
+		<p class="archive-section-note">
+			Commercial bets, market probes, trading ideas, and internet-money experiments.
+			Internal test credits, paper returns, replies, and shipped code are not counted
+			as revenue.
+		</p>
+
+		<div class="proj-list scheme-list">
+			{
+				moneySchemes.map((scheme, index) => {
+					const bodyId = `scheme-body-${index}`;
+
+					return (
+						<article class="proj scheme">
+							<button
+								class="proj-head list-item"
+								aria-expanded="false"
+								aria-controls={bodyId}
+							>
+								<span class="proj-caret" aria-hidden="true">›</span>
+								<span class="proj-name">{scheme.name}</span>
+								<span class={`proj-state ${scheme.state}`}>{scheme.state}</span>
+								<span class="proj-date">{scheme.date}</span>
+							</button>
+							<div id={bodyId} class="proj-body" hidden>
+								<dl class="archive-fields scheme-summary">
+									<div class="archive-field">
+										<dt>Model</dt>
+										<dd>{scheme.description}</dd>
+									</div>
+									<div class="archive-field">
+										<dt>Now</dt>
+										<dd>{scheme.currentState}</dd>
+									</div>
+									<div class="archive-field">
+										<dt>Decision</dt>
+										<dd>
+											<span class={`scheme-decision ${scheme.decision}`}>
+												{scheme.decision}
+											</span>
+										</dd>
+									</div>
+									<div class="archive-field">
+										<dt>Wall</dt>
+										<dd>{scheme.bottleneck}</dd>
+									</div>
+								</dl>
+
+								<ol class="scheme-history" aria-label={`${scheme.name} attempt history`}>
+									{
+										scheme.history.map((entry) => (
+											<li class="scheme-history-item">
+												<div class="scheme-history-head">
+													<time datetime={entry.date}>{entry.date}</time>
+													<span class={`proj-state ${entry.state}`}>{entry.state}</span>
+												</div>
+												<dl class="scheme-history-fields">
+													<div class="scheme-history-field">
+														<dt>Attempt</dt>
+														<dd>{entry.attemptedModel}</dd>
+													</div>
+													<div class="scheme-history-field">
+														<dt>Did</dt>
+														<dd>{entry.work}</dd>
+													</div>
+													<div class="scheme-history-field">
+														<dt>Result</dt>
+														<dd>{entry.result}</dd>
+													</div>
+													<div class="scheme-history-field">
+														<dt>Evidence</dt>
+														<dd>
+															<ul class="archive-proof">
+																{
+																	entry.proof.map((item) => (
+																		<li>
+																			{item.href ? (
+																				<a href={item.href} target="_blank" rel="noreferrer">
+																					{item.label} ↗
+																				</a>
+																			) : item.label}
+																		</li>
+																	))
+																}
+															</ul>
+														</dd>
+													</div>
+												</dl>
+											</li>
+										))
+									}
+								</ol>
+
+								<ul class="tag-list archive-tags" aria-label={`${scheme.name} tags`}>
+									{scheme.tags.map((tag) => <li>{tag}</li>)}
+								</ul>
+							</div>
+						</article>
+					);
+				})
+			}
+		</div>
+	</section>
 
 	<script>
 		document.querySelectorAll<HTMLButtonElement>(".proj-head").forEach((head) => {
+			const bodyId = head.getAttribute("aria-controls");
+			const body = bodyId ? document.getElementById(bodyId) : null;
+			if (!body) return;
+
 			head.addEventListener("click", () => {
 				const project = head.closest(".proj")!;
 				const open = project.classList.toggle("open");
 				head.setAttribute("aria-expanded", open ? "true" : "false");
+				body.hidden = !open;
 			});
 		});
 	</script>
