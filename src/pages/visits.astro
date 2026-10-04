@@ -129,8 +129,9 @@ const ranges = [
 
 	// Continuous UTC day axis from the range start (or first visit) to today.
 	function fillDays(rows: Summary["daily"], since: number, first: number | null) {
+		if (!first || !rows.length) return [];
 		const byDay = new Map(rows.map((row) => [row.day, row]));
-		const start = new Date(Math.max(since, first ?? since) * 1000);
+		const start = new Date(Math.max(since, first) * 1000);
 		start.setUTCHours(0, 0, 0, 0);
 		const days: Summary["daily"] = [];
 		for (const d = start; d.getTime() <= Date.now(); d.setUTCDate(d.getUTCDate() + 1)) {
