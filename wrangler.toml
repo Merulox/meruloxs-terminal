@@ -17,3 +17,13 @@ id = "61fa3931e29b4e0f82b2aec085a3350a"
 [[env.production.kv_namespaces]]
 binding = "SUBSTACK_SUMMARIES"
 id = "b54b7e6037804aec93c8f9d1422833e3"
+
+[[d1_databases]]
+binding = "VISITS_DB"
+database_name = "merulox-visits"
+database_id = "a1fbcb0b-5612-4bde-a8a7-a99546287326"
+
+[[env.production.d1_databases]]
+binding = "VISITS_DB"
+database_name = "merulox-visits"
+database_id = "a1fbcb0b-5612-4bde-a8a7-a99546287326"

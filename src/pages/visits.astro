@@ -1,0 +1,287 @@
+---
+// Dev-only tab: functions/visits/_middleware.js returns 404 for /visits on every
+// host except dev.merulox.com, which the root middleware puts behind auth.
+import Layout from "../layouts/Layout.astro";
+import { WORLD_LAND_PATH } from "../data/world-land";
+
+const ranges = [
+	["24h", "24 hours"],
+	["7d", "7 days"],
+	["30d", "30 days"],
+	["90d", "90 days"],
+	["all", "all time"],
+];
+---
+
+<Layout title="visits | MERULOX" description="merulox.com visits by location." noindex={true}>
+	<h1>Visits</h1>
+
+	<div class="period-bar kbd-row" role="group" aria-label="Visit time range">
+		{
+			ranges.map(([value, label]) => (
+				<button class:list={["period-btn", "row-item", { active: value === "30d" }]} data-range={value} type="button">
+					{label}
+				</button>
+			))
+		}
+	</div>
+
+	<p class="vis-summary" id="vis-summary" aria-live="polite">loading…</p>
+
+	<figure class="vis-map">
+		<svg viewBox="0 0 360 150" role="img" aria-labelledby="vis-map-title">
+			<title id="vis-map-title">merulox.com visits by location</title>
+			<path class="vis-land" d={WORLD_LAND_PATH} />
+			<g id="vis-points"></g>
+		</svg>
+	</figure>
+
+	<div class="vis-daily" id="vis-daily" aria-hidden="true"></div>
+
+	<div class="vis-grid">
+		<section><h2>countries</h2><ol class="vis-list" id="vis-countries"></ol></section>
+		<section><h2>cities</h2><ol class="vis-list" id="vis-cities"></ol></section>
+		<section><h2>pages</h2><ol class="vis-list" id="vis-paths"></ol></section>
+		<section><h2>referrers</h2><ol class="vis-list" id="vis-referrers"></ol></section>
+	</div>
+
+	<p class="vis-note">
+		Cookieless beacon on merulox.com. Location is Cloudflare's edge estimate from
+		the visitor IP, rounded to the city; no IP, user agent, or identifier is stored.
+		visits = first page of a browser tab session; views = every page load. Exclude
+		your own browser with <a href="https://merulox.com/?notrack=1">merulox.com/?notrack=1</a>
+		(undo with <code>?notrack=0</code>).
+	</p>
+</Layout>
+
+<script>
+	type Row = { views: number; visits: number | null };
+	type Point = Row & { lat: number; lon: number; city: string | null; region: string | null; country: string | null };
+	type Summary = {
+		totals: { views: number; visits: number | null; countries: number; first: number | null };
+		points: Point[];
+		countries: (Row & { country: string | null })[];
+		cities: (Row & { city: string; region: string | null; country: string | null })[];
+		paths: (Row & { path: string })[];
+		referrers: (Row & { referrer: string })[];
+		daily: (Row & { day: string })[];
+	};
+
+	const SVG = "http://www.w3.org/2000/svg";
+	const names = new Intl.DisplayNames(["en"], { type: "region" });
+	const countryName = (code: string | null) => {
+		if (!code || code === "XX" || code === "T1") return code === "T1" ? "Tor" : "unknown";
+		try {
+			return names.of(code) ?? code;
+		} catch {
+			return code;
+		}
+	};
+	const place = (p: { city: string | null; region: string | null; country: string | null }) =>
+		[p.city, p.region, countryName(p.country)].filter(Boolean).join(", ");
+	const n = (value: number | null | undefined) => (value ?? 0).toLocaleString("en");
+
+	const $ = (id: string) => document.getElementById(id)!;
+
+	function renderList(id: string, rows: Row[], label: (row: any) => string) {
+		const list = $(id);
+		list.replaceChildren();
+		if (!rows.length) {
+			const empty = document.createElement("li");
+			empty.className = "vis-empty";
+			empty.textContent = "none yet";
+			list.append(empty);
+			return;
+		}
+		const max = Math.max(...rows.map((row) => row.views));
+		for (const row of rows) {
+			const item = document.createElement("li");
+			item.style.setProperty("--share", `${(row.views / max) * 100}%`);
+			const name = document.createElement("span");
+			name.className = "vis-name";
+			name.textContent = label(row);
+			const count = document.createElement("span");
+			count.className = "vis-count";
+			count.textContent = n(row.views);
+			count.title = `${n(row.views)} views · ${n(row.visits)} visits`;
+			item.append(name, count);
+			list.append(item);
+		}
+	}
+
+	function renderMap(points: Point[]) {
+		const group = $("vis-points");
+		group.replaceChildren();
+		const max = Math.max(1, ...points.map((p) => p.views));
+		// Largest first so small bubbles stay on top and hoverable.
+		for (const p of [...points].sort((a, b) => b.views - a.views)) {
+			const circle = document.createElementNS(SVG, "circle");
+			circle.setAttribute("cx", String(p.lon + 180));
+			circle.setAttribute("cy", String(90 - p.lat));
+			circle.setAttribute("r", String(1.2 + 5.8 * Math.sqrt(p.views / max)));
+			circle.setAttribute("class", "vis-point");
+			const title = document.createElementNS(SVG, "title");
+			title.textContent = `${place(p)} — ${n(p.views)} views, ${n(p.visits)} visits`;
+			circle.append(title);
+			group.append(circle);
+		}
+	}
+
+	// Continuous UTC day axis from the range start (or first visit) to today.
+	function fillDays(rows: Summary["daily"], since: number, first: number | null) {
+		const byDay = new Map(rows.map((row) => [row.day, row]));
+		const start = new Date(Math.max(since, first ?? since) * 1000);
+		start.setUTCHours(0, 0, 0, 0);
+		const days: Summary["daily"] = [];
+		for (const d = start; d.getTime() <= Date.now(); d.setUTCDate(d.getUTCDate() + 1)) {
+			const day = d.toISOString().slice(0, 10);
+			days.push(byDay.get(day) ?? { day, views: 0, visits: 0 });
+		}
+		return days;
+	}
+
+	function renderDaily(days: Summary["daily"]) {
+		const box = $("vis-daily");
+		box.replaceChildren();
+		const max = Math.max(1, ...days.map((d) => d.views));
+		for (const day of days) {
+			const bar = document.createElement("span");
+			bar.style.height = day.views ? `${Math.max(6, (day.views / max) * 100)}%` : "1px";
+			bar.title = `${day.day}: ${n(day.views)} views`;
+			box.append(bar);
+		}
+		box.hidden = days.length < 2;
+	}
+
+	async function load(range: string) {
+		const summary = $("vis-summary");
+		summary.textContent = "loading…";
+		const response = await fetch(`/api/visits?range=${encodeURIComponent(range)}`, { cache: "no-store" });
+		if (!response.ok) {
+			summary.textContent = `could not load visits (${response.status})`;
+			return;
+		}
+		const data: Summary & { since: number } = await response.json();
+		const t = data.totals;
+		const since = t.first ? ` · first ${new Date(t.first * 1000).toISOString().slice(0, 10)}` : "";
+		summary.textContent = `${n(t.visits)} visits · ${n(t.views)} views · ${n(t.countries)} countries${since}`;
+		renderMap(data.points);
+		renderDaily(fillDays(data.daily, data.since, t.first));
+		renderList("vis-countries", data.countries, (row) => countryName(row.country));
+		renderList("vis-cities", data.cities, place);
+		renderList("vis-paths", data.paths, (row) => row.path);
+		renderList("vis-referrers", data.referrers, (row) => row.referrer);
+	}
+
+	const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-range]"));
+	for (const button of buttons) {
+		button.addEventListener("click", () => {
+			buttons.forEach((b) => b.classList.toggle("active", b === button));
+			load(button.dataset.range!);
+		});
+	}
+	load("30d");
+</script>
+
+<style is:global>
+	.vis-summary {
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 12px;
+		margin-bottom: 14px;
+	}
+
+	.vis-map {
+		margin: 0 0 10px;
+		border: 1px solid var(--line);
+		border-radius: 2px;
+	}
+
+	.vis-map svg {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	.vis-land {
+		fill: #151a21;
+		stroke: var(--faint);
+		stroke-width: 0.25;
+	}
+
+	.vis-point {
+		fill: rgba(78, 184, 196, 0.35);
+		stroke: var(--accent);
+		stroke-width: 0.35;
+	}
+
+	.vis-point:hover {
+		fill: rgba(78, 184, 196, 0.75);
+	}
+
+	.vis-daily {
+		display: flex;
+		align-items: flex-end;
+		gap: 1px;
+		height: 36px;
+		margin-bottom: 30px;
+	}
+
+	.vis-daily span {
+		flex: 1;
+		background: rgba(78, 184, 196, 0.45);
+	}
+
+	.vis-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 28px 34px;
+	}
+
+	.vis-grid h2 {
+		font-size: 14px;
+		margin-bottom: 10px;
+		color: var(--muted);
+	}
+
+	.vis-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 12px;
+	}
+
+	.vis-list li {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 3px 6px;
+		background: linear-gradient(90deg, rgba(78, 184, 196, 0.1) var(--share, 0%), transparent var(--share, 0%));
+	}
+
+	.vis-list li + li {
+		margin-top: 2px;
+	}
+
+	.vis-name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.vis-count {
+		color: var(--muted);
+	}
+
+	.vis-empty {
+		color: var(--muted);
+	}
+
+	.vis-note {
+		margin-top: 34px;
+		color: var(--muted);
+		font-size: 12px;
+		max-width: 64ch;
+	}
+</style>

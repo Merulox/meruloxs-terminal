@@ -13,6 +13,7 @@ Personal site. Dark, monospace, no JavaScript frameworks.
 | `/music` | Last.fm listening data |
 | `/log` | Session logs |
 | `/employers` | Separate section: approach, projects, momentum, contact |
+| `/visits` | dev.merulox.com only: merulox.com visits on a world map (D1 `merulox-visits`) |
 
 ## Stack
 
@@ -30,6 +31,11 @@ npm run deploy
 `dev.merulox.com` is protected by HTTP Basic authentication. Configure the
 Cloudflare Pages secrets `DEV_AUTH_USER` and `DEV_AUTH_PASSWORD` for preview
 deployments; production hosts remain public.
+
+Visit tracking: every merulox.com page sends a cookieless beacon to
+`/api/visit`, stored in the D1 database `merulox-visits` (binding `VISITS_DB`,
+schema in `migrations/`) with Cloudflare edge geolocation only. `/visits` and
+`/api/visits` return 404 off `dev.merulox.com`. `?notrack=1` excludes a browser.
 
 ## Repo layout
 
