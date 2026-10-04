@@ -101,7 +101,7 @@ test("aggregate API is dev-host only, authenticated, and groups by location", as
 	assert.equal((await get("https://merulox.com/api/visits")).status, 404);
 	assert.equal((await get("https://dev.merulox.com/api/visits")).status, 401);
 	assert.equal((await get("https://dev.merulox.com/api/visits?range=1y", { devAuthenticated: true })).status, 400);
-	assert.equal((await get("https://dev.merulox.com/api/visits", {}, { Authorization: "Bearer ingest" })).status, 200);
+	assert.equal((await get("https://dev.merulox.com/api/visits", {}, { Authorization: "Bearer ingest" })).status, 401);
 
 	const response = await get("https://dev.merulox.com/api/visits?range=7d", { devAuthenticated: true });
 	assert.equal(response.status, 200);

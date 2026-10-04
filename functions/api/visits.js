@@ -13,9 +13,8 @@ export async function onRequestGet(context) {
 	const url = new URL(request.url);
 	if (url.hostname !== DEV_HOST) return json({ error: "not found" }, 404);
 
-	const token = (request.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-	const bearerAuthorized = Boolean(token && env.LOG_KV_TOKEN && token === env.LOG_KV_TOKEN);
-	if (!bearerAuthorized && data?.devAuthenticated !== true) return json({ error: "unauthorized" }, 401);
+	// Returns visitor IPs: Basic-auth dev sessions only (not the ingest bearer token).
+	if (data?.devAuthenticated !== true) return json({ error: "unauthorized" }, 401);
 
 	const range = url.searchParams.get("range") ?? "30d";
 	const since = rangeStart(range);
