@@ -94,6 +94,7 @@ export function parseVisit(request, bodyText, now = Date.now()) {
 			entry: body.e === 1 ? 1 : 0,
 			referrer: referrerHost(body.r),
 			...geoFrom(request.cf),
+			ip: text(request.headers.get("CF-Connecting-IP"), 45),
 		},
 	};
 }
@@ -101,9 +102,9 @@ export function parseVisit(request, bodyText, now = Date.now()) {
 export async function recordVisit(db, row) {
 	await db
 		.prepare(
-			"INSERT INTO visits (ts, path, entry, referrer, country, region, city, lat, lon, colo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			"INSERT INTO visits (ts, path, entry, referrer, country, region, city, lat, lon, colo, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		)
-		.bind(row.ts, row.path, row.entry, row.referrer, row.country, row.region, row.city, row.lat, row.lon, row.colo)
+		.bind(row.ts, row.path, row.entry, row.referrer, row.country, row.region, row.city, row.lat, row.lon, row.colo, row.ip ?? null)
 		.run();
 }
 
@@ -123,14 +124,15 @@ export async function summarize(db, since) {
 			.all()
 			.then((result) => result.results ?? []);
 
-	const [totals, points, countries, cities, paths, referrers, daily] = await Promise.all([
-		all(`SELECT ${COUNTS}, COUNT(DISTINCT country) AS countries, MIN(ts) AS first, MAX(ts) AS last FROM visits WHERE ts >= ?`),
+	const [totals, points, countries, cities, paths, referrers, daily, recent] = await Promise.all([
+		all(`SELECT ${COUNTS}, COUNT(DISTINCT country) AS countries, COUNT(DISTINCT ip) AS ips, MIN(ts) AS first, MAX(ts) AS last FROM visits WHERE ts >= ?`),
 		all(`SELECT lat, lon, city, region, country, ${COUNTS} FROM visits WHERE ts >= ? AND lat IS NOT NULL AND lon IS NOT NULL GROUP BY lat, lon, city, region, country ORDER BY views DESC LIMIT 500`),
 		all(`SELECT country, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY country ORDER BY views DESC LIMIT 50`),
 		all(`SELECT city, region, country, ${COUNTS} FROM visits WHERE ts >= ? AND city IS NOT NULL GROUP BY city, region, country ORDER BY views DESC LIMIT 25`),
 		all(`SELECT path, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY path ORDER BY views DESC LIMIT 25`),
 		all(`SELECT referrer, ${COUNTS} FROM visits WHERE ts >= ? AND referrer IS NOT NULL GROUP BY referrer ORDER BY views DESC LIMIT 25`),
 		all(`SELECT date(ts, 'unixepoch') AS day, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY day ORDER BY day`),
+		all(`SELECT ts, ip, path, entry, referrer, city, region, country FROM visits WHERE ts >= ? ORDER BY ts DESC, id DESC LIMIT 200`),
 	]);
 
 	const total = totals[0] ?? {};
@@ -139,6 +141,7 @@ export async function summarize(db, since) {
 			views: total.views ?? 0,
 			visits: total.visits ?? 0,
 			countries: total.countries ?? 0,
+			ips: total.ips ?? 0,
 			first: total.first ?? null,
 			last: total.last ?? null,
 		},
@@ -148,5 +151,6 @@ export async function summarize(db, since) {
 		paths,
 		referrers,
 		daily,
+		recent,
 	};
 }

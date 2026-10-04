@@ -34,7 +34,7 @@ deployments; production hosts remain public.
 
 Visit tracking: every merulox.com page sends a cookieless beacon to
 `/api/visit`, stored in the D1 database `merulox-visits` (binding `VISITS_DB`,
-schema in `migrations/`) with Cloudflare edge geolocation only. `/visits` and
+schema in `migrations/`) with the visitor IP (`CF-Connecting-IP`) and Cloudflare edge geolocation. `/visits` and
 `/api/visits` return 404 off `dev.merulox.com`. `?notrack=1` excludes a browser.
 
 ## Repo layout

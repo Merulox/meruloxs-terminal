@@ -45,9 +45,20 @@ const ranges = [
 		<section><h2>referrers</h2><ol class="vis-list" id="vis-referrers"></ol></section>
 	</div>
 
+	<section class="vis-recent">
+		<h2>recent visits</h2>
+		<p class="vis-empty" id="vis-recent-empty">none yet</p>
+		<div class="vis-table-wrap">
+			<table>
+				<thead><tr><th>time</th><th>ip</th><th>location</th><th>page</th><th>referrer</th></tr></thead>
+				<tbody id="vis-recent"></tbody>
+			</table>
+		</div>
+	</section>
+
 	<p class="vis-note">
-		Cookieless beacon on merulox.com. Location is Cloudflare's edge estimate from
-		the visitor IP, rounded to the city; no IP, user agent, or identifier is stored.
+		Cookieless beacon on merulox.com. Each view stores the visitor IP
+		(Cloudflare CF-Connecting-IP) and Cloudflare's city-level location estimate.
 		visits = first page of a browser tab session; views = every page load. Exclude
 		your own browser with <a href="https://merulox.com/?notrack=1">merulox.com/?notrack=1</a>
 		(undo with <code>?notrack=0</code>).
@@ -58,7 +69,8 @@ const ranges = [
 	type Row = { views: number; visits: number | null };
 	type Point = Row & { lat: number; lon: number; city: string | null; region: string | null; country: string | null };
 	type Summary = {
-		totals: { views: number; visits: number | null; countries: number; first: number | null };
+		totals: { views: number; visits: number | null; countries: number; ips: number; first: number | null };
+		recent: { ts: number; ip: string | null; path: string; referrer: string | null; city: string | null; region: string | null; country: string | null }[];
 		points: Point[];
 		countries: (Row & { country: string | null })[];
 		cities: (Row & { city: string; region: string | null; country: string | null })[];
@@ -154,6 +166,28 @@ const ranges = [
 		box.hidden = days.length < 2;
 	}
 
+	function renderRecent(rows: Summary["recent"]) {
+		const body = $("vis-recent");
+		body.replaceChildren();
+		for (const row of rows) {
+			const tr = document.createElement("tr");
+			const cells = [
+				new Date(row.ts * 1000).toLocaleString("en-CA", { hour12: false }).replace(",", ""),
+				row.ip ?? "—",
+				place(row),
+				row.path,
+				row.referrer ?? "",
+			];
+			for (const value of cells) {
+				const td = document.createElement("td");
+				td.textContent = value;
+				tr.append(td);
+			}
+			body.append(tr);
+		}
+		$("vis-recent-empty").hidden = rows.length > 0;
+	}
+
 	async function load(range: string) {
 		const summary = $("vis-summary");
 		summary.textContent = "loading…";
@@ -165,13 +199,14 @@ const ranges = [
 		const data: Summary & { since: number } = await response.json();
 		const t = data.totals;
 		const since = t.first ? ` · first ${new Date(t.first * 1000).toISOString().slice(0, 10)}` : "";
-		summary.textContent = `${n(t.visits)} visits · ${n(t.views)} views · ${n(t.countries)} countries${since}`;
+		summary.textContent = `${n(t.visits)} visits · ${n(t.views)} views · ${n(t.ips)} IPs · ${n(t.countries)} countries${since}`;
 		renderMap(data.points);
 		renderDaily(fillDays(data.daily, data.since, t.first));
 		renderList("vis-countries", data.countries, (row) => countryName(row.country));
 		renderList("vis-cities", data.cities, place);
 		renderList("vis-paths", data.paths, (row) => row.path);
 		renderList("vis-referrers", data.referrers, (row) => row.referrer);
+		renderRecent(data.recent);
 	}
 
 	const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-range]"));
@@ -277,6 +312,41 @@ const ranges = [
 
 	.vis-empty {
 		color: var(--muted);
+	}
+
+	.vis-recent {
+		margin-top: 34px;
+	}
+
+	.vis-recent h2 {
+		font-size: 14px;
+		margin-bottom: 10px;
+		color: var(--muted);
+	}
+
+	.vis-table-wrap {
+		overflow-x: auto;
+	}
+
+	.vis-recent table {
+		width: 100%;
+		border-collapse: collapse;
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 12px;
+	}
+
+	.vis-recent th {
+		text-align: left;
+		color: var(--muted);
+		font-weight: 400;
+		border-bottom: 1px solid var(--line);
+		padding: 4px 8px 4px 0;
+	}
+
+	.vis-recent td {
+		padding: 3px 8px 3px 0;
+		white-space: nowrap;
+		border-bottom: 1px solid var(--line);
 	}
 
 	.vis-note {

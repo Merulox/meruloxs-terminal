@@ -7,7 +7,9 @@ import { onRequestGet } from "../functions/api/visits.js";
 import { onRequest as visitsGate } from "../functions/visits/_middleware.js";
 import { cleanPath, parseVisit, referrerHost } from "../src/lib/visits.js";
 
-const SCHEMA = readFileSync(new URL("../migrations/0001_visits.sql", import.meta.url), "utf8");
+const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql"]
+	.map((file) => readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"))
+	.join("\n");
 
 // Minimal D1 facade over node:sqlite (prepare → bind → run/all).
 function d1() {
@@ -33,7 +35,7 @@ function beacon(url, body, headers = {}, cf = CF) {
 	const request = new Request(url, {
 		method: "POST",
 		body: typeof body === "string" ? body : JSON.stringify(body),
-		headers: { Origin: "https://merulox.com", "User-Agent": "Mozilla/5.0 Firefox/131.0", ...headers },
+		headers: { Origin: "https://merulox.com", "User-Agent": "Mozilla/5.0 Firefox/131.0", "CF-Connecting-IP": "203.0.113.7", ...headers },
 	});
 	Object.defineProperty(request, "cf", { value: cf });
 	return request;
@@ -51,7 +53,7 @@ test("path and referrer normalisation", () => {
 	assert.equal(referrerHost("javascript:alert(1)"), null);
 });
 
-test("beacon stores coarse geo and no client identifiers", async () => {
+test("beacon stores visitor IP and geo", async () => {
 	const env = { VISITS_DB: d1() };
 	const response = await onRequestPost({
 		request: beacon("https://merulox.com/api/visit", { p: "/links/", r: "https://x.com/merulox", e: 1 }),
@@ -62,10 +64,8 @@ test("beacon stores coarse geo and no client identifiers", async () => {
 	assert.equal(rows.length, 1);
 	assert.deepEqual(
 		{ ...rows[0], id: undefined, ts: undefined },
-		{ id: undefined, ts: undefined, path: "/links", entry: 1, referrer: "x.com", country: "CA", region: "Quebec", city: "Montreal", lat: 45.51, lon: -73.59, colo: "YUL" },
+		{ id: undefined, ts: undefined, path: "/links", entry: 1, referrer: "x.com", country: "CA", region: "Quebec", city: "Montreal", lat: 45.51, lon: -73.59, colo: "YUL", ip: "203.0.113.7" },
 	);
-	const columns = env.VISITS_DB.raw.prepare("SELECT name FROM pragma_table_info('visits')").all().map((c) => c.name);
-	assert.ok(!columns.some((c) => /ip|agent|ua|cookie|visitor/i.test(c)));
 });
 
 test("beacon ignores dev/preview hosts, bots, and rejects foreign origins and junk", async () => {
@@ -117,6 +117,9 @@ test("aggregate API is dev-host only, authenticated, and groups by location", as
 	assert.deepEqual(body.referrers, [{ referrer: "news.ycombinator.com", views: 1, visits: 1 }]);
 	assert.equal(body.daily.length, 1);
 	assert.equal(body.daily[0].views, 4);
+	assert.equal(body.totals.ips, 1);
+	assert.equal(body.recent.length, 4);
+	assert.equal(body.recent[0].ip, "203.0.113.7");
 });
 
 test("/visits page is hidden outside dev.merulox.com", async () => {
