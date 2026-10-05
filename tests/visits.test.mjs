@@ -3,11 +3,12 @@ import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { onRequestPost } from "../functions/api/visit.js";
+import { onRequestPost as onFingerprintPost } from "../functions/api/fingerprint.js";
 import { enrichIp, onRequestGet } from "../functions/api/visits.js";
 import { onRequest as visitsGate } from "../functions/visits/_middleware.js";
 import { cleanPath, normalizeIp, parseVisit, referrerHost, reverseName } from "../src/lib/visits.js";
 
-const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql", "0003_visits_source.sql", "0004_visits_ip_index.sql"]
+const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql", "0003_visits_source.sql", "0004_visits_ip_index.sql", "0005_fingerprints.sql"]
 	.map((file) => readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"))
 	.join("\n");
 
@@ -66,6 +67,52 @@ test("beacon stores visitor IP and geo", async () => {
 		{ ...rows[0], id: undefined, ts: undefined },
 		{ id: undefined, ts: undefined, path: "/links", entry: 1, referrer: "x.com", country: "CA", region: "Quebec", city: "Montreal", lat: 45.51, lon: -73.59, colo: "YUL", ip: "203.0.113.7", source: "beacon", weight: 1, import_key: null },
 	);
+});
+
+test("fingerprint endpoint stores bounded attributes and updates one tab snapshot", async () => {
+	const env = { VISITS_DB: d1() };
+	const hash = "a".repeat(64);
+	const payload = {
+		v: 1,
+		p: "/",
+		sid: "session_1234567890",
+		hash,
+		attributes: {
+			browser: { platform: "Linux x86_64", languages: ["en-CA", "en"] },
+			screen: { screen: { width: 2560, height: 1440 } },
+			canvas: { hash: "canvas-example" },
+		},
+	};
+	const request = (body = payload, headers = {}) =>
+		new Request("https://merulox.com/api/fingerprint", {
+			method: "POST",
+			body: JSON.stringify(body),
+			headers: {
+				Origin: "https://merulox.com",
+				"User-Agent": "Mozilla/5.0 Firefox/131.0",
+				"CF-Connecting-IP": "203.0.113.7",
+				...headers,
+			},
+		});
+
+	assert.equal((await onFingerprintPost({ request: request(), env })).status, 204);
+	let rows = env.VISITS_DB.raw.prepare("SELECT * FROM fingerprints").all();
+	assert.equal(rows.length, 1);
+	assert.deepEqual(
+		{ ip: rows[0].ip, path: rows[0].path, session: rows[0].session_id, hash: rows[0].fingerprint_hash, attributes: JSON.parse(rows[0].attributes) },
+		{ ip: "203.0.113.7", path: "/", session: payload.sid, hash, attributes: payload.attributes },
+	);
+
+	assert.equal((await onFingerprintPost({ request: request({ ...payload, p: "/links" }), env })).status, 204);
+	rows = env.VISITS_DB.raw.prepare("SELECT * FROM fingerprints").all();
+	assert.equal(rows.length, 1, "same tab session and fingerprint updates instead of duplicating");
+	assert.equal(rows[0].path, "/links");
+
+	assert.equal((await onFingerprintPost({ request: request({ ...payload, hash: "bad" }), env })).status, 400);
+	assert.equal((await onFingerprintPost({ request: request(payload, { Origin: "https://evil.example" }), env })).status, 403);
+	assert.equal((await onFingerprintPost({ request: request(payload, { "User-Agent": "Googlebot" }), env })).status, 204);
+	assert.equal((await onFingerprintPost({ request: request({ ...payload, attributes: { blob: "x".repeat(48_000) } }), env })).status, 413);
+	assert.equal(env.VISITS_DB.raw.prepare("SELECT COUNT(*) AS count FROM fingerprints").get().count, 1);
 });
 
 test("beacon ignores dev/preview hosts, bots, and rejects foreign origins and junk", async () => {
@@ -192,6 +239,9 @@ test("IP detail API returns one IP's weighted history; ipinfo only on request", 
 	await record({ p: "/links", e: 0 }, "203.0.113.7");
 	await record({ p: "/", e: 1 }, "198.51.100.1");
 	env.VISITS_DB.raw.exec("INSERT INTO visits (ts, path, entry, country, ip, source, weight, import_key) VALUES (strftime('%s','now') - 86400 * 3, '/music', 0, 'CA', '203.0.113.7', 'cloudflare', 4, 'k2')");
+	env.VISITS_DB.raw
+		.prepare("INSERT INTO fingerprints (ts, ip, path, session_id, fingerprint_hash, attributes) VALUES (strftime('%s','now'), ?, '/', ?, ?, ?)")
+		.run("203.0.113.7", "session_abcdefghijkl", "b".repeat(64), JSON.stringify({ browser: { platform: "Linux x86_64" } }));
 
 	const calls = [];
 	const original = globalThis.fetch;
@@ -216,6 +266,9 @@ test("IP detail API returns one IP's weighted history; ipinfo only on request", 
 			{ views: 6, visits: 1, rows: 3, days: 2, imported: 4 },
 		);
 		assert.deepEqual(detail.paths.map((p) => [p.path, p.views]), [["/music", 4], ["/", 1], ["/links", 1]]);
+		assert.equal(detail.fingerprints.length, 1);
+		assert.equal(detail.fingerprints[0].hash, "b".repeat(64));
+		assert.equal(detail.fingerprints[0].attributes.browser.platform, "Linux x86_64");
 		assert.equal(calls.length, 0, "detail must not wait on any network lookup");
 
 		const history = await (await get("view=history&ip=203.0.113.7")).json();

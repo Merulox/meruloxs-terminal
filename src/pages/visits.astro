@@ -423,11 +423,19 @@ const ranges = [
 	});
 
 	// ── IP panel ──────────────────────────────────────────────────────────
+	type FingerprintSnapshot = {
+		ts: number;
+		path: string;
+		sessionId: string;
+		hash: string;
+		attributes: Record<string, unknown>;
+	};
 	type IpDetail = {
 		ip: string;
 		totals: { views: number; visits: number; rows: number; days: number; imported: number; first: number | null; last: number | null };
 		paths: (Row & { path: string })[];
 		places: (Row & { city: string | null; region: string | null; country: string | null; lat: number | null; lon: number | null })[];
+		fingerprints: FingerprintSnapshot[];
 	};
 	type Network = {
 		ipinfo: "ok" | "unavailable" | "not queried";
@@ -457,6 +465,41 @@ const ranges = [
 	function section(title: string, ...children: Node[]) {
 		const wrap = el("section", undefined, "ip-section");
 		wrap.append(el("h3", title), ...children);
+		return wrap;
+	}
+
+	function fingerprintValue(value: unknown) {
+		if (value === null || value === undefined) return "unavailable";
+		if (typeof value === "string") return value || "(empty)";
+		if (typeof value === "number" || typeof value === "boolean") return String(value);
+		return JSON.stringify(value);
+	}
+
+	function fingerprintSnapshot(snapshot: FingerprintSnapshot, expanded: boolean) {
+		const wrap = el("article", undefined, "fp-snapshot");
+		wrap.append(
+			facts([
+				["captured", when(snapshot.ts)],
+				["page", snapshot.path],
+				["fingerprint", snapshot.hash],
+				["tab session", snapshot.sessionId],
+			]),
+		);
+		const groups = el("div", undefined, "fp-groups");
+		for (const [name, value] of Object.entries(snapshot.attributes)) {
+			const detail = el("details", undefined, "fp-group");
+			detail.open = expanded && ["browser", "screen"].includes(name);
+			detail.append(el("summary", name));
+			if (value && typeof value === "object" && !Array.isArray(value)) {
+				detail.append(
+					facts(Object.entries(value as Record<string, unknown>).map(([key, child]) => [key, fingerprintValue(child)])),
+				);
+			} else {
+				detail.append(el("pre", fingerprintValue(value)));
+			}
+			groups.append(detail);
+		}
+		wrap.append(groups);
 		return wrap;
 	}
 
@@ -593,6 +636,12 @@ const ranges = [
 		const network = el("div");
 		const links = el("div");
 		links.append(toolLinks(detail.ip, null));
+		const fingerprintHost = el("div", undefined, "fp-list");
+		if (detail.fingerprints.length) {
+			detail.fingerprints.forEach((snapshot, index) => fingerprintHost.append(fingerprintSnapshot(snapshot, index === 0)));
+		} else {
+			fingerprintHost.append(el("p", "none captured yet", "vis-empty"));
+		}
 
 		panelBody.replaceChildren(
 			titleRow,
@@ -609,6 +658,7 @@ const ranges = [
 					["seen from", detail.places.map((p) => `${place(p)} (${n(p.views)})`).join("; ")],
 				]),
 			),
+			section("browser fingerprints", fingerprintHost),
 			section("network", network),
 			section("pages", ...pathNodes),
 			section("history", pagerTop, empty, tableWrap, pagerBottom),
@@ -1113,6 +1163,48 @@ const ranges = [
 
 	.ip-tools a:hover {
 		border-color: var(--accent);
+	}
+
+	.fp-list {
+		display: grid;
+		gap: 18px;
+	}
+
+	.fp-snapshot {
+		border: 1px solid var(--line);
+		border-radius: 2px;
+		padding: 12px;
+		min-width: 0;
+	}
+
+	.fp-groups {
+		display: grid;
+		gap: 5px;
+		margin-top: 12px;
+	}
+
+	.fp-group {
+		border-top: 1px solid var(--line);
+		padding-top: 5px;
+		min-width: 0;
+	}
+
+	.fp-group summary {
+		color: var(--accent);
+		cursor: pointer;
+		font: 12px "SFMono-Regular", Consolas, monospace;
+	}
+
+	.fp-group .ip-facts,
+	.fp-group pre {
+		margin-top: 8px;
+	}
+
+	.fp-group pre {
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		font: 11px/1.5 "SFMono-Regular", Consolas, monospace;
+		color: var(--muted);
 	}
 
 	.vis-note {

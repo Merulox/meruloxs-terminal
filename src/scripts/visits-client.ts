@@ -1,3 +1,5 @@
+import { collectBrowserFingerprint } from "./fingerprint-client";
+
 // Injected into every page by the astro.config.mjs `merulox-visits` integration.
 // merulox.com: send one cookieless page-view beacon (geo is resolved at the edge).
 // dev.merulox.com: add the dev-only "visits" tab to the navigation.
@@ -5,6 +7,8 @@ const DEV_HOST = "dev.merulox.com";
 const TRACKED_HOSTS = ["merulox.com", "www.merulox.com"];
 const OPT_OUT_KEY = "mx-notrack";
 const SESSION_KEY = "mx-visit";
+const FP_SESSION_KEY = "mx-fp-session";
+const FP_CACHE_KEY = "mx-fp-cache";
 
 function optedOut(): boolean {
 	const flag = new URLSearchParams(location.search).get("notrack");
@@ -30,6 +34,61 @@ function sendBeacon() {
 	const blob = new Blob([body], { type: "text/plain" });
 	if (!navigator.sendBeacon?.("/api/visit", blob)) {
 		fetch("/api/visit", { method: "POST", body, keepalive: true }).catch(() => {});
+	}
+}
+
+function fingerprintSession() {
+	try {
+		const existing = sessionStorage.getItem(FP_SESSION_KEY);
+		if (existing) return existing;
+		const id = crypto.randomUUID?.() ?? Array.from(crypto.getRandomValues(new Uint32Array(4)), (part) => part.toString(16).padStart(8, "0")).join("");
+		sessionStorage.setItem(FP_SESSION_KEY, id);
+		return id;
+	} catch {
+		return crypto.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+	}
+}
+
+async function fingerprintSnapshot() {
+	try {
+		const cached = sessionStorage.getItem(FP_CACHE_KEY);
+		if (cached) {
+			const parsed: unknown = JSON.parse(cached);
+			if (
+				parsed &&
+				typeof parsed === "object" &&
+				"hash" in parsed &&
+				typeof parsed.hash === "string" &&
+				"attributes" in parsed &&
+				parsed.attributes &&
+				typeof parsed.attributes === "object" &&
+				!Array.isArray(parsed.attributes)
+			) {
+				return { hash: parsed.hash, attributes: parsed.attributes };
+			}
+		}
+	} catch {}
+	const captured = await collectBrowserFingerprint();
+	try {
+		sessionStorage.setItem(FP_CACHE_KEY, JSON.stringify(captured));
+	} catch {}
+	return captured;
+}
+
+async function sendFingerprint() {
+	if (optedOut()) return;
+	const { attributes, hash } = await fingerprintSnapshot();
+	const body = JSON.stringify({
+		v: 1,
+		p: location.pathname,
+		sid: fingerprintSession(),
+		hash,
+		attributes,
+	});
+	if (new TextEncoder().encode(body).byteLength > 48_000) return;
+	const blob = new Blob([body], { type: "text/plain" });
+	if (!navigator.sendBeacon?.("/api/fingerprint", blob)) {
+		fetch("/api/fingerprint", { method: "POST", body, keepalive: true }).catch(() => {});
 	}
 }
 
@@ -59,4 +118,7 @@ function addVisitsTab() {
 }
 
 if (location.hostname === DEV_HOST) addVisitsTab();
-else if (TRACKED_HOSTS.includes(location.hostname)) sendBeacon();
+else if (TRACKED_HOSTS.includes(location.hostname)) {
+	sendBeacon();
+	void sendFingerprint();
+}

@@ -190,12 +190,21 @@ export function reverseName(ip) {
 
 export async function ipDetail(db, ip) {
 	const one = (sql) => db.prepare(sql).bind(ip).all().then((r) => r.results ?? []);
-	const [totals, paths, places] = await Promise.all([
+	const [totals, paths, places, fingerprintRows] = await Promise.all([
 		one(`SELECT ${COUNTS}, COUNT(*) AS rows, MIN(ts) AS first, MAX(ts) AS last, COUNT(DISTINCT date(ts, 'unixepoch')) AS days, SUM(CASE WHEN source = 'cloudflare' THEN weight ELSE 0 END) AS imported FROM visits WHERE ip = ?`),
 		one(`SELECT path, ${COUNTS} FROM visits WHERE ip = ? GROUP BY path ORDER BY views DESC, path`),
 		one(`SELECT city, region, country, lat, lon, ${COUNTS} FROM visits WHERE ip = ? GROUP BY city, region, country ORDER BY views DESC`),
+		one(`SELECT ts, path, session_id AS sessionId, fingerprint_hash AS hash, attributes FROM fingerprints WHERE ip = ? ORDER BY ts DESC, id DESC LIMIT 10`),
 	]);
 	const total = totals[0] ?? {};
+	const fingerprints = [];
+	for (const row of fingerprintRows) {
+		try {
+			fingerprints.push({ ...row, attributes: JSON.parse(row.attributes) });
+		} catch {
+			fingerprints.push({ ...row, attributes: { error: "stored attributes are invalid JSON" } });
+		}
+	}
 	return {
 		ip,
 		totals: {
@@ -209,6 +218,7 @@ export async function ipDetail(db, ip) {
 		},
 		paths,
 		places,
+		fingerprints,
 	};
 }
 
