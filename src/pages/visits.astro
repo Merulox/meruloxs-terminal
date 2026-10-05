@@ -465,6 +465,7 @@ const ranges = [
 		const asnNumber = network?.asn?.replace(/^AS/, "");
 		const links: [string, string][] = [
 			["ipinfo", `https://ipinfo.io/${q}`],
+			["Melissa", `https://lookups.melissa.com/home/iplocation/ip/?ip=${q}`],
 			["AbuseIPDB", `https://www.abuseipdb.com/check/${q}`],
 			["GreyNoise", `https://viz.greynoise.io/ip/${q}`],
 			["Shodan", `https://www.shodan.io/host/${q}`],
