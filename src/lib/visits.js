@@ -132,7 +132,7 @@ export async function summarize(db, since) {
 		all(`SELECT path, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY path ORDER BY views DESC LIMIT 25`),
 		all(`SELECT referrer, ${COUNTS} FROM visits WHERE ts >= ? AND referrer IS NOT NULL GROUP BY referrer ORDER BY views DESC LIMIT 25`),
 		all(`SELECT date(ts, 'unixepoch') AS day, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY day ORDER BY day`),
-		all(`SELECT ts, ip, path, entry, referrer, city, region, country, source FROM visits WHERE ts >= ? ORDER BY ts DESC, id DESC LIMIT 200`),
+		all(`SELECT ts, ip, path, entry, referrer, city, region, country, source, weight FROM visits WHERE ts >= ? ORDER BY ts DESC, id DESC LIMIT 200`),
 	]);
 
 	const total = totals[0] ?? {};
@@ -153,5 +153,63 @@ export async function summarize(db, since) {
 		referrers,
 		daily,
 		recent,
+	};
+}
+
+// ── Per-IP detail (dev panel) ───────────────────────────────────────────────
+
+const IPV4 = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
+const IPV6 = /^[0-9a-f:]{2,39}$/i;
+
+export function normalizeIp(value) {
+	if (typeof value !== "string") return null;
+	const ip = value.trim().toLowerCase();
+	if (IPV4.test(ip)) return ip;
+	if (IPV6.test(ip) && ip.includes(":") && expandIpv6(ip)) return ip;
+	return null;
+}
+
+function expandIpv6(ip) {
+	const halves = ip.split("::");
+	if (halves.length > 2) return null;
+	const head = halves[0] ? halves[0].split(":") : [];
+	const tail = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+	const missing = 8 - head.length - tail.length;
+	if (halves.length === 1 ? missing !== 0 : missing < 1) return null;
+	const groups = [...head, ...Array(halves.length === 2 ? missing : 0).fill("0"), ...tail];
+	if (groups.length !== 8 || groups.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return null;
+	return groups.map((g) => g.padStart(4, "0"));
+}
+
+// DNS name for a PTR (reverse DNS) lookup.
+export function reverseName(ip) {
+	if (IPV4.test(ip)) return `${ip.split(".").reverse().join(".")}.in-addr.arpa`;
+	const groups = expandIpv6(ip);
+	return groups ? `${groups.join("").split("").reverse().join(".")}.ip6.arpa` : null;
+}
+
+export async function ipDetail(db, ip) {
+	const one = (sql) => db.prepare(sql).bind(ip).all().then((r) => r.results ?? []);
+	const [totals, history, paths, places] = await Promise.all([
+		one(`SELECT ${COUNTS}, COUNT(*) AS rows, MIN(ts) AS first, MAX(ts) AS last, COUNT(DISTINCT date(ts, 'unixepoch')) AS days, SUM(CASE WHEN source = 'cloudflare' THEN weight ELSE 0 END) AS imported FROM visits WHERE ip = ?`),
+		one(`SELECT ts, path, entry, referrer, city, region, country, lat, lon, colo, source, weight FROM visits WHERE ip = ? ORDER BY ts DESC, id DESC LIMIT 500`),
+		one(`SELECT path, ${COUNTS} FROM visits WHERE ip = ? GROUP BY path ORDER BY views DESC, path`),
+		one(`SELECT city, region, country, lat, lon, ${COUNTS} FROM visits WHERE ip = ? GROUP BY city, region, country ORDER BY views DESC`),
+	]);
+	const total = totals[0] ?? {};
+	return {
+		ip,
+		totals: {
+			views: total.views ?? 0,
+			visits: total.visits ?? 0,
+			rows: total.rows ?? 0,
+			days: total.days ?? 0,
+			imported: total.imported ?? 0,
+			first: total.first ?? null,
+			last: total.last ?? null,
+		},
+		history,
+		paths,
+		places,
 	};
 }

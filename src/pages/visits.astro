@@ -50,18 +50,31 @@ const ranges = [
 		<p class="vis-empty" id="vis-recent-empty">none yet</p>
 		<div class="vis-table-wrap">
 			<table>
-				<thead><tr><th>time</th><th>ip</th><th>location</th><th>page</th><th>referrer</th><th>source</th></tr></thead>
+				<thead><tr><th>time</th><th>ip</th><th>location</th><th>page</th><th>referrer</th><th class="num">views</th><th>source</th></tr></thead>
 				<tbody id="vis-recent"></tbody>
 			</table>
 		</div>
 	</section>
+
+	<div class="ip-backdrop" id="ip-backdrop" hidden></div>
+	<aside class="ip-panel" id="ip-panel" aria-labelledby="ip-panel-title" aria-hidden="true">
+		<header class="ip-panel-head">
+			<h2 id="ip-panel-title">—</h2>
+			<button class="ip-close" id="ip-close" type="button" aria-label="Close IP panel">esc ×</button>
+		</header>
+		<div class="ip-panel-body" id="ip-panel-body"></div>
+	</aside>
 
 	<p class="vis-note">
 		Cookieless beacon on merulox.com. Each view stores the visitor IP
 		(Cloudflare CF-Connecting-IP) and Cloudflare's city-level location estimate.
 		Rows marked "cf log" were backfilled from Cloudflare's request logs (last ~31
 		days before tracking began): sampled counts, bot-filtered by user agent only,
-		location from the DB-IP Lite database, no referrer, and not counted as visits.
+		location from the DB-IP Lite database, no referrer, and not counted as visits;
+		"views" shows how many sampled requests a cf log row stands for. Click an IP for
+		its full history, network details (reverse DNS automatically; ASN/org from ipinfo.io only on request), and
+		lookup links. IP geolocation for imported rows by
+		<a href="https://db-ip.com">DB-IP</a> (CC BY 4.0).
 		visits = first page of a browser tab session; views = every page load. Exclude
 		your own browser with <a href="https://merulox.com/?notrack=1">merulox.com/?notrack=1</a>
 		(undo with <code>?notrack=0</code>).
@@ -73,7 +86,7 @@ const ranges = [
 	type Point = Row & { lat: number; lon: number; city: string | null; region: string | null; country: string | null };
 	type Summary = {
 		totals: { views: number; visits: number | null; countries: number; ips: number; imported: number; first: number | null };
-		recent: { ts: number; ip: string | null; path: string; referrer: string | null; city: string | null; region: string | null; country: string | null; source: string }[];
+		recent: { ts: number; ip: string | null; path: string; referrer: string | null; city: string | null; region: string | null; country: string | null; source: string; weight: number }[];
 		points: Point[];
 		countries: (Row & { country: string | null })[];
 		cities: (Row & { city: string; region: string | null; country: string | null })[];
@@ -169,28 +182,257 @@ const ranges = [
 		box.hidden = days.length < 2;
 	}
 
+	const when = (ts: number) => new Date(ts * 1000).toLocaleString("en-CA", { hour12: false }).replace(",", "");
+	const sourceLabel = (source: string) => (source === "cloudflare" ? "cf log" : "beacon");
+
+	function cell(tr: HTMLTableRowElement, value: string | Node, className = "") {
+		const td = document.createElement("td");
+		if (className) td.className = className;
+		td.append(value);
+		tr.append(td);
+	}
+
+	function ipButton(ip: string) {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "ip-link";
+		button.dataset.ip = ip;
+		button.textContent = ip;
+		return button;
+	}
+
 	function renderRecent(rows: Summary["recent"]) {
 		const body = $("vis-recent");
 		body.replaceChildren();
 		for (const row of rows) {
 			const tr = document.createElement("tr");
-			const cells = [
-				new Date(row.ts * 1000).toLocaleString("en-CA", { hour12: false }).replace(",", ""),
-				row.ip ?? "—",
-				place(row),
-				row.path,
-				row.referrer ?? "",
-				row.source === "cloudflare" ? "cf log" : "beacon",
-			];
-			for (const value of cells) {
-				const td = document.createElement("td");
-				td.textContent = value;
-				tr.append(td);
-			}
+			cell(tr, when(row.ts), "nowrap");
+			cell(tr, row.ip ? ipButton(row.ip) : "—", "nowrap");
+			cell(tr, place(row), "wrap");
+			cell(tr, row.path, "wrap");
+			cell(tr, row.referrer ?? "", "wrap");
+			cell(tr, row.weight > 1 ? `×${n(row.weight)}` : "1", "num");
+			cell(tr, sourceLabel(row.source), "nowrap muted");
 			body.append(tr);
 		}
 		$("vis-recent-empty").hidden = rows.length > 0;
 	}
+
+	// ── IP panel ──────────────────────────────────────────────────────────
+	type IpDetail = {
+		ip: string;
+		totals: { views: number; visits: number; rows: number; days: number; imported: number; first: number | null; last: number | null };
+		history: (Summary["recent"][number] & { lat: number | null; lon: number | null; colo: string | null; entry: number })[];
+		paths: (Row & { path: string })[];
+		places: (Row & { city: string | null; region: string | null; country: string | null; lat: number | null; lon: number | null })[];
+		network: {
+			ipinfo: "ok" | "unavailable" | "not queried";
+			reverseDns: string[]; asn: string | null; org: string | null; hostname: string | null;
+			city: string | null; region: string | null; country: string | null; postal: string | null;
+			timezone: string | null; loc: string | null; anycast: boolean; bogon: boolean;
+		};
+	};
+
+	const panel = $("ip-panel");
+	const backdrop = $("ip-backdrop");
+	const panelBody = $("ip-panel-body");
+	let lastFocus: HTMLElement | null = null;
+	let panelRequest = 0;
+
+	function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string) {
+		const node = document.createElement(tag);
+		if (text !== undefined) node.textContent = text;
+		if (className) node.className = className;
+		return node;
+	}
+
+	function facts(rows: [string, string | Node | null | undefined][]) {
+		const dl = el("dl", undefined, "ip-facts");
+		for (const [label, value] of rows) {
+			if (value === null || value === undefined || value === "") continue;
+			dl.append(el("dt", label));
+			const dd = el("dd");
+			dd.append(value);
+			dl.append(dd);
+		}
+		return dl;
+	}
+
+	function section(title: string, ...children: Node[]) {
+		const wrap = el("section", undefined, "ip-section");
+		wrap.append(el("h3", title), ...children);
+		return wrap;
+	}
+
+	function toolLinks(ip: string, network: IpDetail["network"]) {
+		const q = encodeURIComponent(ip);
+		const asnNumber = network.asn?.replace(/^AS/, "");
+		const links: [string, string][] = [
+			["ipinfo", `https://ipinfo.io/${q}`],
+			["AbuseIPDB", `https://www.abuseipdb.com/check/${q}`],
+			["GreyNoise", `https://viz.greynoise.io/ip/${q}`],
+			["Shodan", `https://www.shodan.io/host/${q}`],
+			["Censys", `https://search.censys.io/hosts/${q}`],
+			["VirusTotal", `https://www.virustotal.com/gui/ip-address/${q}`],
+			["Spur (VPN/proxy)", `https://spur.us/context/${q}`],
+			["IPQualityScore", `https://www.ipqualityscore.com/free-ip-lookup-proxy-vpn-test/lookup/${q}`],
+			["Talos", `https://talosintelligence.com/reputation_center/lookup?search=${q}`],
+			["AlienVault OTX", `https://otx.alienvault.com/indicator/ip/${q}`],
+			["RDAP whois", `https://rdap.org/ip/${q}`],
+			["bgp.he.net", `https://bgp.he.net/ip/${q}`],
+			["robtex", `https://www.robtex.com/ip-lookup/${q}`],
+			["urlscan", `https://urlscan.io/search/#ip:%22${q}%22`],
+		];
+		if (asnNumber) links.push([`${network.asn} (bgp.he.net)`, `https://bgp.he.net/AS${asnNumber}`]);
+		if (network.loc) links.push(["map", `https://www.openstreetmap.org/?mlat=${network.loc.split(",")[0]}&mlon=${network.loc.split(",")[1]}#map=11/${network.loc.replace(",", "/")}`]);
+		const list = el("ul", undefined, "ip-tools");
+		for (const [label, href] of links) {
+			const li = el("li");
+			const a = el("a", label);
+			a.href = href;
+			a.target = "_blank";
+			a.rel = "noopener noreferrer";
+			li.append(a);
+			list.append(li);
+		}
+		return list;
+	}
+
+	function renderIp(detail: IpDetail) {
+		const t = detail.totals;
+		const net = detail.network;
+		const copy = el("button", "copy", "ip-copy");
+		copy.type = "button";
+		copy.addEventListener("click", () => {
+			navigator.clipboard?.writeText(detail.ip).then(() => (copy.textContent = "copied"));
+		});
+		const titleRow = el("div", undefined, "ip-title-row");
+		titleRow.append(el("span", detail.ip, "ip-addr"), copy);
+
+		const netPlace = [net.city, net.region, net.country ? countryName(net.country) : null].filter(Boolean).join(", ");
+		const flags = [net.anycast && "anycast", net.bogon && "bogon / private"].filter(Boolean).join(", ");
+		let ipinfoState: string | Node = net.ipinfo === "ok" ? "ipinfo.io" : net.ipinfo;
+		if (net.ipinfo === "not queried") {
+			const query = el("button", "query ipinfo.io (sends this IP to ipinfo)", "ip-copy");
+			query.type = "button";
+			query.addEventListener("click", () => openIp(detail.ip, true));
+			ipinfoState = query;
+		}
+
+		const pathList = el("ol", undefined, "vis-list");
+		const maxPath = Math.max(1, ...detail.paths.map((p) => p.views));
+		for (const p of detail.paths) {
+			const li = el("li");
+			li.style.setProperty("--share", `${(p.views / maxPath) * 100}%`);
+			li.append(el("span", p.path, "vis-name"), el("span", n(p.views), "vis-count"));
+			pathList.append(li);
+		}
+
+		const table = el("table", undefined, "ip-history");
+		const head = el("thead");
+		const hr = el("tr");
+		for (const h of ["time", "page", "location", "referrer", "views", "source"]) hr.append(el("th", h));
+		head.append(hr);
+		const body = el("tbody");
+		for (const row of detail.history) {
+			const tr = document.createElement("tr");
+			cell(tr, when(row.ts), "nowrap");
+			cell(tr, row.path + (row.entry ? " ↵" : ""), "nowrap");
+			cell(tr, place(row) + (row.colo ? ` · ${row.colo}` : ""), "wrap");
+			cell(tr, row.referrer ?? "", "wrap");
+			cell(tr, row.weight > 1 ? `×${n(row.weight)}` : "1", "num");
+			cell(tr, sourceLabel(row.source), "nowrap muted");
+			body.append(tr);
+		}
+		table.append(head, body);
+		const tableWrap = el("div", undefined, "vis-table-wrap");
+		tableWrap.append(table);
+
+		panelBody.replaceChildren(
+			titleRow,
+			section(
+				"activity",
+				facts([
+					["views", `${n(t.views)}${t.imported ? ` (${n(t.imported)} from cf logs)` : ""}`],
+					["visits", n(t.visits)],
+					["active days", n(t.days)],
+					["first seen", t.first ? when(t.first) : null],
+					["last seen", t.last ? when(t.last) : null],
+					["↵", t.visits ? "marks a session entry page" : null],
+					["seen from", detail.places.map((p) => `${place(p)} (${n(p.views)})`).join("; ")],
+				]),
+			),
+			section(
+				"network",
+				facts([
+					["reverse dns", net.reverseDns.join(", ") || net.hostname || "none"],
+					["asn / org source", ipinfoState],
+					["asn", net.asn],
+					["organization", net.org],
+					["ipinfo location", [netPlace, net.postal].filter(Boolean).join(" ")],
+					["timezone", net.timezone],
+					["flags", flags],
+				]),
+			),
+			section("pages", pathList),
+			section(`history (${n(detail.history.length)}${t.rows > detail.history.length ? ` of ${n(t.rows)}` : ""})`, tableWrap),
+			section("lookup", toolLinks(detail.ip, net)),
+		);
+	}
+
+	async function openIp(ip: string, withIpinfo = false, trigger: HTMLElement | null = null) {
+		const request = ++panelRequest;
+		if (!panel.classList.contains("open")) lastFocus = trigger ?? (document.activeElement as HTMLElement | null);
+		$("ip-panel-title").textContent = ip;
+		panelBody.replaceChildren(el("p", "loading…", "vis-empty"));
+		panel.classList.add("open");
+		panel.setAttribute("aria-hidden", "false");
+		backdrop.hidden = false;
+		document.body.classList.add("ip-panel-open");
+		$("ip-close").focus({ preventScroll: true });
+		history.replaceState(null, "", `#ip=${encodeURIComponent(ip)}`);
+		const response = await fetch(`/api/visits?ip=${encodeURIComponent(ip)}${withIpinfo ? "&ipinfo=1" : ""}`, { cache: "no-store" });
+		if (request !== panelRequest) return;
+		if (!response.ok) {
+			panelBody.replaceChildren(el("p", `could not load ${ip} (${response.status})`, "vis-empty"));
+			return;
+		}
+		renderIp(await response.json());
+	}
+
+	function closeIp() {
+		if (!panel.classList.contains("open")) return;
+		panelRequest++;
+		panel.classList.remove("open");
+		panel.setAttribute("aria-hidden", "true");
+		backdrop.hidden = true;
+		document.body.classList.remove("ip-panel-open");
+		history.replaceState(null, "", location.pathname + location.search);
+		// The table may have re-rendered while the panel was open; fall back to the same IP's new button.
+		const ip = lastFocus?.dataset.ip;
+		const target = lastFocus?.isConnected ? lastFocus : ip ? document.querySelector<HTMLElement>(`.ip-link[data-ip="${CSS.escape(ip)}"]`) : null;
+		target?.focus({ preventScroll: true });
+	}
+
+	document.addEventListener("click", (event) => {
+		const button = (event.target as HTMLElement).closest<HTMLElement>(".ip-link");
+		if (button?.dataset.ip) openIp(button.dataset.ip, false, button);
+	});
+	$("ip-close").addEventListener("click", closeIp);
+	backdrop.addEventListener("click", closeIp);
+	// Capture phase so the site-wide arrow/hjkl navigation never sees keys meant for the panel.
+	document.addEventListener(
+		"keydown",
+		(event) => {
+			if (!panel.classList.contains("open")) return;
+			if (event.key === "Escape") {
+				event.preventDefault();
+				closeIp();
+			}
+			event.stopPropagation();
+		},
+		true,
+	);
 
 	async function load(range: string) {
 		const summary = $("vis-summary");
@@ -221,6 +463,8 @@ const ranges = [
 		});
 	}
 	load("30d");
+	const initialIp = new URLSearchParams(location.hash.slice(1)).get("ip");
+	if (initialIp) openIp(initialIp);
 </script>
 
 <style is:global>
@@ -318,11 +562,17 @@ const ranges = [
 		color: var(--muted);
 	}
 
+	/* Break out of the 640px column so the table fits without horizontal scroll. */
 	.vis-recent {
+		position: relative;
+		left: 50%;
+		width: min(1240px, calc(100vw - 48px));
+		transform: translateX(-50%);
 		margin-top: 34px;
 	}
 
-	.vis-recent h2 {
+	.vis-recent h2,
+	.ip-section h3 {
 		font-size: 14px;
 		margin-bottom: 10px;
 		color: var(--muted);
@@ -332,25 +582,198 @@ const ranges = [
 		overflow-x: auto;
 	}
 
-	.vis-recent table {
+	.vis-recent table,
+	.ip-history {
 		width: 100%;
 		border-collapse: collapse;
 		font-family: "SFMono-Regular", Consolas, monospace;
 		font-size: 12px;
 	}
 
-	.vis-recent th {
+	.vis-recent th,
+	.ip-history th {
 		text-align: left;
 		color: var(--muted);
 		font-weight: 400;
 		border-bottom: 1px solid var(--line);
-		padding: 4px 8px 4px 0;
+		padding: 4px 10px 4px 0;
 	}
 
-	.vis-recent td {
-		padding: 3px 8px 3px 0;
-		white-space: nowrap;
+	.vis-recent td,
+	.ip-history td {
+		padding: 3px 10px 3px 0;
 		border-bottom: 1px solid var(--line);
+		vertical-align: top;
+	}
+
+	.vis-recent .nowrap,
+	.ip-history .nowrap {
+		white-space: nowrap;
+	}
+
+	.vis-recent .wrap,
+	.ip-history .wrap {
+		overflow-wrap: anywhere;
+	}
+
+	.vis-recent .num,
+	.ip-history .num {
+		text-align: right;
+		white-space: nowrap;
+	}
+
+	.vis-recent .muted,
+	.ip-history .muted {
+		color: var(--muted);
+	}
+
+	.ip-link {
+		background: none;
+		border: 0;
+		padding: 0;
+		font: inherit;
+		color: var(--accent);
+		cursor: pointer;
+		text-decoration: underline;
+		text-decoration-color: var(--faint);
+		text-underline-offset: 0.22em;
+	}
+
+	.ip-link:hover,
+	.ip-link:focus-visible {
+		text-decoration-color: var(--accent);
+		outline: none;
+	}
+
+	.ip-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(5, 7, 10, 0.55);
+		z-index: 40;
+	}
+
+	.ip-panel {
+		position: fixed;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		width: min(640px, 100vw);
+		background: var(--bg);
+		border-left: 1px solid var(--line);
+		box-shadow: -12px 0 32px rgba(0, 0, 0, 0.45);
+		z-index: 50;
+		display: flex;
+		flex-direction: column;
+		transform: translateX(100%);
+		visibility: hidden;
+		transition: transform 140ms ease-out, visibility 0s linear 140ms;
+	}
+
+	.ip-panel.open {
+		transform: none;
+		visibility: visible;
+		transition: transform 140ms ease-out;
+	}
+
+	body.ip-panel-open {
+		overflow: hidden;
+	}
+
+	.ip-panel-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 12px;
+		padding: 18px 22px 12px;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.ip-panel-head h2 {
+		margin: 0;
+		font-size: 13px;
+		color: var(--muted);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-weight: 400;
+	}
+
+	.ip-close,
+	.ip-copy {
+		background: none;
+		border: 1px solid var(--line);
+		border-radius: 2px;
+		color: var(--muted);
+		font: 11px "SFMono-Regular", Consolas, monospace;
+		padding: 3px 8px;
+		cursor: pointer;
+	}
+
+	.ip-close:hover,
+	.ip-copy:hover,
+	.ip-close:focus-visible {
+		color: var(--accent);
+		border-color: var(--accent);
+		outline: none;
+	}
+
+	.ip-panel-body {
+		overflow-y: auto;
+		padding: 16px 22px 40px;
+	}
+
+	.ip-title-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 18px;
+	}
+
+	.ip-addr {
+		font: 20px "SFMono-Regular", Consolas, monospace;
+		color: var(--text);
+		overflow-wrap: anywhere;
+	}
+
+	.ip-section + .ip-section {
+		margin-top: 24px;
+	}
+
+	.ip-facts {
+		display: grid;
+		grid-template-columns: max-content 1fr;
+		gap: 4px 16px;
+		margin: 0;
+		font: 12px "SFMono-Regular", Consolas, monospace;
+	}
+
+	.ip-facts dt {
+		color: var(--muted);
+	}
+
+	.ip-facts dd {
+		margin: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.ip-tools {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		font: 12px "SFMono-Regular", Consolas, monospace;
+	}
+
+	.ip-tools a {
+		display: inline-block;
+		padding: 3px 8px;
+		border: 1px solid var(--line);
+		border-radius: 2px;
+		text-decoration: none;
+	}
+
+	.ip-tools a:hover {
+		border-color: var(--accent);
 	}
 
 	.vis-note {

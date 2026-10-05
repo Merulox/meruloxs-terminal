@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { onRequestPost } from "../functions/api/visit.js";
-import { onRequestGet } from "../functions/api/visits.js";
+import { enrichIp, onRequestGet } from "../functions/api/visits.js";
 import { onRequest as visitsGate } from "../functions/visits/_middleware.js";
-import { cleanPath, parseVisit, referrerHost } from "../src/lib/visits.js";
+import { cleanPath, normalizeIp, parseVisit, referrerHost, reverseName } from "../src/lib/visits.js";
 
 const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql", "0003_visits_source.sql"]
 	.map((file) => readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"))
@@ -129,6 +129,12 @@ test("aggregate API is dev-host only, authenticated, and groups by location", as
 	assert.equal(mixed.totals.visits, 3);
 	assert.equal(mixed.totals.imported, 10);
 	assert.equal(mixed.totals.ips, 2);
+	assert.equal(mixed.recent.find((r) => r.source === "cloudflare").weight, 10);
+
+	// Re-importing the same import_key is ignored (import uses INSERT OR IGNORE).
+	env.VISITS_DB.raw.exec("INSERT OR IGNORE INTO visits (ts, path, entry, country, ip, source, weight, import_key) VALUES (strftime('%s','now') - 60, '/music', 0, 'DE', '198.51.100.9', 'cloudflare', 10, 'k1')");
+	const again = await (await get("https://dev.merulox.com/api/visits?range=7d", { devAuthenticated: true })).json();
+	assert.equal(again.totals.views, 14);
 });
 
 test("/visits page is hidden outside dev.merulox.com", async () => {
@@ -136,4 +142,66 @@ test("/visits page is hidden outside dev.merulox.com", async () => {
 	assert.equal((await visitsGate(ctx("https://merulox.com/visits"))).status, 404);
 	assert.equal((await visitsGate(ctx("https://abc.merulox.pages.dev/visits/"))).status, 404);
 	assert.equal(await (await visitsGate(ctx("https://dev.merulox.com/visits"))).text(), "page");
+});
+
+test("IP validation and reverse DNS names", () => {
+	assert.equal(normalizeIp(" 203.0.113.7 "), "203.0.113.7");
+	assert.equal(normalizeIp("2001:DB8::1"), "2001:db8::1");
+	for (const bad of ["256.1.1.1", "1.2.3", "2001:db8::1::2", "example.com", "1.2.3.4/../x", ""]) {
+		assert.equal(normalizeIp(bad), null, bad);
+	}
+	assert.equal(reverseName("203.0.113.7"), "7.113.0.203.in-addr.arpa");
+	assert.equal(reverseName("2001:db8::1"), `1.${"0.".repeat(23)}8.b.d.0.1.0.0.2.ip6.arpa`);
+});
+
+test("IP detail API returns one IP's weighted history; ipinfo only on request", async () => {
+	const env = { VISITS_DB: d1() };
+	const record = (body, ip) =>
+		onRequestPost({ request: beacon("https://merulox.com/api/visit", body, { "CF-Connecting-IP": ip }), env });
+	await record({ p: "/", e: 1 }, "203.0.113.7");
+	await record({ p: "/links", e: 0 }, "203.0.113.7");
+	await record({ p: "/", e: 1 }, "198.51.100.1");
+	env.VISITS_DB.raw.exec("INSERT INTO visits (ts, path, entry, country, ip, source, weight, import_key) VALUES (strftime('%s','now') - 86400 * 3, '/music', 0, 'CA', '203.0.113.7', 'cloudflare', 4, 'k2')");
+
+	const calls = [];
+	const original = globalThis.fetch;
+	globalThis.fetch = async (url) => {
+		calls.push(String(url));
+		const body = String(url).includes("ipinfo.io")
+			? { org: "AS64500 Example Net", city: "Montreal", country: "CA", timezone: "America/Toronto" }
+			: { Answer: [{ type: 12, data: "host.example.net." }] };
+		return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
+	};
+	try {
+		const get = (query, data = { devAuthenticated: true }) =>
+			onRequestGet({ request: new Request(`https://dev.merulox.com/api/visits?${query}`), env, data });
+
+		assert.equal((await get("ip=203.0.113.7", {})).status, 401);
+		assert.equal((await get("ip=not-an-ip")).status, 400);
+
+		const detail = await (await get("ip=203.0.113.7")).json();
+		assert.equal(detail.ip, "203.0.113.7");
+		assert.deepEqual(
+			{ views: detail.totals.views, visits: detail.totals.visits, rows: detail.totals.rows, days: detail.totals.days, imported: detail.totals.imported },
+			{ views: 6, visits: 1, rows: 3, days: 2, imported: 4 },
+		);
+		assert.equal(detail.history.length, 3);
+		assert.equal(detail.history.at(-1).weight, 4);
+		assert.deepEqual(detail.paths.map((p) => [p.path, p.views]), [["/music", 4], ["/", 1], ["/links", 1]]);
+		assert.deepEqual(detail.network.reverseDns, ["host.example.net"]);
+		assert.equal(detail.network.ipinfo, "not queried");
+		assert.ok(calls.every((u) => !u.includes("ipinfo.io")), "ipinfo must not be called by default");
+		assert.ok(calls[0].includes("7.113.0.203.in-addr.arpa"));
+
+		const enriched = await (await get("ip=203.0.113.7&ipinfo=1")).json();
+		assert.equal(enriched.network.ipinfo, "ok");
+		assert.equal(enriched.network.asn, "AS64500");
+		assert.equal(enriched.network.org, "Example Net");
+		assert.ok(calls.some((u) => u === "https://ipinfo.io/203.0.113.7/json"));
+	} finally {
+		globalThis.fetch = original;
+	}
+
+	const failed = await enrichIp("203.0.113.7", { ipinfo: true, fetcher: async () => null });
+	assert.deepEqual([failed.reverseDns, failed.asn, failed.ipinfo], [[], null, "unavailable"]);
 });
