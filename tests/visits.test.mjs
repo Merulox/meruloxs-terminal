@@ -7,7 +7,7 @@ import { enrichIp, onRequestGet } from "../functions/api/visits.js";
 import { onRequest as visitsGate } from "../functions/visits/_middleware.js";
 import { cleanPath, normalizeIp, parseVisit, referrerHost, reverseName } from "../src/lib/visits.js";
 
-const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql", "0003_visits_source.sql"]
+const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql", "0003_visits_source.sql", "0004_visits_ip_index.sql"]
 	.map((file) => readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"))
 	.join("\n");
 
@@ -118,9 +118,10 @@ test("aggregate API is dev-host only, authenticated, and groups by location", as
 	assert.equal(body.daily.length, 1);
 	assert.equal(body.daily[0].views, 4);
 	assert.equal(body.totals.ips, 1);
-	assert.equal(body.recent.length, 4);
-	assert.equal(body.recent[0].ip, "203.0.113.7");
-	assert.equal(body.recent[0].source, "beacon");
+	const recent = await (await get("https://dev.merulox.com/api/visits?view=history&range=7d", { devAuthenticated: true })).json();
+	assert.equal(recent.rows.length, 4);
+	assert.equal(recent.rows[0].ip, "203.0.113.7");
+	assert.equal(recent.rows[0].source, "beacon");
 
 	// Imported Cloudflare rows count by weight, never as visits.
 	env.VISITS_DB.raw.exec("INSERT INTO visits (ts, path, entry, country, ip, source, weight, import_key) VALUES (strftime('%s','now') - 60, '/music', 0, 'DE', '198.51.100.9', 'cloudflare', 10, 'k1')");
@@ -129,7 +130,8 @@ test("aggregate API is dev-host only, authenticated, and groups by location", as
 	assert.equal(mixed.totals.visits, 3);
 	assert.equal(mixed.totals.imported, 10);
 	assert.equal(mixed.totals.ips, 2);
-	assert.equal(mixed.recent.find((r) => r.source === "cloudflare").weight, 10);
+	const mixedRows = await (await get("https://dev.merulox.com/api/visits?view=history&range=7d", { devAuthenticated: true })).json();
+	assert.equal(mixedRows.rows.find((r) => r.source === "cloudflare").weight, 10);
 
 	// Re-importing the same import_key is ignored (import uses INSERT OR IGNORE).
 	env.VISITS_DB.raw.exec("INSERT OR IGNORE INTO visits (ts, path, entry, country, ip, source, weight, import_key) VALUES (strftime('%s','now') - 60, '/music', 0, 'DE', '198.51.100.9', 'cloudflare', 10, 'k1')");
@@ -185,15 +187,22 @@ test("IP detail API returns one IP's weighted history; ipinfo only on request", 
 			{ views: detail.totals.views, visits: detail.totals.visits, rows: detail.totals.rows, days: detail.totals.days, imported: detail.totals.imported },
 			{ views: 6, visits: 1, rows: 3, days: 2, imported: 4 },
 		);
-		assert.equal(detail.history.length, 3);
-		assert.equal(detail.history.at(-1).weight, 4);
 		assert.deepEqual(detail.paths.map((p) => [p.path, p.views]), [["/music", 4], ["/", 1], ["/links", 1]]);
-		assert.deepEqual(detail.network.reverseDns, ["host.example.net"]);
-		assert.equal(detail.network.ipinfo, "not queried");
+		assert.equal(calls.length, 0, "detail must not wait on any network lookup");
+
+		const history = await (await get("view=history&ip=203.0.113.7")).json();
+		assert.deepEqual([history.total, history.page, history.pages, history.rows.length], [3, 1, 1, 3]);
+		assert.ok(history.rows.every((r) => r.ip === "203.0.113.7"), "history is isolated to the IP");
+		assert.equal(history.rows.at(-1).weight, 4);
+
+		const network = (await (await get("view=network&ip=203.0.113.7")).json()).network;
+		assert.deepEqual(network.reverseDns, ["host.example.net"]);
+		assert.equal(network.ipinfo, "not queried");
 		assert.ok(calls.every((u) => !u.includes("ipinfo.io")), "ipinfo must not be called by default");
 		assert.ok(calls[0].includes("7.113.0.203.in-addr.arpa"));
+		assert.equal((await get("view=network")).status, 400);
 
-		const enriched = await (await get("ip=203.0.113.7&ipinfo=1")).json();
+		const enriched = await (await get("view=network&ip=203.0.113.7&ipinfo=1")).json();
 		assert.equal(enriched.network.ipinfo, "ok");
 		assert.equal(enriched.network.asn, "AS64500");
 		assert.equal(enriched.network.org, "Example Net");
@@ -204,4 +213,44 @@ test("IP detail API returns one IP's weighted history; ipinfo only on request", 
 
 	const failed = await enrichIp("203.0.113.7", { ipinfo: true, fetcher: async () => null });
 	assert.deepEqual([failed.reverseDns, failed.asn, failed.ipinfo], [[], null, "unavailable"]);
+});
+
+test("history paging: pages, sizes, clamping, range and IP filters", async () => {
+	const env = { VISITS_DB: d1() };
+	const now = Math.floor(Date.now() / 1000);
+	const insert = env.VISITS_DB.raw.prepare("INSERT INTO visits (ts, path, entry, ip, source, weight) VALUES (?, ?, 0, ?, 'beacon', 1)");
+	// 130 rows for one IP over the last ~2 days, 7 rows for another, 5 rows older than 30 days.
+	for (let i = 0; i < 130; i += 1) insert.run(now - i * 60, `/p${i}`, "203.0.113.7");
+	for (let i = 0; i < 7; i += 1) insert.run(now - i * 90 - 30, "/other", "198.51.100.1");
+	for (let i = 0; i < 5; i += 1) insert.run(now - 86400 * 40 - i, "/old", "203.0.113.7");
+
+	const get = (query) =>
+		onRequestGet({ request: new Request(`https://dev.merulox.com/api/visits?view=history&${query}`), env, data: { devAuthenticated: true } });
+	const page = async (query) => (await get(query)).json();
+
+	const first = await page("range=30d&size=50");
+	assert.deepEqual([first.total, first.pages, first.page, first.size, first.rows.length], [137, 3, 1, 50, 50]);
+	assert.equal(first.rows[0].path, "/p0", "newest first");
+
+	const last = await page("range=30d&size=50&page=3");
+	assert.deepEqual([last.page, last.rows.length], [3, 37]);
+	const seen = new Set([...first.rows, ...(await page("range=30d&size=50&page=2")).rows, ...last.rows].map((r) => `${r.ts}${r.path}${r.ip}`));
+	assert.equal(seen.size, 137, "pages do not overlap or skip rows");
+
+	assert.equal((await page("range=30d&size=50&page=99")).page, 3, "page beyond the end clamps to the last page");
+	assert.equal((await page("range=all&size=200")).total, 142);
+
+	const ip = await page("ip=203.0.113.7&size=100&page=2");
+	assert.deepEqual([ip.total, ip.pages, ip.page, ip.rows.length], [135, 2, 2, 35], "IP history spans all time");
+	assert.ok(ip.rows.every((r) => r.ip === "203.0.113.7"));
+	assert.equal(ip.rows.at(-1).path, "/old");
+
+	const empty = await page("ip=192.0.2.1");
+	assert.deepEqual([empty.total, empty.pages, empty.page, empty.rows.length], [0, 1, 1, 0]);
+
+	for (const bad of ["size=7", "size=50&page=0", "size=50&page=1.5", "page=abc", "range=1y", "ip=nope"]) {
+		assert.equal((await get(bad)).status, 400, bad);
+	}
+	const invalidView = await onRequestGet({ request: new Request("https://dev.merulox.com/api/visits?view=dump"), env, data: { devAuthenticated: true } });
+	assert.equal(invalidView.status, 400);
 });

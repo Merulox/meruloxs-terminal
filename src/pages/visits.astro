@@ -46,14 +46,16 @@ const ranges = [
 	</div>
 
 	<section class="vis-recent">
-		<h2>recent visits</h2>
-		<p class="vis-empty" id="vis-recent-empty">none yet</p>
+		<h2>history</h2>
+		<div class="pager-host" id="vis-recent-pager-top"></div>
+		<p class="vis-empty" id="vis-recent-empty" hidden>none yet</p>
 		<div class="vis-table-wrap">
 			<table>
 				<thead><tr><th>time</th><th>ip</th><th>location</th><th>page</th><th>referrer</th><th class="num">views</th><th>source</th></tr></thead>
 				<tbody id="vis-recent"></tbody>
 			</table>
 		</div>
+		<div class="pager-host" id="vis-recent-pager-bottom"></div>
 	</section>
 
 	<div class="ip-backdrop" id="ip-backdrop" hidden></div>
@@ -86,7 +88,6 @@ const ranges = [
 	type Point = Row & { lat: number; lon: number; city: string | null; region: string | null; country: string | null };
 	type Summary = {
 		totals: { views: number; visits: number | null; countries: number; ips: number; imported: number; first: number | null };
-		recent: { ts: number; ip: string | null; path: string; referrer: string | null; city: string | null; region: string | null; country: string | null; source: string; weight: number }[];
 		points: Point[];
 		countries: (Row & { country: string | null })[];
 		cities: (Row & { city: string; region: string | null; country: string | null })[];
@@ -110,6 +111,13 @@ const ranges = [
 	const n = (value: number | null | undefined) => (value ?? 0).toLocaleString("en");
 
 	const $ = (id: string) => document.getElementById(id)!;
+
+	type HistoryRow = {
+		ts: number; ip: string | null; path: string; entry: number; referrer: string | null;
+		city: string | null; region: string | null; country: string | null; colo: string | null;
+		source: string; weight: number;
+	};
+	type HistoryPage = { rows: HistoryRow[]; total: number; page: number; pages: number; size: number };
 
 	function renderList(id: string, rows: Row[], label: (row: any) => string) {
 		const list = $(id);
@@ -201,36 +209,202 @@ const ranges = [
 		return button;
 	}
 
-	function renderRecent(rows: Summary["recent"]) {
-		const body = $("vis-recent");
-		body.replaceChildren();
-		for (const row of rows) {
-			const tr = document.createElement("tr");
-			cell(tr, when(row.ts), "nowrap");
-			cell(tr, row.ip ? ipButton(row.ip) : "—", "nowrap");
-			cell(tr, place(row), "wrap");
-			cell(tr, row.path, "wrap");
-			cell(tr, row.referrer ?? "", "wrap");
-			cell(tr, row.weight > 1 ? `×${n(row.weight)}` : "1", "num");
-			cell(tr, sourceLabel(row.source), "nowrap muted");
-			body.append(tr);
-		}
-		$("vis-recent-empty").hidden = rows.length > 0;
+	function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string) {
+		const node = document.createElement(tag);
+		if (text !== undefined) node.textContent = text;
+		if (className) node.className = className;
+		return node;
 	}
+
+	// ── Paged history (shared by the main table and the IP panel) ─────────
+	const PAGE_SIZES = [25, 50, 100, 200];
+	const SIZE_KEY = "mx-visits-page-size";
+	const savedSize = () => {
+		const size = Number(localStorage.getItem(SIZE_KEY));
+		return PAGE_SIZES.includes(size) ? size : 50;
+	};
+
+	type Pager = { reload: (page?: number) => Promise<void> };
+
+	// query(page, size) -> API URL. Navigation replaces rows; "load more" appends the next page.
+	function pagedHistory(options: {
+		body: HTMLElement;
+		empty: HTMLElement;
+		hosts: HTMLElement[];
+		query: (page: number, size: number) => string;
+		row: (row: HistoryRow) => HTMLTableRowElement;
+		alive?: () => boolean;
+	}): Pager {
+		let first = 1;
+		let last = 1;
+		let state: HistoryPage | null = null;
+		let request = 0;
+		let busy = false;
+
+		async function fetchPage(page: number, size: number) {
+			const response = await fetch(options.query(page, size), { cache: "no-store" });
+			if (!response.ok) throw new Error(String(response.status));
+			return (await response.json()) as HistoryPage;
+		}
+
+		function renderPager() {
+			for (const host of options.hosts) {
+				host.replaceChildren();
+				if (!state || state.total === 0) continue;
+				const nav = el("nav", undefined, "pager");
+				nav.setAttribute("aria-label", "history pages");
+				const button = (label: string, title: string, target: number, disabled: boolean) => {
+					const b = el("button", label, "pager-btn");
+					b.type = "button";
+					b.title = title;
+					b.disabled = disabled || busy;
+					b.addEventListener("click", () => go(target));
+					return b;
+				};
+				const from = (first - 1) * state.size + 1;
+				const to = Math.min(last * state.size, state.total);
+				nav.append(
+					button("«", "first page", 1, first === 1),
+					button("‹", "previous page", first - 1, first === 1),
+				);
+				const jump = el("input", undefined, "pager-jump");
+				jump.type = "number";
+				jump.min = "1";
+				jump.max = String(state.pages);
+				jump.value = String(last);
+				jump.setAttribute("aria-label", "page number");
+				const commit = () => {
+					const target = Math.min(state!.pages, Math.max(1, Math.round(Number(jump.value) || 1)));
+					if (target !== last || first !== last) go(target);
+					else jump.value = String(last);
+				};
+				jump.addEventListener("focus", () => jump.select());
+				jump.addEventListener("change", commit);
+				jump.addEventListener("keydown", (event) => {
+					if (event.key === "Enter") {
+						event.preventDefault();
+						commit();
+					}
+				});
+				const of = el("span", `/ ${n(state.pages)}`, "pager-of");
+				nav.append(jump, of);
+				nav.append(
+					button("›", "next page", last + 1, last >= state.pages),
+					button("»", "last page", state.pages, last >= state.pages),
+				);
+				nav.append(el("span", `rows ${n(from)}–${n(to)} of ${n(state.total)}`, "pager-range"));
+				const size = el("select", undefined, "pager-size");
+				size.setAttribute("aria-label", "rows per page");
+				for (const value of PAGE_SIZES) {
+					const option = el("option", `${value} / page`);
+					option.value = String(value);
+					option.selected = value === state.size;
+					size.append(option);
+				}
+				size.disabled = busy;
+				size.addEventListener("change", () => {
+					localStorage.setItem(SIZE_KEY, size.value);
+					// Keep roughly the same position when the page size changes.
+					go(Math.floor(((first - 1) * state!.size) / Number(size.value)) + 1);
+				});
+				nav.append(size);
+				if (last < state.pages) {
+					const more = el("button", `load ${n(Math.min(state.size, state.total - to))} more`, "pager-btn pager-more");
+					more.type = "button";
+					more.disabled = busy;
+					more.addEventListener("click", loadMore);
+					nav.append(more);
+				}
+				host.append(nav);
+			}
+		}
+
+		function paint(rows: HistoryRow[], append: boolean) {
+			if (!append) options.body.replaceChildren();
+			for (const row of rows) options.body.append(options.row(row));
+			options.empty.textContent = "none yet";
+			options.empty.hidden = (state?.total ?? 0) > 0;
+		}
+
+		async function go(page: number) {
+			const id = ++request;
+			busy = true;
+			renderPager();
+			try {
+				const result = await fetchPage(Math.max(1, page), savedSize());
+				if (id !== request || options.alive?.() === false) return;
+				state = result;
+				first = last = result.page;
+				paint(result.rows, false);
+			} catch (error) {
+				if (id !== request) return;
+				options.body.replaceChildren();
+				options.empty.hidden = false;
+				options.empty.textContent = `could not load history (${(error as Error).message})`;
+			} finally {
+				if (id === request) {
+					busy = false;
+					renderPager();
+				}
+			}
+		}
+
+		async function loadMore() {
+			if (!state || last >= state.pages) return;
+			const id = ++request;
+			busy = true;
+			renderPager();
+			try {
+				const result = await fetchPage(last + 1, state.size);
+				if (id !== request || options.alive?.() === false) return;
+				// Totals can shift if new visits arrive; take the fresh counts.
+				state = { ...result };
+				last = result.page;
+				paint(result.rows, true);
+			} finally {
+				if (id === request) {
+					busy = false;
+					renderPager();
+				}
+			}
+		}
+
+		return { reload: (page = 1) => go(page) };
+	}
+
+	function recentRow(row: HistoryRow) {
+		const tr = document.createElement("tr");
+		cell(tr, when(row.ts), "nowrap");
+		cell(tr, row.ip ? ipButton(row.ip) : "—", "nowrap");
+		cell(tr, place(row), "wrap");
+		cell(tr, row.path, "wrap");
+		cell(tr, row.referrer ?? "", "wrap");
+		cell(tr, row.weight > 1 ? `×${n(row.weight)}` : "1", "num");
+		cell(tr, sourceLabel(row.source), "nowrap muted");
+		return tr;
+	}
+
+	let currentRange = "30d";
+	const recent = pagedHistory({
+		body: $("vis-recent"),
+		empty: $("vis-recent-empty"),
+		hosts: [$("vis-recent-pager-top"), $("vis-recent-pager-bottom")],
+		query: (page, size) => `/api/visits?view=history&range=${encodeURIComponent(currentRange)}&page=${page}&size=${size}`,
+		row: recentRow,
+	});
 
 	// ── IP panel ──────────────────────────────────────────────────────────
 	type IpDetail = {
 		ip: string;
 		totals: { views: number; visits: number; rows: number; days: number; imported: number; first: number | null; last: number | null };
-		history: (Summary["recent"][number] & { lat: number | null; lon: number | null; colo: string | null; entry: number })[];
 		paths: (Row & { path: string })[];
 		places: (Row & { city: string | null; region: string | null; country: string | null; lat: number | null; lon: number | null })[];
-		network: {
-			ipinfo: "ok" | "unavailable" | "not queried";
-			reverseDns: string[]; asn: string | null; org: string | null; hostname: string | null;
-			city: string | null; region: string | null; country: string | null; postal: string | null;
-			timezone: string | null; loc: string | null; anycast: boolean; bogon: boolean;
-		};
+	};
+	type Network = {
+		ipinfo: "ok" | "unavailable" | "not queried";
+		reverseDns: string[]; asn: string | null; org: string | null; hostname: string | null;
+		city: string | null; region: string | null; country: string | null; postal: string | null;
+		timezone: string | null; loc: string | null; anycast: boolean; bogon: boolean;
 	};
 
 	const panel = $("ip-panel");
@@ -238,13 +412,6 @@ const ranges = [
 	const panelBody = $("ip-panel-body");
 	let lastFocus: HTMLElement | null = null;
 	let panelRequest = 0;
-
-	function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string) {
-		const node = document.createElement(tag);
-		if (text !== undefined) node.textContent = text;
-		if (className) node.className = className;
-		return node;
-	}
 
 	function facts(rows: [string, string | Node | null | undefined][]) {
 		const dl = el("dl", undefined, "ip-facts");
@@ -264,9 +431,9 @@ const ranges = [
 		return wrap;
 	}
 
-	function toolLinks(ip: string, network: IpDetail["network"]) {
+	function toolLinks(ip: string, network: Network | null) {
 		const q = encodeURIComponent(ip);
-		const asnNumber = network.asn?.replace(/^AS/, "");
+		const asnNumber = network?.asn?.replace(/^AS/, "");
 		const links: [string, string][] = [
 			["ipinfo", `https://ipinfo.io/${q}`],
 			["AbuseIPDB", `https://www.abuseipdb.com/check/${q}`],
@@ -283,8 +450,8 @@ const ranges = [
 			["robtex", `https://www.robtex.com/ip-lookup/${q}`],
 			["urlscan", `https://urlscan.io/search/#ip:%22${q}%22`],
 		];
-		if (asnNumber) links.push([`${network.asn} (bgp.he.net)`, `https://bgp.he.net/AS${asnNumber}`]);
-		if (network.loc) links.push(["map", `https://www.openstreetmap.org/?mlat=${network.loc.split(",")[0]}&mlon=${network.loc.split(",")[1]}#map=11/${network.loc.replace(",", "/")}`]);
+		if (asnNumber) links.push([`${network!.asn} (bgp.he.net)`, `https://bgp.he.net/AS${asnNumber}`]);
+		if (network?.loc) links.push(["map", `https://www.openstreetmap.org/?mlat=${network.loc.split(",")[0]}&mlon=${network.loc.split(",")[1]}#map=11/${network.loc.replace(",", "/")}`]);
 		const list = el("ul", undefined, "ip-tools");
 		for (const [label, href] of links) {
 			const li = el("li");
@@ -298,9 +465,55 @@ const ranges = [
 		return list;
 	}
 
-	function renderIp(detail: IpDetail) {
+	function ipHistoryRow(row: HistoryRow) {
+		const tr = document.createElement("tr");
+		cell(tr, when(row.ts), "nowrap");
+		cell(tr, row.path + (row.entry ? " ↵" : ""), "nowrap");
+		cell(tr, place(row) + (row.colo ? ` · ${row.colo}` : ""), "wrap");
+		cell(tr, row.referrer ?? "", "wrap");
+		cell(tr, row.weight > 1 ? `×${n(row.weight)}` : "1", "num");
+		cell(tr, sourceLabel(row.source), "nowrap muted");
+		return tr;
+	}
+
+	function renderNetwork(host: HTMLElement, links: HTMLElement, ip: string, net: Network, request: number) {
+		const netPlace = [net.city, net.region, net.country ? countryName(net.country) : null].filter(Boolean).join(", ");
+		const flags = [net.anycast && "anycast", net.bogon && "bogon / private"].filter(Boolean).join(", ");
+		let ipinfoState: string | Node = net.ipinfo === "ok" ? "ipinfo.io" : net.ipinfo;
+		if (net.ipinfo === "not queried") {
+			const query = el("button", "query ipinfo.io (sends this IP to ipinfo)", "ip-copy");
+			query.type = "button";
+			query.addEventListener("click", () => loadNetwork(host, links, ip, request, true));
+			ipinfoState = query;
+		}
+		host.replaceChildren(
+			facts([
+				["reverse dns", net.reverseDns.join(", ") || net.hostname || "none"],
+				["asn / org source", ipinfoState],
+				["asn", net.asn],
+				["organization", net.org],
+				["ipinfo location", [netPlace, net.postal].filter(Boolean).join(" ")],
+				["timezone", net.timezone],
+				["flags", flags],
+			]),
+		);
+		links.replaceChildren(toolLinks(ip, net));
+	}
+
+	async function loadNetwork(host: HTMLElement, links: HTMLElement, ip: string, request: number, ipinfo = false) {
+		host.replaceChildren(el("p", ipinfo ? "querying ipinfo.io…" : "looking up reverse dns…", "vis-empty"));
+		try {
+			const response = await fetch(`/api/visits?view=network&ip=${encodeURIComponent(ip)}${ipinfo ? "&ipinfo=1" : ""}`, { cache: "no-store" });
+			if (request !== panelRequest) return;
+			if (!response.ok) throw new Error(String(response.status));
+			renderNetwork(host, links, ip, (await response.json()).network, request);
+		} catch (error) {
+			if (request === panelRequest) host.replaceChildren(el("p", `network lookup failed (${(error as Error).message})`, "vis-empty"));
+		}
+	}
+
+	function renderIp(detail: IpDetail, request: number) {
 		const t = detail.totals;
-		const net = detail.network;
 		const copy = el("button", "copy", "ip-copy");
 		copy.type = "button";
 		copy.addEventListener("click", () => {
@@ -309,23 +522,28 @@ const ranges = [
 		const titleRow = el("div", undefined, "ip-title-row");
 		titleRow.append(el("span", detail.ip, "ip-addr"), copy);
 
-		const netPlace = [net.city, net.region, net.country ? countryName(net.country) : null].filter(Boolean).join(", ");
-		const flags = [net.anycast && "anycast", net.bogon && "bogon / private"].filter(Boolean).join(", ");
-		let ipinfoState: string | Node = net.ipinfo === "ok" ? "ipinfo.io" : net.ipinfo;
-		if (net.ipinfo === "not queried") {
-			const query = el("button", "query ipinfo.io (sends this IP to ipinfo)", "ip-copy");
-			query.type = "button";
-			query.addEventListener("click", () => openIp(detail.ip, true));
-			ipinfoState = query;
-		}
-
+		const PATHS_SHOWN = 10;
 		const pathList = el("ol", undefined, "vis-list");
 		const maxPath = Math.max(1, ...detail.paths.map((p) => p.views));
-		for (const p of detail.paths) {
+		detail.paths.forEach((p, index) => {
 			const li = el("li");
 			li.style.setProperty("--share", `${(p.views / maxPath) * 100}%`);
 			li.append(el("span", p.path, "vis-name"), el("span", n(p.views), "vis-count"));
+			li.hidden = index >= PATHS_SHOWN;
 			pathList.append(li);
+		});
+		const pathNodes: Node[] = [pathList];
+		if (detail.paths.length > PATHS_SHOWN) {
+			const toggle = el("button", `show all ${n(detail.paths.length)} pages`, "pager-btn");
+			toggle.type = "button";
+			toggle.style.marginTop = "6px";
+			toggle.addEventListener("click", () => {
+				const expand = toggle.dataset.expanded !== "1";
+				toggle.dataset.expanded = expand ? "1" : "";
+				pathList.querySelectorAll("li").forEach((li, index) => (li.hidden = !expand && index >= PATHS_SHOWN));
+				toggle.textContent = expand ? `show top ${PATHS_SHOWN}` : `show all ${n(detail.paths.length)} pages`;
+			});
+			pathNodes.push(toggle);
 		}
 
 		const table = el("table", undefined, "ip-history");
@@ -334,19 +552,17 @@ const ranges = [
 		for (const h of ["time", "page", "location", "referrer", "views", "source"]) hr.append(el("th", h));
 		head.append(hr);
 		const body = el("tbody");
-		for (const row of detail.history) {
-			const tr = document.createElement("tr");
-			cell(tr, when(row.ts), "nowrap");
-			cell(tr, row.path + (row.entry ? " ↵" : ""), "nowrap");
-			cell(tr, place(row) + (row.colo ? ` · ${row.colo}` : ""), "wrap");
-			cell(tr, row.referrer ?? "", "wrap");
-			cell(tr, row.weight > 1 ? `×${n(row.weight)}` : "1", "num");
-			cell(tr, sourceLabel(row.source), "nowrap muted");
-			body.append(tr);
-		}
 		table.append(head, body);
 		const tableWrap = el("div", undefined, "vis-table-wrap");
 		tableWrap.append(table);
+		const empty = el("p", "none yet", "vis-empty");
+		empty.hidden = true;
+		const pagerTop = el("div", undefined, "pager-host");
+		const pagerBottom = el("div", undefined, "pager-host");
+
+		const network = el("div");
+		const links = el("div");
+		links.append(toolLinks(detail.ip, null));
 
 		panelBody.replaceChildren(
 			titleRow,
@@ -355,6 +571,7 @@ const ranges = [
 				facts([
 					["views", `${n(t.views)}${t.imported ? ` (${n(t.imported)} from cf logs)` : ""}`],
 					["visits", n(t.visits)],
+					["rows", n(t.rows)],
 					["active days", n(t.days)],
 					["first seen", t.first ? when(t.first) : null],
 					["last seen", t.last ? when(t.last) : null],
@@ -362,42 +579,42 @@ const ranges = [
 					["seen from", detail.places.map((p) => `${place(p)} (${n(p.views)})`).join("; ")],
 				]),
 			),
-			section(
-				"network",
-				facts([
-					["reverse dns", net.reverseDns.join(", ") || net.hostname || "none"],
-					["asn / org source", ipinfoState],
-					["asn", net.asn],
-					["organization", net.org],
-					["ipinfo location", [netPlace, net.postal].filter(Boolean).join(" ")],
-					["timezone", net.timezone],
-					["flags", flags],
-				]),
-			),
-			section("pages", pathList),
-			section(`history (${n(detail.history.length)}${t.rows > detail.history.length ? ` of ${n(t.rows)}` : ""})`, tableWrap),
-			section("lookup", toolLinks(detail.ip, net)),
+			section("network", network),
+			section("pages", ...pathNodes),
+			section("history", pagerTop, empty, tableWrap, pagerBottom),
+			section("lookup", links),
 		);
+
+		pagedHistory({
+			body,
+			empty,
+			hosts: [pagerTop, pagerBottom],
+			query: (page, size) => `/api/visits?view=history&ip=${encodeURIComponent(detail.ip)}&page=${page}&size=${size}`,
+			row: ipHistoryRow,
+			alive: () => request === panelRequest,
+		}).reload(1);
+		loadNetwork(network, links, detail.ip, request);
 	}
 
-	async function openIp(ip: string, withIpinfo = false, trigger: HTMLElement | null = null) {
+	async function openIp(ip: string, trigger: HTMLElement | null = null) {
 		const request = ++panelRequest;
 		if (!panel.classList.contains("open")) lastFocus = trigger ?? (document.activeElement as HTMLElement | null);
 		$("ip-panel-title").textContent = ip;
 		panelBody.replaceChildren(el("p", "loading…", "vis-empty"));
+		panelBody.scrollTop = 0;
 		panel.classList.add("open");
 		panel.setAttribute("aria-hidden", "false");
 		backdrop.hidden = false;
 		document.body.classList.add("ip-panel-open");
 		$("ip-close").focus({ preventScroll: true });
 		history.replaceState(null, "", `#ip=${encodeURIComponent(ip)}`);
-		const response = await fetch(`/api/visits?ip=${encodeURIComponent(ip)}${withIpinfo ? "&ipinfo=1" : ""}`, { cache: "no-store" });
+		const response = await fetch(`/api/visits?ip=${encodeURIComponent(ip)}`, { cache: "no-store" });
 		if (request !== panelRequest) return;
 		if (!response.ok) {
 			panelBody.replaceChildren(el("p", `could not load ${ip} (${response.status})`, "vis-empty"));
 			return;
 		}
-		renderIp(await response.json());
+		renderIp(await response.json(), request);
 	}
 
 	function closeIp() {
@@ -416,25 +633,32 @@ const ranges = [
 
 	document.addEventListener("click", (event) => {
 		const button = (event.target as HTMLElement).closest<HTMLElement>(".ip-link");
-		if (button?.dataset.ip) openIp(button.dataset.ip, false, button);
+		if (button?.dataset.ip) openIp(button.dataset.ip, button);
 	});
 	$("ip-close").addEventListener("click", closeIp);
 	backdrop.addEventListener("click", closeIp);
-	// Capture phase so the site-wide arrow/hjkl navigation never sees keys meant for the panel.
+	// While the panel is open the site-wide arrow/hjkl navigation must not react.
+	// Keys aimed inside the panel still reach their target (e.g. the page-jump
+	// input), then stop at the panel; keys aimed elsewhere stop at capture.
 	document.addEventListener(
 		"keydown",
 		(event) => {
 			if (!panel.classList.contains("open")) return;
 			if (event.key === "Escape") {
 				event.preventDefault();
+				event.stopPropagation();
 				closeIp();
+				return;
 			}
-			event.stopPropagation();
+			if (!panel.contains(event.target as Node)) event.stopPropagation();
 		},
 		true,
 	);
+	panel.addEventListener("keydown", (event) => event.stopPropagation());
 
 	async function load(range: string) {
+		currentRange = range;
+		recent.reload(1);
 		const summary = $("vis-summary");
 		summary.textContent = "loading…";
 		const response = await fetch(`/api/visits?range=${encodeURIComponent(range)}`, { cache: "no-store" });
@@ -452,7 +676,6 @@ const ranges = [
 		renderList("vis-cities", data.cities, place);
 		renderList("vis-paths", data.paths, (row) => row.path);
 		renderList("vis-referrers", data.referrers, (row) => row.referrer);
-		renderRecent(data.recent);
 	}
 
 	const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-range]"));
@@ -625,6 +848,64 @@ const ranges = [
 	.vis-recent .muted,
 	.ip-history .muted {
 		color: var(--muted);
+	}
+
+	.pager {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px 6px;
+		margin: 8px 0;
+		font: 12px "SFMono-Regular", Consolas, monospace;
+		color: var(--muted);
+	}
+
+	.pager-btn,
+	.pager-size,
+	.pager-jump {
+		background: none;
+		border: 1px solid var(--line);
+		border-radius: 2px;
+		color: var(--text);
+		font: inherit;
+		padding: 2px 8px;
+		min-height: 24px;
+	}
+
+	.pager-btn {
+		cursor: pointer;
+	}
+
+	.pager-btn:hover:not(:disabled),
+	.pager-btn:focus-visible,
+	.pager-size:focus-visible,
+	.pager-jump:focus-visible {
+		border-color: var(--accent);
+		color: var(--accent);
+		outline: none;
+	}
+
+	.pager-btn:disabled {
+		color: var(--faint);
+		cursor: default;
+	}
+
+	.pager-jump {
+		width: 5.5em;
+		text-align: right;
+		-moz-appearance: textfield;
+	}
+
+	.pager-size {
+		background: var(--bg);
+	}
+
+	.pager-range {
+		margin: 0 6px;
+	}
+
+	.pager-more {
+		margin-left: auto;
 	}
 
 	.ip-link {

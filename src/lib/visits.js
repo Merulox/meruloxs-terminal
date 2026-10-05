@@ -124,7 +124,7 @@ export async function summarize(db, since) {
 			.all()
 			.then((result) => result.results ?? []);
 
-	const [totals, points, countries, cities, paths, referrers, daily, recent] = await Promise.all([
+	const [totals, points, countries, cities, paths, referrers, daily] = await Promise.all([
 		all(`SELECT ${COUNTS}, COUNT(DISTINCT country) AS countries, COUNT(DISTINCT ip) AS ips, SUM(CASE WHEN source = 'cloudflare' THEN weight ELSE 0 END) AS imported, MIN(ts) AS first, MAX(ts) AS last FROM visits WHERE ts >= ?`),
 		all(`SELECT lat, lon, city, region, country, ${COUNTS} FROM visits WHERE ts >= ? AND lat IS NOT NULL AND lon IS NOT NULL GROUP BY lat, lon, city, region, country ORDER BY views DESC LIMIT 500`),
 		all(`SELECT country, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY country ORDER BY views DESC LIMIT 50`),
@@ -132,7 +132,6 @@ export async function summarize(db, since) {
 		all(`SELECT path, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY path ORDER BY views DESC LIMIT 25`),
 		all(`SELECT referrer, ${COUNTS} FROM visits WHERE ts >= ? AND referrer IS NOT NULL GROUP BY referrer ORDER BY views DESC LIMIT 25`),
 		all(`SELECT date(ts, 'unixepoch') AS day, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY day ORDER BY day`),
-		all(`SELECT ts, ip, path, entry, referrer, city, region, country, source, weight FROM visits WHERE ts >= ? ORDER BY ts DESC, id DESC LIMIT 200`),
 	]);
 
 	const total = totals[0] ?? {};
@@ -152,7 +151,6 @@ export async function summarize(db, since) {
 		paths,
 		referrers,
 		daily,
-		recent,
 	};
 }
 
@@ -190,9 +188,8 @@ export function reverseName(ip) {
 
 export async function ipDetail(db, ip) {
 	const one = (sql) => db.prepare(sql).bind(ip).all().then((r) => r.results ?? []);
-	const [totals, history, paths, places] = await Promise.all([
+	const [totals, paths, places] = await Promise.all([
 		one(`SELECT ${COUNTS}, COUNT(*) AS rows, MIN(ts) AS first, MAX(ts) AS last, COUNT(DISTINCT date(ts, 'unixepoch')) AS days, SUM(CASE WHEN source = 'cloudflare' THEN weight ELSE 0 END) AS imported FROM visits WHERE ip = ?`),
-		one(`SELECT ts, path, entry, referrer, city, region, country, lat, lon, colo, source, weight FROM visits WHERE ip = ? ORDER BY ts DESC, id DESC LIMIT 500`),
 		one(`SELECT path, ${COUNTS} FROM visits WHERE ip = ? GROUP BY path ORDER BY views DESC, path`),
 		one(`SELECT city, region, country, lat, lon, ${COUNTS} FROM visits WHERE ip = ? GROUP BY city, region, country ORDER BY views DESC`),
 	]);
@@ -208,8 +205,39 @@ export async function ipDetail(db, ip) {
 			first: total.first ?? null,
 			last: total.last ?? null,
 		},
-		history,
 		paths,
 		places,
 	};
+}
+
+// ── Paged raw history (recent table + per-IP panel) ─────────────────────────
+
+export const PAGE_SIZES = [25, 50, 100, 200];
+export const DEFAULT_PAGE_SIZE = 50;
+
+export function pageParams(searchParams) {
+	const size = Number(searchParams.get("size") ?? DEFAULT_PAGE_SIZE);
+	const page = Number(searchParams.get("page") ?? 1);
+	if (!PAGE_SIZES.includes(size) || !Number.isInteger(page) || page < 1 || page > 1_000_000) return null;
+	return { size, page };
+}
+
+// Newest first. `since` filters by time (recent table); `ip` filters by address (panel).
+export async function historyPage(db, { since = 0, ip = null, page = 1, size = DEFAULT_PAGE_SIZE }) {
+	const where = ip ? "ip = ? AND ts >= ?" : "ts >= ?";
+	const binds = ip ? [ip, since] : [since];
+	const [{ rows: total = 0 } = {}] =
+		(await db.prepare(`SELECT COUNT(*) AS rows FROM visits WHERE ${where}`).bind(...binds).all()).results ?? [];
+	const pages = Math.max(1, Math.ceil(total / size));
+	const current = Math.min(page, pages);
+	const rows =
+		(
+			await db
+				.prepare(
+					`SELECT ts, ip, path, entry, referrer, city, region, country, colo, source, weight FROM visits WHERE ${where} ORDER BY ts DESC, id DESC LIMIT ? OFFSET ?`,
+				)
+				.bind(...binds, size, (current - 1) * size)
+				.all()
+		).results ?? [];
+	return { rows, total, page: current, pages, size };
 }

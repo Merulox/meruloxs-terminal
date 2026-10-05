@@ -1,8 +1,19 @@
-// GET /api/visits?range=30d — aggregated visit data for the dev.merulox.com
-// visits tab. GET /api/visits?ip=1.2.3.4 — one IP's history plus network
-// enrichment (reverse DNS; ASN/org from ipinfo.io only with &ipinfo=1). Dev host only, after the
-// root middleware's Basic auth.
-import { DEV_HOST, ipDetail, normalizeIp, rangeStart, reverseName, summarize } from "../../src/lib/visits.js";
+// Dev-only visits API (dev.merulox.com, behind the root middleware's Basic auth):
+//   ?range=30d                              aggregates for the dashboard
+//   ?view=history&range=30d&page=1&size=50  paged raw rows, newest first
+//   ?view=history&ip=1.2.3.4&page=1&size=50 one IP's paged rows (all time)
+//   ?ip=1.2.3.4                             one IP's totals, pages, places
+//   ?view=network&ip=1.2.3.4[&ipinfo=1]     reverse DNS; ASN/org from ipinfo.io only with ipinfo=1
+import {
+	DEV_HOST,
+	historyPage,
+	ipDetail,
+	normalizeIp,
+	pageParams,
+	rangeStart,
+	reverseName,
+	summarize,
+} from "../../src/lib/visits.js";
 
 const json = (body, status = 200) =>
 	new Response(JSON.stringify(body), {
@@ -63,13 +74,28 @@ export async function onRequestGet(context) {
 	if (data?.devAuthenticated !== true) return json({ error: "unauthorized" }, 401);
 	if (!env.VISITS_DB) return json({ error: "VISITS_DB binding missing" }, 503);
 
+	const view = url.searchParams.get("view");
+	let ip = null;
 	if (url.searchParams.has("ip")) {
-		const ip = normalizeIp(url.searchParams.get("ip"));
+		ip = normalizeIp(url.searchParams.get("ip"));
 		if (!ip) return json({ error: "invalid ip" }, 400);
-		const ipinfo = url.searchParams.get("ipinfo") === "1";
-		const [detail, network] = await Promise.all([ipDetail(env.VISITS_DB, ip), enrichIp(ip, { ipinfo })]);
-		return json({ ...detail, network });
 	}
+
+	if (view === "network") {
+		if (!ip) return json({ error: "ip required" }, 400);
+		return json({ ip, network: await enrichIp(ip, { ipinfo: url.searchParams.get("ipinfo") === "1" }) });
+	}
+
+	if (view === "history") {
+		const paging = pageParams(url.searchParams);
+		if (!paging) return json({ error: "invalid page or size" }, 400);
+		const since = ip ? 0 : rangeStart(url.searchParams.get("range") ?? "30d");
+		if (since === null) return json({ error: "invalid range" }, 400);
+		return json({ ip, since, ...(await historyPage(env.VISITS_DB, { since, ip, ...paging })) });
+	}
+
+	if (view !== null) return json({ error: "invalid view" }, 400);
+	if (ip) return json(await ipDetail(env.VISITS_DB, ip));
 
 	const range = url.searchParams.get("range") ?? "30d";
 	const since = rangeStart(range);
