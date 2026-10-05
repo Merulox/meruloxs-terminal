@@ -128,10 +128,10 @@ export async function summarize(db, since) {
 		all(`SELECT ${COUNTS}, COUNT(DISTINCT country) AS countries, COUNT(DISTINCT ip) AS ips, SUM(CASE WHEN source = 'cloudflare' THEN weight ELSE 0 END) AS imported, MIN(ts) AS first, MAX(ts) AS last FROM visits WHERE ts >= ?`),
 		all(`SELECT lat, lon, city, region, country, ${COUNTS} FROM visits WHERE ts >= ? AND lat IS NOT NULL AND lon IS NOT NULL GROUP BY lat, lon, city, region, country ORDER BY views DESC LIMIT 500`),
 		all(`SELECT country, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY country ORDER BY views DESC LIMIT 50`),
-		all(`SELECT city, region, country, ${COUNTS} FROM visits WHERE ts >= ? AND city IS NOT NULL GROUP BY city, region, country ORDER BY views DESC LIMIT 25`),
-		all(`SELECT ip, ${COUNTS} FROM visits WHERE ts >= ? AND ip IS NOT NULL GROUP BY ip ORDER BY views DESC, ip LIMIT 25`),
-		all(`SELECT path, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY path ORDER BY views DESC LIMIT 25`),
-		all(`SELECT referrer, ${COUNTS} FROM visits WHERE ts >= ? AND referrer IS NOT NULL GROUP BY referrer ORDER BY views DESC LIMIT 25`),
+		all(`SELECT city, region, country, ${COUNTS} FROM visits WHERE ts >= ? AND city IS NOT NULL GROUP BY city, region, country ORDER BY views DESC LIMIT 50`),
+		all(`SELECT ip, ${COUNTS} FROM visits WHERE ts >= ? AND ip IS NOT NULL GROUP BY ip ORDER BY views DESC, ip LIMIT 50`),
+		all(`SELECT path, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY path ORDER BY views DESC LIMIT 50`),
+		all(`SELECT referrer, ${COUNTS} FROM visits WHERE ts >= ? AND referrer IS NOT NULL GROUP BY referrer ORDER BY views DESC LIMIT 50`),
 		all(`SELECT date(ts, 'unixepoch') AS day, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY day ORDER BY day`),
 	]);
 

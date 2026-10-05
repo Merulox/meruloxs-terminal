@@ -144,6 +144,29 @@ test("aggregate API is dev-host only, authenticated, and groups by location", as
 	assert.equal(again.totals.views, 14);
 });
 
+test("summary lists expose up to 50 entries by default", async () => {
+	const env = { VISITS_DB: d1() };
+	const insert = env.VISITS_DB.raw.prepare(
+		"INSERT INTO visits (ts, path, entry, referrer, country, region, city, ip, source, weight) VALUES (strftime('%s','now'), ?, 0, ?, ?, 'Region', ?, ?, 'beacon', ?)",
+	);
+	for (let i = 1; i <= 55; i += 1) {
+		const suffix = String(i).padStart(2, "0");
+		insert.run(`/page-${suffix}`, `ref-${suffix}.example`, `C${suffix}`, `City ${suffix}`, `10.0.0.${i}`, 100 - i);
+	}
+	const response = await onRequestGet({
+		request: new Request("https://dev.merulox.com/api/visits?range=all"),
+		env,
+		data: { devAuthenticated: true },
+	});
+	assert.equal(response.status, 200);
+	const body = await response.json();
+	for (const key of ["countries", "cities", "ips", "paths", "referrers"]) {
+		assert.equal(body[key].length, 50, key);
+		assert.equal(body[key][0].views, 99, `${key} first`);
+		assert.equal(body[key].at(-1).views, 50, `${key} last`);
+	}
+});
+
 test("/visits page is hidden outside dev.merulox.com", async () => {
 	const ctx = (url) => ({ request: new Request(url), next: async () => new Response("page") });
 	assert.equal((await visitsGate(ctx("https://merulox.com/visits"))).status, 404);
