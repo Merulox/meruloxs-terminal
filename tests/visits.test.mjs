@@ -114,6 +114,7 @@ test("aggregate API is dev-host only, authenticated, and groups by location", as
 		[["Montreal", 2, 1], ["Tokyo", 1, 1]],
 	);
 	assert.deepEqual(body.countries[0], { country: "CA", views: 2, visits: 1 });
+	assert.deepEqual(body.ips, [{ ip: "203.0.113.7", views: 4, visits: 3 }]);
 	assert.deepEqual(body.referrers, [{ referrer: "news.ycombinator.com", views: 1, visits: 1 }]);
 	assert.equal(body.daily.length, 1);
 	assert.equal(body.daily[0].views, 4);
@@ -130,6 +131,10 @@ test("aggregate API is dev-host only, authenticated, and groups by location", as
 	assert.equal(mixed.totals.visits, 3);
 	assert.equal(mixed.totals.imported, 10);
 	assert.equal(mixed.totals.ips, 2);
+	assert.deepEqual(mixed.ips, [
+		{ ip: "198.51.100.9", views: 10, visits: 0 },
+		{ ip: "203.0.113.7", views: 4, visits: 3 },
+	]);
 	const mixedRows = await (await get("https://dev.merulox.com/api/visits?view=history&range=7d", { devAuthenticated: true })).json();
 	assert.equal(mixedRows.rows.find((r) => r.source === "cloudflare").weight, 10);
 

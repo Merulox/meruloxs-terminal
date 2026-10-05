@@ -28,21 +28,24 @@ const ranges = [
 
 	<p class="vis-summary" id="vis-summary" aria-live="polite">loading…</p>
 
-	<figure class="vis-map">
-		<svg viewBox="0 0 360 150" role="img" aria-labelledby="vis-map-title">
-			<title id="vis-map-title">merulox.com visits by location</title>
-			<path class="vis-land" d={WORLD_LAND_PATH} />
-			<g id="vis-points"></g>
-		</svg>
-	</figure>
+	<div class="vis-overview">
+		<figure class="vis-map">
+			<svg viewBox="0 0 360 150" role="img" aria-labelledby="vis-map-title">
+				<title id="vis-map-title">merulox.com visits by location</title>
+				<path class="vis-land" d={WORLD_LAND_PATH} />
+				<g id="vis-points"></g>
+			</svg>
+		</figure>
 
-	<div class="vis-daily" id="vis-daily" aria-hidden="true"></div>
+		<div class="vis-daily" id="vis-daily" aria-hidden="true"></div>
 
-	<div class="vis-grid">
-		<section><h2>countries</h2><ol class="vis-list" id="vis-countries"></ol></section>
-		<section><h2>cities</h2><ol class="vis-list" id="vis-cities"></ol></section>
-		<section><h2>pages</h2><ol class="vis-list" id="vis-paths"></ol></section>
-		<section><h2>referrers</h2><ol class="vis-list" id="vis-referrers"></ol></section>
+		<div class="vis-grid">
+			<section><h2>countries</h2><ol class="vis-list" id="vis-countries"></ol></section>
+			<section><h2>cities</h2><ol class="vis-list" id="vis-cities"></ol></section>
+			<section><h2>top IPs</h2><ol class="vis-list" id="vis-ips"></ol></section>
+			<section><h2>pages</h2><ol class="vis-list" id="vis-paths"></ol></section>
+			<section><h2>referrers</h2><ol class="vis-list" id="vis-referrers"></ol></section>
+		</div>
 	</div>
 
 	<section class="vis-recent">
@@ -91,6 +94,7 @@ const ranges = [
 		points: Point[];
 		countries: (Row & { country: string | null })[];
 		cities: (Row & { city: string; region: string | null; country: string | null })[];
+		ips: (Row & { ip: string })[];
 		paths: (Row & { path: string })[];
 		referrers: (Row & { referrer: string })[];
 		daily: (Row & { day: string })[];
@@ -136,6 +140,31 @@ const ranges = [
 			const name = document.createElement("span");
 			name.className = "vis-name";
 			name.textContent = label(row);
+			const count = document.createElement("span");
+			count.className = "vis-count";
+			count.textContent = n(row.views);
+			count.title = `${n(row.views)} views · ${n(row.visits)} visits`;
+			item.append(name, count);
+			list.append(item);
+		}
+	}
+
+	function renderIps(rows: Summary["ips"]) {
+		const list = $("vis-ips");
+		list.replaceChildren();
+		if (!rows.length) {
+			const empty = document.createElement("li");
+			empty.className = "vis-empty";
+			empty.textContent = "none yet";
+			list.append(empty);
+			return;
+		}
+		const max = Math.max(...rows.map((row) => row.views));
+		for (const row of rows) {
+			const item = document.createElement("li");
+			item.style.setProperty("--share", `${(row.views / max) * 100}%`);
+			const name = ipButton(row.ip);
+			name.classList.add("vis-name");
 			const count = document.createElement("span");
 			count.className = "vis-count";
 			count.textContent = n(row.views);
@@ -674,6 +703,7 @@ const ranges = [
 		renderDaily(fillDays(data.daily, data.since, t.first));
 		renderList("vis-countries", data.countries, (row) => countryName(row.country));
 		renderList("vis-cities", data.cities, place);
+		renderIps(data.ips);
 		renderList("vis-paths", data.paths, (row) => row.path);
 		renderList("vis-referrers", data.referrers, (row) => row.referrer);
 	}
@@ -696,6 +726,13 @@ const ranges = [
 		font-family: "SFMono-Regular", Consolas, monospace;
 		font-size: 12px;
 		margin-bottom: 14px;
+	}
+
+	.vis-overview {
+		position: relative;
+		left: 50%;
+		width: min(1240px, calc(100vw - 48px));
+		transform: translateX(-50%);
 	}
 
 	.vis-map {
@@ -741,8 +778,8 @@ const ranges = [
 
 	.vis-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 28px 34px;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 28px 22px;
 	}
 
 	.vis-grid h2 {
@@ -775,6 +812,11 @@ const ranges = [
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.vis-list .ip-link {
+		min-width: 0;
+		text-align: left;
 	}
 
 	.vis-count {
