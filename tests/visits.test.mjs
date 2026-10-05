@@ -7,7 +7,7 @@ import { onRequestGet } from "../functions/api/visits.js";
 import { onRequest as visitsGate } from "../functions/visits/_middleware.js";
 import { cleanPath, parseVisit, referrerHost } from "../src/lib/visits.js";
 
-const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql"]
+const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql", "0003_visits_source.sql"]
 	.map((file) => readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"))
 	.join("\n");
 
@@ -64,7 +64,7 @@ test("beacon stores visitor IP and geo", async () => {
 	assert.equal(rows.length, 1);
 	assert.deepEqual(
 		{ ...rows[0], id: undefined, ts: undefined },
-		{ id: undefined, ts: undefined, path: "/links", entry: 1, referrer: "x.com", country: "CA", region: "Quebec", city: "Montreal", lat: 45.51, lon: -73.59, colo: "YUL", ip: "203.0.113.7" },
+		{ id: undefined, ts: undefined, path: "/links", entry: 1, referrer: "x.com", country: "CA", region: "Quebec", city: "Montreal", lat: 45.51, lon: -73.59, colo: "YUL", ip: "203.0.113.7", source: "beacon", weight: 1, import_key: null },
 	);
 });
 
@@ -120,6 +120,15 @@ test("aggregate API is dev-host only, authenticated, and groups by location", as
 	assert.equal(body.totals.ips, 1);
 	assert.equal(body.recent.length, 4);
 	assert.equal(body.recent[0].ip, "203.0.113.7");
+	assert.equal(body.recent[0].source, "beacon");
+
+	// Imported Cloudflare rows count by weight, never as visits.
+	env.VISITS_DB.raw.exec("INSERT INTO visits (ts, path, entry, country, ip, source, weight, import_key) VALUES (strftime('%s','now') - 60, '/music', 0, 'DE', '198.51.100.9', 'cloudflare', 10, 'k1')");
+	const mixed = await (await get("https://dev.merulox.com/api/visits?range=7d", { devAuthenticated: true })).json();
+	assert.equal(mixed.totals.views, 14);
+	assert.equal(mixed.totals.visits, 3);
+	assert.equal(mixed.totals.imported, 10);
+	assert.equal(mixed.totals.ips, 2);
 });
 
 test("/visits page is hidden outside dev.merulox.com", async () => {

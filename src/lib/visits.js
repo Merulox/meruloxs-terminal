@@ -114,7 +114,7 @@ export function rangeStart(range, now = Date.now()) {
 	return span === null ? 0 : Math.floor(now / 1000) - span;
 }
 
-const COUNTS = "COUNT(*) AS views, SUM(entry) AS visits";
+const COUNTS = "SUM(weight) AS views, SUM(entry) AS visits";
 
 export async function summarize(db, since) {
 	const all = (sql) =>
@@ -125,14 +125,14 @@ export async function summarize(db, since) {
 			.then((result) => result.results ?? []);
 
 	const [totals, points, countries, cities, paths, referrers, daily, recent] = await Promise.all([
-		all(`SELECT ${COUNTS}, COUNT(DISTINCT country) AS countries, COUNT(DISTINCT ip) AS ips, MIN(ts) AS first, MAX(ts) AS last FROM visits WHERE ts >= ?`),
+		all(`SELECT ${COUNTS}, COUNT(DISTINCT country) AS countries, COUNT(DISTINCT ip) AS ips, SUM(CASE WHEN source = 'cloudflare' THEN weight ELSE 0 END) AS imported, MIN(ts) AS first, MAX(ts) AS last FROM visits WHERE ts >= ?`),
 		all(`SELECT lat, lon, city, region, country, ${COUNTS} FROM visits WHERE ts >= ? AND lat IS NOT NULL AND lon IS NOT NULL GROUP BY lat, lon, city, region, country ORDER BY views DESC LIMIT 500`),
 		all(`SELECT country, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY country ORDER BY views DESC LIMIT 50`),
 		all(`SELECT city, region, country, ${COUNTS} FROM visits WHERE ts >= ? AND city IS NOT NULL GROUP BY city, region, country ORDER BY views DESC LIMIT 25`),
 		all(`SELECT path, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY path ORDER BY views DESC LIMIT 25`),
 		all(`SELECT referrer, ${COUNTS} FROM visits WHERE ts >= ? AND referrer IS NOT NULL GROUP BY referrer ORDER BY views DESC LIMIT 25`),
 		all(`SELECT date(ts, 'unixepoch') AS day, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY day ORDER BY day`),
-		all(`SELECT ts, ip, path, entry, referrer, city, region, country FROM visits WHERE ts >= ? ORDER BY ts DESC, id DESC LIMIT 200`),
+		all(`SELECT ts, ip, path, entry, referrer, city, region, country, source FROM visits WHERE ts >= ? ORDER BY ts DESC, id DESC LIMIT 200`),
 	]);
 
 	const total = totals[0] ?? {};
@@ -142,6 +142,7 @@ export async function summarize(db, since) {
 			visits: total.visits ?? 0,
 			countries: total.countries ?? 0,
 			ips: total.ips ?? 0,
+			imported: total.imported ?? 0,
 			first: total.first ?? null,
 			last: total.last ?? null,
 		},

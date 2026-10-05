@@ -50,7 +50,7 @@ const ranges = [
 		<p class="vis-empty" id="vis-recent-empty">none yet</p>
 		<div class="vis-table-wrap">
 			<table>
-				<thead><tr><th>time</th><th>ip</th><th>location</th><th>page</th><th>referrer</th></tr></thead>
+				<thead><tr><th>time</th><th>ip</th><th>location</th><th>page</th><th>referrer</th><th>source</th></tr></thead>
 				<tbody id="vis-recent"></tbody>
 			</table>
 		</div>
@@ -59,6 +59,9 @@ const ranges = [
 	<p class="vis-note">
 		Cookieless beacon on merulox.com. Each view stores the visitor IP
 		(Cloudflare CF-Connecting-IP) and Cloudflare's city-level location estimate.
+		Rows marked "cf log" were backfilled from Cloudflare's request logs (last ~31
+		days before tracking began): sampled counts, bot-filtered by user agent only,
+		location from the DB-IP Lite database, no referrer, and not counted as visits.
 		visits = first page of a browser tab session; views = every page load. Exclude
 		your own browser with <a href="https://merulox.com/?notrack=1">merulox.com/?notrack=1</a>
 		(undo with <code>?notrack=0</code>).
@@ -69,8 +72,8 @@ const ranges = [
 	type Row = { views: number; visits: number | null };
 	type Point = Row & { lat: number; lon: number; city: string | null; region: string | null; country: string | null };
 	type Summary = {
-		totals: { views: number; visits: number | null; countries: number; ips: number; first: number | null };
-		recent: { ts: number; ip: string | null; path: string; referrer: string | null; city: string | null; region: string | null; country: string | null }[];
+		totals: { views: number; visits: number | null; countries: number; ips: number; imported: number; first: number | null };
+		recent: { ts: number; ip: string | null; path: string; referrer: string | null; city: string | null; region: string | null; country: string | null; source: string }[];
 		points: Point[];
 		countries: (Row & { country: string | null })[];
 		cities: (Row & { city: string; region: string | null; country: string | null })[];
@@ -177,6 +180,7 @@ const ranges = [
 				place(row),
 				row.path,
 				row.referrer ?? "",
+				row.source === "cloudflare" ? "cf log" : "beacon",
 			];
 			for (const value of cells) {
 				const td = document.createElement("td");
@@ -199,7 +203,7 @@ const ranges = [
 		const data: Summary & { since: number } = await response.json();
 		const t = data.totals;
 		const since = t.first ? ` · first ${new Date(t.first * 1000).toISOString().slice(0, 10)}` : "";
-		summary.textContent = `${n(t.visits)} visits · ${n(t.views)} views · ${n(t.ips)} IPs · ${n(t.countries)} countries${since}`;
+		summary.textContent = `${n(t.visits)} visits · ${n(t.views)} views · ${n(t.ips)} IPs · ${n(t.countries)} countries${since}${t.imported ? ` · ${n(t.imported)} views imported from Cloudflare logs` : ""}`;
 		renderMap(data.points);
 		renderDaily(fillDays(data.daily, data.since, t.first));
 		renderList("vis-countries", data.countries, (row) => countryName(row.country));

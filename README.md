@@ -36,6 +36,9 @@ Visit tracking: every merulox.com page sends a cookieless beacon to
 `/api/visit`, stored in the D1 database `merulox-visits` (binding `VISITS_DB`,
 schema in `migrations/`) with the visitor IP (`CF-Connecting-IP`) and Cloudflare edge geolocation. `/visits` and
 `/api/visits` return 404 off `dev.merulox.com`. `?notrack=1` excludes a browser.
+`scripts/import-cloudflare-visits.py` backfills ~31 days of pre-tracking page
+views from Cloudflare's request logs (`source = 'cloudflare'`, sampled, geo via
+DB-IP Lite); delete them with `DELETE FROM visits WHERE source = 'cloudflare'`.
 
 ## Repo layout
 
