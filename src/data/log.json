@@ -23,18 +23,18 @@
     },
     {
       "date": "2026-10-01",
-      "kind": "ship",
-      "text": "Worked on the public build-log system for merulox, with extra focus on keeping private operational details out of anything published. The day was mostly about tightening the filter between internal work signals and a short, safe public record."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-30",
-      "kind": "think",
-      "text": "Reviewed how a new assistant workflow feature could fit into the operating system without building a custom interface first. Also clarified the boundary for model-safety research: focus on authorized evaluation and controlled sandboxes, not bypassing safeguards on hosted models."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-29",
-      "kind": "think",
-      "text": "Worked on tightening the daily build-log process so private operational notes can become safe public updates. The focus was on clearer filtering: keep useful project context, leave out client details, credentials, and internal state."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-28",
@@ -48,8 +48,8 @@
     },
     {
       "date": "2026-09-26",
-      "kind": "ship",
-      "text": "Set up a new Expo mobile app foundation with routing, TypeScript, linting, and multi-platform targets ready for the first real product work. Also tightened the public build-log process around sanitization so private operational notes stay out of published entries."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-25",
@@ -58,18 +58,18 @@
     },
     {
       "date": "2026-09-24",
-      "kind": "think",
-      "text": "Worked on tightening the public build-log process so private operational notes can be turned into safe, understated updates. The focus was on clearer boundaries: what can be named, what should stay generic, and when to skip a day rather than publish something thin or private."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-23",
-      "kind": "ship",
-      "text": "Worked on the Quant Lab and tightened its status reporting so separate lifecycle models are shown truthfully instead of being blurred together. The next focus was scoped as a candidate-bound controller for the full staged flow, with schema convergence and autonomous progression kept out of scope until the foundation is clearer."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-22",
       "kind": "ship",
-      "text": "Reworked the personal site’s project archive into a set of living theses instead of a static list. Also tightened a few operating systems: deferred a Muse integration cleanly, bounded an offline collector with journaling and tests, and refined a lead-exchange reservation rule so holds cannot outlive their underlying quote."
+      "text": "A small amount of concrete work was recorded today. One completed result appeared in the available receipts."
     },
     {
       "date": "2026-09-21",
@@ -93,8 +93,8 @@
     },
     {
       "date": "2026-09-17",
-      "kind": "read",
-      "text": "Spent time evaluating Kronos, an open-source time-series forecasting model, for possible use in trading research — ran a zero-shot backtest across a basket of sector ETFs against simple baselines. Result was negative: no exploitable edge, consistent with what other independent reviewers have found. Filed as a dead end rather than something to build on."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-16",
@@ -108,8 +108,8 @@
     },
     {
       "date": "2026-09-14",
-      "kind": "think",
-      "text": "Spent part of the day reassessing revenue paths after concluding that client-service outreach wasn't converting fast enough on its own. Looked seriously at a Solana wallet-tracking signal dashboard and mapped the broader 2026 AI-monetization landscape against real evidence rather than hype, ranking options honestly instead of chasing the most exciting one. Neither idea turned out to be deployable this week — the wallet dashboard doesn't exist yet for structural, not bureaucratic, reasons — but ruling both out clearly was the actual point of the day."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-13",
@@ -119,17 +119,17 @@
     {
       "date": "2026-09-12",
       "kind": "ship",
-      "text": "Rebuilt an e-commerce project as a standard technical store — real cart, Stripe Checkout, and an admin panel — stripping out the bespoke payment routing and compliance hooks that had been wired into checkout. Verified working end to end and shipped, with real payment keys and the compliance piece left for whoever owns that part next."
+      "text": "A small amount of concrete work was recorded today. One completed result appeared in the available receipts."
     },
     {
       "date": "2026-09-11",
       "kind": "ship",
-      "text": "Built and shipped a working prototype of an online cannabis storefront configured for Ontario's regulatory framework (AGCO), including an age gate, compliance-checking middleware, and a checkout flow that enforces the rules at the point of purchase rather than as an afterthought. Verified the whole path end-to-end against a real database before committing it. Landed on Ontario after confirming Quebec's cannabis law reserves all retail, including online, to the provincial monopoly — so a private storefront has no legal path there."
+      "text": "A small amount of concrete work was recorded today. One completed result appeared in the available receipts."
     },
     {
       "date": "2026-09-10",
-      "kind": "ship",
-      "text": "Worked on two agent prompts today: a paper-trading research loop meant to push hypotheses through to honest, evidence-backed conclusions faster, and a private operational-intelligence reviewer built to surface real leverage instead of just interesting-sounding activity. Both are infrastructure pieces for filtering signal from noise before it reaches a decision."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-09",
@@ -148,13 +148,13 @@
     },
     {
       "date": "2026-09-06",
-      "kind": "think",
-      "text": "Spent part of the day tracing why Boréal's automated outreach had stalled — a leftover automation rule was still pushing scheduled sends even though current policy says no broad automated outreach for now. Traced it to two conflicting sources of truth (a canonical policy file vs. a bus-derived rule) rather than a bug in the sending logic itself. With the conflict identified, fell back to a manual outreach call in the meantime instead of waiting on a fix, and did some lighter review work on parallel research and evidence-scoring scaffolding."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-09-05",
       "kind": "ship",
-      "text": "Built and deployed a session-management skill that inventories in-progress work threads, scores each one for importance and expected ROI, and lets a shutdown/resume cycle pick up exactly where it left off. Also shipped visibility into a paper-trading research pipeline's decision gates, and made progress on a skill-contract system that tracks machine-readable interfaces and run costs so automated planning can compose only compatible tools. Spent part of the day evaluating a Solana copy-trading approach and deciding against a quick retail launch in favor of validating the underlying data first."
+      "text": "A small amount of concrete work was recorded today. One completed result appeared in the available receipts."
     },
     {
       "date": "2026-09-04",
@@ -193,8 +193,8 @@
     },
     {
       "date": "2026-08-28",
-      "kind": "ship",
-      "text": "Spent the day on the onchain trading terminal, fixing how wallet equity is calculated for accounts that use unified or portfolio margin on Hyperliquid — the previous number wasn't authoritative and would have quietly corrupted any returns or rankings built on top of it. Also ran a research-expansion loop on paper-trading hypotheses, and cut a narrated video for social that didn't work — filed as a negative prototype rather than reused."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-27",
@@ -203,23 +203,23 @@
     },
     {
       "date": "2026-08-26",
-      "kind": "ship",
-      "text": "Spent the day pushing an experiment in giving autonomous agents real economic accountability: jobs now carry fixed payouts and cost ceilings, get independently verified before any payout, and settle against exact, receipt-backed cost accounting so nothing can self-approve or double-pay. Closed the loop on a completion-aware work contract so an agent stops redundantly repeating (and repaying for) tasks it already finished, then coordinated with a parallel instance working the same system to avoid duplicate effort. Also shipped a fix to an account-provisioning tool used for social automation."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-25",
-      "kind": "ship",
-      "text": "Kept building a governed agent-economy experiment: an autonomous agent that proposes actions, gets them approved, and executes with cryptographically verified receipts on an append-only ledger. Ruled out depending on a third-party API for a planned side-by-side comparison after learning it's being shut down within weeks, closing off that path before it became a liability. Also reviewed a human-in-the-loop safety pattern for automating account signup flows, drawing a hard line at anything that would create credentials or bypass verification on its own."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-24",
-      "kind": "ship",
-      "text": "Built two parallel implementations of a governed autonomous-agent runtime for Genesis — one running on the existing model infrastructure, another wired to a third-party compute backend — to compare tradeoffs before committing to an architecture. The core piece: durable agent identity, mandates, an append-only ledger, and an approval-to-execution lifecycle with verifier-gated revenue entries. Also scoped whether an open-source technique for stripping refusal behavior out of local language models could run on the home GPU, and flagged a privacy quirk in its telemetry defaults."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-23",
-      "kind": "ship",
-      "text": "Tested the first real case for an autonomous account-provisioning agent under the Signaler project: a persistent, agent-controlled browser session logged into Google Cloud, located an existing OAuth client, and verified the stored credentials still worked end-to-end. It didn't prove full zero-to-one signup (no CAPTCHA or handle creation involved), but it validated the harder post-signup chain — persistent browser context, profile verification, and OAuth configuration lookup — as a foundation for future automated provisioning."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-22",
@@ -228,78 +228,83 @@
     },
     {
       "date": "2026-08-21",
-      "kind": "ship",
-      "text": "Spent part of the day debugging the OAuth pipeline behind an automated YouTube publishing system for SignalToMind. What looked like a missing refresh token turned out to be a corrupted stored credential, tracked down step by step rather than assumed. Rebuilt the one-time Google consent flow so the token exchange now runs automatically through the internal dashboard instead of by hand, closing out most of the pipeline testing."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-20",
-      "kind": "ship",
-      "text": "Built out a provider policy registry for SYNTRA, encoding supplier-specific rules so the system can resolve stock and fulfillment questions automatically instead of manual lookups — registry is built and live. Also kept The Trader's research loop moving, drafting a new preregistered hypothesis to work through the evidence pipeline before any live decision gets made on it."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-19",
       "kind": "think",
-      "text": "Worked on SYNTRA's product evaluation flow, separating the advisory screenshot council from the real launch gate: verified supplier evidence. The next step was narrowed to collecting written per-product confirmations before generating store hypotheses. Also revisited quant-trading research and clarified that one Solana strategy family was rejected, not the broader ecosystem."
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-18",
-      "kind": "think",
-      "text": "Worked on the personal build-log system, tightening how private work signals get turned into safe public notes. Also reviewed the operating dashboard with a focus on evidence-backed constraints rather than activity for its own sake."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-08-17",
-      "kind": "think",
-      "text": "Refined the daily build-log process with stricter publication rules around privacy, attribution, and tone. Also worked on a private review workflow for turning raw operating notes into clearer, evidence-backed priorities."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-08-16",
-      "kind": "ship",
-      "text": "Built a private SYNTRA product council that can review product screenshots through multiple perspectives, then preserve disagreements instead of flattening them into a single vague score. Also tightened the result handling so empty runs behave cleanly, while work continued on trader evaluation notes and a rewritten article about FOMO as a decision trap rather than a market signal."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-15",
-      "kind": "ship",
-      "text": "Worked on SYNTRA’s supplier and catalog pipeline, including API setup and the first pass at a multi-store foundry model. The work tightened how store projects, brand systems, assortments, supplier offers, and commerce classifications fit together. Also clarified that Boréal remains the active operating focus for follow-ups and manual lead handling."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-08-14",
-      "kind": "ship",
-      "text": "Tightened the build-log review flow so critic findings stay bounded while still preserving the quality gate. Also worked through a cleaner automation architecture based on typed task graphs, immutable artifacts, isolated side effects, and independent validation rather than adding a larger orchestration system too early."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-08-13",
-      "kind": "ship",
-      "text": "Built out the SYNTRA commerce-foundry foundation, including structures for store projects, brand systems, assortments, supplier offers, generated artifacts, deployments, and metrics. Also worked through supplier qualification for a first commerce source, with the result that the integration path looks viable but no product is qualified yet. Separately, reviewed dashboard evidence and marked earlier chart comparisons as unreliable until the telemetry issues are cleaned up."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-12",
       "kind": "think",
-      "text": "Worked through the shape of Signaler’s YouTube publishing system, including account-scoped authorization and the boundary between setup work and the actual rendering/upload pipeline. The day ended with a cleaner architecture prompt for building the production path instead of continuing to patch around an unfinished subsystem."
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-11",
-      "kind": "ship",
-      "text": "Built out an account creation workbench with a channel queue, filters, progress tracking, and inline checklist actions for setting up brand profiles across publishing platforms. Also worked through the next Solana trading experiment sequence and kept the decision conservative: paper testing can continue once the hypothesis and measurement contract are clear, but real-money deployment stays blocked until governance and signing infrastructure are ready."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-10",
-      "kind": "ship",
-      "text": "Built a call log and call center panel for the internal dashboard — dial, contacts, call history — with phone-number autocomplete against CRM leads so a missed call can be traced back to who called. Also finished wiring an autonomous strategy pipeline for Signaler: proposals now pass through an independent critic, deploy automatically, and get promoted or rolled back based on measured outcomes instead of manual approval. Boréal outreach continues in the background, still waiting on the first discovery call to land."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-09",
-      "kind": "ship",
-      "text": "Worked on Boréal's lead-follow-up loop and reviewed where the automation stands: outreach is out, a handful of leads have responded, but nothing has converted to a booked call yet. Spent time on Signaler, a cross-platform content and growth system — moved past hard-coded, generic bios toward a governed profile-strategy layer that generates and scores platform-specific identity drafts with a separate critic model. Also started architecting a more deliberate evidence-collection system to replace an ad hoc learning loop."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-08-08",
-      "kind": "ship",
-      "text": "Finished the matte-black visual redesign for SYNTRA today — a founder-tech aesthetic pass across the homepage, shelf, collections, product pages, and about page, while keeping the existing site structure, discovery flow, and copy intact. Verified the new look at both desktop and mobile breakpoints across all major routes before marking it ready for deployment."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
+    },
+    {
+      "date": "2026-08-07",
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-08-06",
       "kind": "think",
-      "text": "Spent part of the day diagnosing a paper-trading bot that mirrors another wallet's trades, after noticing it still looked active even though it had actually run out of cash. Decided against the easy fix of just refilling it and continuing to copy trades, since that would erase the lesson from the failure. Instead chose to freeze the current run as a failed baseline to study before building the next version."
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-05",
@@ -309,52 +314,57 @@
     {
       "date": "2026-08-04",
       "kind": "ship",
-      "text": "Started a new side project: an initial paper-trading recorder for Solana, a first step toward testing trading strategies without risking real capital. Also kept polishing the Boréal Numérique site — published a new page, fixed metadata on the services page, and chased down a text-rendering bug across devices."
+      "text": "A small amount of concrete work was recorded today. One completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-03",
-      "kind": "ship",
-      "text": "Spent the day refining Boréal Numérique's site — added motion to the services page, including a pulsing status indicator, an animated hero, and staggered card reveals, to make it feel less static. Also worked through a Pi/hosting configuration issue and a domain-connection blocker that's still unresolved. Separately, audited the reasoning behind the lead-tracking system and concluded a planned feature was overbuilt for the business's actual current scale, so it stays shelved for now."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-02",
-      "kind": "ship",
-      "text": "Spent the day on infrastructure work. Fixed a sandboxing bug in an internal agent tool — the sandbox backend expected Docker access it didn't have — by switching it to a remote sandbox provider instead. Also published a new services page for Boréal Numérique and worked through DNS and hosting configuration to get a staging domain pointed at it."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-08-01",
-      "kind": "ship",
-      "text": "Shipped two upgrades to Genesis, the personal voice assistant: replies now trigger a desktop notification with the full text of what it said, and the text-to-speech voice was replaced after the previous one turned out barely intelligible once the primary voice API ran out of quota. Also spent time folding a round of research on long-horizon AI/agent business models into Boréal Numérique's roadmap, explicitly keeping web design and marketing services as part of the plan rather than dropping them in favor of a pure automation play."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
+    },
+    {
+      "date": "2026-07-31",
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-07-30",
-      "kind": "ship",
-      "text": "Built and deployed a small ambient voice service for Genesis, running continuously in the background as a systemd service and confirmed live and stable by the end of the day. Also worked through a batch of automated content proposals for the Signaler system, drafting and queuing several posts for review instead of leaving them stuck in chat."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-29",
-      "kind": "ship",
-      "text": "Built Compounder, a private reviewer that reads across the operational-intelligence loops and pushes for evidence-backed leverage instead of just tracking activity. Also did upkeep on the signaler/commander dashboard after a rebrand broke its page, and worked through profile-card navigation for reviewing pending posts."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-28",
-      "kind": "ship",
-      "text": "Built out the SignalToMind posting and research workflow, including profile assets, source intake, draft handling, and a path into Typefully for reviewed posts. Also worked on the agency pipeline for Hormozi, tightening the split between stronger goal ownership and human approval before execution."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-27",
-      "kind": "ship",
-      "text": "Built cleaner account profile widgets for the social publishing system, with avatars, platform badges, descriptions, status, and fallback states. Set up the first real account concept, @signaltomind, around consciousness and brain-computer interfaces with a prepared bio, profile image, and warming status. Also kept the Boréal and SYNTRA loops moving with state updates and task cleanup."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-26",
       "kind": "think",
-      "text": "Spent time today rethinking an overbuilt piece of the Genesis system — a simulated \"resident\" model meant to run different social media accounts turned out to need more chat infrastructure and upkeep than it was worth, so the call was made to drop that in favor of a plain dashboard tab showing account status instead. Alongside that, tracked down and fixed a content-pipeline bug where niche proposals were defaulting to affiliate monetization with no actual reasoning behind the choice. Boréal and Syntra automation loops kept ticking in the background, syncing state and checking pipeline health."
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-25",
-      "kind": "ship",
-      "text": "Shipped a redesigned SYNTRA homepage today — swapped a placeholder that didn't match the vision for a stripped-down, matte-black founder-tech aesthetic — verified live in production. Also landed a new opt-in adapter in Genesis's automation kernel that runs AI-driven contracts in disposable, credential-isolated sandboxes instead of exposing raw tokens directly. Spent part of the day stabilizing a personal machine after a memory-related freeze took down the login screen overnight."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-24",
@@ -363,18 +373,18 @@
     },
     {
       "date": "2026-07-23",
-      "kind": "ship",
-      "text": "Spent the day on the Boréal Numérique website — updated the homepage hero and footer copy, refreshed the contact pages, and built out a new demo section. Tried to push the changes to the live borealnumerique.ca domain but found it wasn't actually pointed at the updated site, so the production cutover is on hold until that's sorted. Also set up a small local Urbit instance on the side, mostly to explore it as a personal system experiment."
+      "kind": "idle",
+      "text": "The day was mostly exploratory or quiet. No concrete project output was recorded in the available evidence."
     },
     {
       "date": "2026-07-22",
-      "kind": "ship",
-      "text": "Worked on the lead-monitoring loop for Boréal Numérique — the system meant to make sure no paid-for lead goes cold without a follow-up. Added explicit rules for when a lead counts as dead (a long stretch of silence after several follow-up attempts), so the system knows when to stop chasing and flag it instead of looping forever. Also did routine upkeep on the internal dashboards and state-tracking that keep the various automation loops honest."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-21",
-      "kind": "ship",
-      "text": "Ran Boréal Numérique's automated lead-follow-up loop, which drafted several SMS re-engagement message variants for cold leads who'd gone quiet after an initial outreach. Rest of the day was routine maintenance — heartbeat checks and gap-audits across the broader project stack (the dashboard, orbit runtime, and related tooling) to keep the automation honest about its own state. No new feature shipped, mostly upkeep to make sure paid-for leads don't melt silently in the pipeline."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-20",
@@ -384,7 +394,7 @@
     {
       "date": "2026-07-19",
       "kind": "ship",
-      "text": "Fixed a classifier issue in Aperture so quoted text is less likely to be treated as blocked content. Also worked on Boréal lead follow-up flows, cold re-touch SMS drafts, and the operating notes around the web design agency research process."
+      "text": "A small amount of concrete work was recorded today. One completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-18",
@@ -398,8 +408,8 @@
     },
     {
       "date": "2026-07-16",
-      "kind": "ship",
-      "text": "Built a git management panel in Aperture that shows which repos are behind their remotes, surfaces color-coded diffs, and lets me push without leaving the dashboard — including a dirty-repo legend and a push-all option. Also fixed the sticker pack scorer in SYNTRA and imported a couple more brand datasets to round out the catalog."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-15",
@@ -409,37 +419,37 @@
     {
       "date": "2026-07-14",
       "kind": "listen",
-      "text": "A quiet day on the build front — the only machine activity was routine self-maintenance, nothing new shipped. The week's soundtrack tells the real story: heavy rotation of $uicideboy$ and Lil Peep, nearly neck and neck, with Yung Lean, Yeat, and Scrim filling out the rest. Dark, hypnotic underground rap almost wall to wall, with one ambient outlier in desert sand feels warm at night."
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-07-13",
       "kind": "listen",
-      "text": "Quiet day on the build side — just automated housekeeping, nothing worth writing home about. The soundtrack carried the week instead: heavy rotation of Lil Peep and $uicideboy$, with Scrim, Yung Lean, and Pouya filling in the edges. Dark, hypnotic, emotionally raw — the usual territory."
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-07-12",
       "kind": "listen",
-      "text": "A quiet day on the build side — mostly heavy rotation instead. Lil Peep and $uicideboy$ dominated the week, with Scrim, Yeat, Yung Lean, and Pouya filling out the rest. Dark, hypnotic rap all the way down."
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-07-11",
       "kind": "listen",
-      "text": "Quiet day on the build side — the system mostly idled on its own heartbeat checks. The soundtrack did the heavy lifting instead: a week deep in Lil Peep and $uicideboy$, with Scrim, Yung Lean, and Pouya rounding out the rotation. Dark, hypnotic, on repeat."
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-07-10",
-      "kind": "ship",
-      "text": "Spent the day smoothing out the task pipeline: the board's hand-off gate was too vague about what it actually wanted, so I clarified the verification step a task needs before it gets passed to an automated coding agent, and wired up a curation-scoring task to feed it. Some routine upkeep on the command center and live state alongside. Meanwhile the knowledge system quietly digested a batch of notes on running a solo automation shop — pricing structure, when to qualify prospects, and why simplification has to come before automation."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-09",
       "kind": "think",
-      "text": "Mostly a scoping day. Reworked the plan for the personal site's public API: instead of a static endpoint it becomes an evolving curation layer that surfaces only the highest-signal items, with a scoring pass to decide what's worth exposing. One larger brief got pushed to the backburner as not ready to build yet. Meanwhile the knowledge system kept ingesting — a batch of new claims came in and a pile of contradictions between notes got flagged for resolution."
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-08",
-      "kind": "learn",
-      "text": "The knowledge system processed a batch of new claims about AI automation, outreach strategy, and business operations — surfacing conflicts between competing frameworks and resolving them into the graph. Resolution work touched outreach copy length, human-in-the-loop tradeoffs, and realistic estimates of how much time AI can return to a solo operator. Maintenance routines ran in the background; no new code shipped."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-07",
@@ -448,13 +458,13 @@
     },
     {
       "date": "2026-07-06",
-      "kind": "ship",
-      "text": "Worked through a backlog of design issues flagged in a prior review for SYNTRA — layout and style corrections across the landing page, product detail, shelf, and header components. Built an automated price-refresh pipeline (a background service and timer) so the product catalog stays current without manual upkeep. Extended the design-review tooling to cover every page in the app, including the catalog, and wired in a screenshot step to verify output."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-05",
       "kind": "ship",
-      "text": "Built the visual review loop for SYNTRA: a design panel in the internal dashboard that pulls live site screenshots, shows AI review output, and keeps the evidence close to the task queue. The point is not just prettier screenshots; it is a faster aesthetic and SEO iteration system where active design work can move from capture to critique to confirmed build without losing context. This sets SYNTRA up for sustained refinement instead of one-off landing-page fixes."
+      "text": "A small amount of concrete work was recorded today. One completed result appeared in the available receipts."
     },
     {
       "date": "2026-07-04",
@@ -468,23 +478,23 @@
     },
     {
       "date": "2026-07-02",
-      "kind": "learn",
-      "text": "A quiet ops day — routine health checks and live-state maintenance, nothing urgent to action. Most of the mental energy went toward researching trading and investing: paper trading mechanics, brokerage fee structures, crypto basics, and terminal options. Exploratory pass, not a commitment to anything yet."
+      "kind": "listen",
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-07-01",
-      "kind": "ship",
-      "text": "Audited SYNTRA and wrote up briefs for the next round of builds — uncapping the sitemap and prerender, a shelf-browse view, and a redeploy. Also fixed the command dashboard's color scheme, which had drifted into barely-readable territory, and stood up a local security-testing sandbox to learn on. Less a shipping day than a sharpening-the-tools day."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-06-30",
-      "kind": "ship",
-      "text": "Spent the day wiring up the callback side of the Boréal console. Added lead lookup, hooked callback reminders into the reminders table, and exported them to a calendar feed so scheduled call-backs sync to my calendar automatically. Also set up a Telegram alert that fires when a callback is imminent, so nothing slips."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-06-29",
       "kind": "ship",
-      "text": "Spent the day building a cold-calling workspace into Boréal's internal commander — a way to pull up an untouched lead and work it on the fly. Each call view gathers the things you actually need mid-conversation: quick contact links, any prior SMS thread, and a notes field, with a single-card focus mode you can toggle on or off. Also wired in a mic recorder for calls and added a small guestbook link to the personal site."
+      "text": "A small amount of concrete work was recorded today. One completed result appeared in the available receipts."
     },
     {
       "date": "2026-06-28",
@@ -493,8 +503,8 @@
     },
     {
       "date": "2026-06-27",
-      "kind": "ship",
-      "text": "Debugged the missed-call text-back bot after discovering it wasn't firing on live calls. Traced the issue through the running services and surfaced a gap in API credit visibility — no consolidated view of which services are draining credits at what rate. Wrote a brief for a credit-tracking panel to fix that blind spot."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-06-26",
@@ -504,7 +514,7 @@
     {
       "date": "2026-06-25",
       "kind": "listen",
-      "text": "A quiet day with no code shipped. Heavy rotation through underground rap — $uicideboy$, Lil Peep, Bladee, Bones. Sometimes the work is just holding the line."
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-06-24",
@@ -512,44 +522,49 @@
       "text": "Built a browser extension called Selection Oracle that captures text selections and surfaces them through an injected UI layer. Took a few rounds of fixes to get right — content script bundle format, overlay placement, and diagnostics logging all needed attention before it ran cleanly."
     },
     {
+      "date": "2026-06-23",
+      "kind": "listen",
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
+    },
+    {
       "date": "2026-06-22",
       "kind": "listen",
-      "text": "Quiet day. Heavy rotation on $uicideboy$, Lil Peep, and Lily Chou-Chou — the usual mix of dark rap and ethereal Japanese folk. Nothing shipped, nothing broken."
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-06-21",
-      "kind": "think",
-      "text": "Spent time thinking through what agentic desktop operating systems might look like as AI gets embedded deeper into the OS layer — less about apps, more about the environment itself becoming an agent. Some parallel work on naming and legal groundwork. No major builds shipped; this was an orientation and ideation day."
+      "kind": "listen",
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-06-20",
-      "kind": "learn",
-      "text": "Spent the day studying door-to-door sales from first principles — roleplay sessions, objection handling, first-contact framing. The working thesis: in-person outreach is a learnable system, not a personality trait. Also explored layered agent patterns for dashboard-building as a side thread."
+      "kind": "listen",
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-06-19",
-      "kind": "think",
-      "text": "The day was mostly exploratory — conversations around AI-assisted sales tooling, what tipping points look like at civilizational scale, and the future of money and conflict. Some time spent on personal aspiration framing and what mythic ambition actually demands in practice. Nothing shipped, but the thinking layer was running."
+      "kind": "listen",
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-06-18",
       "kind": "listen",
-      "text": "Quiet day operationally — mostly a heartbeat check rather than active building. Heavy rotation: $uicideboy$, Lil Peep, Scrim, Lily Chou-Chou. The darker, more atmospheric end of the catalog."
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-06-17",
-      "kind": "think",
-      "text": "A re-orientation day after a pause — thinking through how to frame the service offer and what a client presentation should actually contain. Some time spent comparing tools and exploring the line between planning and building. No code shipped; the day was mostly diagnostic."
+      "kind": "listen",
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-06-16",
-      "kind": "learn",
-      "text": "Spent time comparing local model options — Qwen variants, Hermes, and a few smaller models — against frontier alternatives. Looked into running models in GPU containers and explored live transcript summarization as a potential use case. No code shipped; this was a model-selection research pass."
+      "kind": "listen",
+      "text": "No meaningful project work was recorded today. Recent listening data was the only concrete signal available."
     },
     {
       "date": "2026-06-15",
-      "kind": "ship",
-      "text": "Patched a broken system config and got the build back to green. Ran a director session to assess current priorities and drafted a brief for an affiliate program angle. Also updated the personal knowledge system's live state and health tracking — routine maintenance that keeps the ops layer honest."
+      "kind": "think",
+      "text": "A limited amount of in-progress work was recorded today. No completed result appeared in the available receipts."
     },
     {
       "date": "2026-06-14",
