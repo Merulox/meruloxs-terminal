@@ -1,6 +1,396 @@
 {
-  "generated": "2026-07-18",
+  "generated": "2026-10-06",
   "entries": [
+    {
+      "date": "2026-10-05",
+      "kind": "ship",
+      "text": "Shipped a batch of visit-tracking improvements on the personal site — browser fingerprint diagnostics, an IP lookup link, paged history tables, and a backfill of pre-tracking views from server logs. Also built an isolated demo phone line for Boréal's missed-call-text-back offer with Twilio signature checks and a French demo script, and landed a local company-factory experiment MVP on Genesis."
+    },
+    {
+      "date": "2026-10-04",
+      "kind": "ship",
+      "text": "Added visitor tracking to the personal site, including a password-protected dev dashboard with a geographic view of where visits come from. Kept building out Commander's demo workspace for Boréal's offer too — fixed a mobile layout bug, hardened how demo progress gets saved, and wrote down clearer rules for how it gets deployed."
+    },
+    {
+      "date": "2026-10-03",
+      "kind": "ship",
+      "text": "Built more of Boréal Numérique’s outreach and warm-up system: CRM tracking, demo verification cleanup, and a fuller collateral registry for email-to-call workflows. Also tightened the operating layer around portfolio reports, live asks, and project decision flow so the dashboard work can surface the right work without exposing private client context."
+    },
+    {
+      "date": "2026-10-02",
+      "kind": "ship",
+      "text": "Built more of the shared builder control layer: project status, weekly capacity, and active work threads are now easier to see from one place. Also hardened the bridge that lets the local project system read operational context without giving it write access, and set up a private Slack workflow so project updates can move through a clearer channel instead of staying scattered."
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "ship",
+      "text": "Worked on the public build-log system for merulox, with extra focus on keeping private operational details out of anything published. The day was mostly about tightening the filter between internal work signals and a short, safe public record."
+    },
+    {
+      "date": "2026-09-30",
+      "kind": "think",
+      "text": "Reviewed how a new assistant workflow feature could fit into the operating system without building a custom interface first. Also clarified the boundary for model-safety research: focus on authorized evaluation and controlled sandboxes, not bypassing safeguards on hosted models."
+    },
+    {
+      "date": "2026-09-29",
+      "kind": "think",
+      "text": "Worked on tightening the daily build-log process so private operational notes can become safe public updates. The focus was on clearer filtering: keep useful project context, leave out client details, credentials, and internal state."
+    },
+    {
+      "date": "2026-09-28",
+      "kind": "ship",
+      "text": "Built a Boréal Insights area in the command dashboard and tightened the registry behind it so malformed notes do not break the view. The work also cleaned up the research notes so unverified CRM observations are labeled as hypotheses instead of facts, and separated outreach constraints from delivery limits."
+    },
+    {
+      "date": "2026-09-27",
+      "kind": "ship",
+      "text": "Shipped the DickFit app into the personal site and tightened its positioning around program outcomes instead of measurement. Also added a bounded jailbreak evaluation console and improved Boréal outreach collateral so drafts stay honest, evidence-based, and do not go out with unfinished placeholders."
+    },
+    {
+      "date": "2026-09-26",
+      "kind": "ship",
+      "text": "Set up a new Expo mobile app foundation with routing, TypeScript, linting, and multi-platform targets ready for the first real product work. Also tightened the public build-log process around sanitization so private operational notes stay out of published entries."
+    },
+    {
+      "date": "2026-09-25",
+      "kind": "ship",
+      "text": "Worked on Commander and Boréal outreach tooling: added a clearer follow-up outcome for leads who were sent information, surfaced call options directly in the lead widget, and tightened how call notes survive live refreshes. Also built more flexible outreach email formats and cleaned up collateral so the next step feels simpler and less like a hard sell."
+    },
+    {
+      "date": "2026-09-24",
+      "kind": "think",
+      "text": "Worked on tightening the public build-log process so private operational notes can be turned into safe, understated updates. The focus was on clearer boundaries: what can be named, what should stay generic, and when to skip a day rather than publish something thin or private."
+    },
+    {
+      "date": "2026-09-23",
+      "kind": "ship",
+      "text": "Worked on the Quant Lab and tightened its status reporting so separate lifecycle models are shown truthfully instead of being blurred together. The next focus was scoped as a candidate-bound controller for the full staged flow, with schema convergence and autonomous progression kept out of scope until the foundation is clearer."
+    },
+    {
+      "date": "2026-09-22",
+      "kind": "ship",
+      "text": "Reworked the personal site’s project archive into a set of living theses instead of a static list. Also tightened a few operating systems: deferred a Muse integration cleanly, bounded an offline collector with journaling and tests, and refined a lead-exchange reservation rule so holds cannot outlive their underlying quote."
+    },
+    {
+      "date": "2026-09-21",
+      "kind": "ship",
+      "text": "Updated the personal site with a more honest archive of projects and money experiments. Tightened the Commander money-flow research workflow so it focuses less on big abstract markets and more on concrete anomalies, capture paths, and validation gaps. Also scoped Muse as a possible narrow worker for creative and review tasks, rather than as a core operating system."
+    },
+    {
+      "date": "2026-09-20",
+      "kind": "ship",
+      "text": "Built and hardened several parts of Commander, including a local-first PGP workbench, clearer decrypt flow, tighter trust boundaries, and more resilient worker handling. Also refined the Learning workflow so capability gaps and operational failures are treated separately, and tightened Money Flows cleanup and reconciliation behavior. On the personal site, the music page was temporarily disabled and then restored."
+    },
+    {
+      "date": "2026-09-19",
+      "kind": "ship",
+      "text": "Built out a more governed market-probe system for testing small service ideas before committing deeper work. Also tightened Genesis call workflows with safer triggers, scheduled nudges, and guided outreach support, while improving Boréal delivery flows for service selection, contracts, and payment setup."
+    },
+    {
+      "date": "2026-09-18",
+      "kind": "ship",
+      "text": "Worked on Boréal’s client delivery flow: signed-agreement onboarding, live-payment scaffolding, owner notifications, follow-up reminders, and weekly digest pieces moved into place. Separate Signaler work updated the content-sourcing path after an upstream API change and added a small trend-seed pilot. Also tightened a Genesis voice workflow so spoken messages can surface as local desktop notifications."
+    },
+    {
+      "date": "2026-09-17",
+      "kind": "read",
+      "text": "Spent time evaluating Kronos, an open-source time-series forecasting model, for possible use in trading research — ran a zero-shot backtest across a basket of sector ETFs against simple baselines. Result was negative: no exploitable edge, consistent with what other independent reviewers have found. Filed as a dead end rather than something to build on."
+    },
+    {
+      "date": "2026-09-16",
+      "kind": "ship",
+      "text": "Shipped a profile view on the Boréal leads workbench, adding a quick-access hook and detail panel to the list/detail interface, plus a fix for a UI bug where the dashboard would blank out briefly during live refreshes. Also brought a new content-agent project, Signaler, under version control alongside the rest of the workspace."
+    },
+    {
+      "date": "2026-09-15",
+      "kind": "ship",
+      "text": "Unified the scattered per-lead views in Boréal's operations dashboard into a single profile: one record and one panel that pulls together everything known about a lead instead of three inconsistent widgets doing the same job differently. Also sketched a renewal proposal for one of the ongoing trading research threads. Small step, but it removes a chunk of friction from the daily workflow of following up with leads."
+    },
+    {
+      "date": "2026-09-14",
+      "kind": "think",
+      "text": "Spent part of the day reassessing revenue paths after concluding that client-service outreach wasn't converting fast enough on its own. Looked seriously at a Solana wallet-tracking signal dashboard and mapped the broader 2026 AI-monetization landscape against real evidence rather than hype, ranking options honestly instead of chasing the most exciting one. Neither idea turned out to be deployable this week — the wallet dashboard doesn't exist yet for structural, not bureaucratic, reasons — but ruling both out clearly was the actual point of the day."
+    },
+    {
+      "date": "2026-09-13",
+      "kind": "ship",
+      "text": "Shipped a read-only client-portal dashboard for Boréal that fails closed when data snapshots go stale, added test coverage for the multi-turn reply pipeline, and fixed a couple of close-agent edge cases — a dangling opt-out phrase and a price-objection response that wasn't actually grounded in the generated text. Also spent time hardening the Workstreams hub: added an execution/effect ledger and portfolio registry, derived conservative hazard projections from it, and closed a fail-open bug in the resume-status gating logic."
+    },
+    {
+      "date": "2026-09-12",
+      "kind": "ship",
+      "text": "Rebuilt an e-commerce project as a standard technical store — real cart, Stripe Checkout, and an admin panel — stripping out the bespoke payment routing and compliance hooks that had been wired into checkout. Verified working end to end and shipped, with real payment keys and the compliance piece left for whoever owns that part next."
+    },
+    {
+      "date": "2026-09-11",
+      "kind": "ship",
+      "text": "Built and shipped a working prototype of an online cannabis storefront configured for Ontario's regulatory framework (AGCO), including an age gate, compliance-checking middleware, and a checkout flow that enforces the rules at the point of purchase rather than as an afterthought. Verified the whole path end-to-end against a real database before committing it. Landed on Ontario after confirming Quebec's cannabis law reserves all retail, including online, to the provincial monopoly — so a private storefront has no legal path there."
+    },
+    {
+      "date": "2026-09-10",
+      "kind": "ship",
+      "text": "Worked on two agent prompts today: a paper-trading research loop meant to push hypotheses through to honest, evidence-backed conclusions faster, and a private operational-intelligence reviewer built to surface real leverage instead of just interesting-sounding activity. Both are infrastructure pieces for filtering signal from noise before it reaches a decision."
+    },
+    {
+      "date": "2026-09-09",
+      "kind": "ship",
+      "text": "Consolidated the Boréal Numérique operations tooling: retired stale legacy pipeline/stage columns from the CRM, unified several workspace views into one operations dashboard, and hardened its navigation and collateral previews. Also fixed a Nix build habit that was quietly copying ignored files into the store on every change."
+    },
+    {
+      "date": "2026-09-08",
+      "kind": "ship",
+      "text": "Busy build day across several tracks: hardened evidence integrity and shipped a new detection dashboard in Aperture, added a governed workstreams control plane to Commander with a dedicated Boréal section, and stood up a model-matched control plane plus a new behavior-research track in Realm. Also locked in the first research lane for the trading system, narrowing toward a specific on-chain buyer pattern, and made progress on the groundwork for wallet-based copy-trading research."
+    },
+    {
+      "date": "2026-09-07",
+      "kind": "ship",
+      "text": "Spent the day tightening operational plumbing across a couple of projects. On Capital Map, fixed how follow-up reminders are scheduled and reported, and wrote up the launch of a design-partner outreach pipeline. On Boréal, cleaned up overdue callback reminders and put together new client-facing collateral. Also closed out a feasibility check on pulling exchange data for a trading research project — came back negative, so that avenue is shelved for now."
+    },
+    {
+      "date": "2026-09-06",
+      "kind": "think",
+      "text": "Spent part of the day tracing why Boréal's automated outreach had stalled — a leftover automation rule was still pushing scheduled sends even though current policy says no broad automated outreach for now. Traced it to two conflicting sources of truth (a canonical policy file vs. a bus-derived rule) rather than a bug in the sending logic itself. With the conflict identified, fell back to a manual outreach call in the meantime instead of waiting on a fix, and did some lighter review work on parallel research and evidence-scoring scaffolding."
+    },
+    {
+      "date": "2026-09-05",
+      "kind": "ship",
+      "text": "Built and deployed a session-management skill that inventories in-progress work threads, scores each one for importance and expected ROI, and lets a shutdown/resume cycle pick up exactly where it left off. Also shipped visibility into a paper-trading research pipeline's decision gates, and made progress on a skill-contract system that tracks machine-readable interfaces and run costs so automated planning can compose only compatible tools. Spent part of the day evaluating a Solana copy-trading approach and deciding against a quick retail launch in favor of validating the underlying data first."
+    },
+    {
+      "date": "2026-09-04",
+      "kind": "ship",
+      "text": "Spent the day hardening the autonomous trading canary system after an audit turned up a real flaw: left unchecked, it would keep repeating the same strategy and burn through its own capital. Added an adaptive capital controller, paused uneconomic research, and locked new strategy runs behind hard cost and expected-edge thresholds. Also shipped a capability control plane and a new research console in Commander to start tracking which tools and skills actually earn their keep."
+    },
+    {
+      "date": "2026-09-03",
+      "kind": "ship",
+      "text": "Spent the day hardening the live capital-canary system for the agent-economy experiment, getting it back to an armed, autonomous, reboot-persistent state. Also worked on the Hyperliquid market-making canary on the onchain terminal project, adding a governed L2 capture job and documenting a source expiry issue after the exchange dropped its long-lived WebSocket connections mid-window."
+    },
+    {
+      "date": "2026-09-02",
+      "kind": "think",
+      "text": "Closed out a monthly SPY volatility-management strategy after it failed its statistical bar — the returns looked directionally right but the confidence interval didn't clear zero, so it got formally rejected and the reasoning was written up rather than quietly dropped. Alongside that, spent time researching how other people structure and visualize trading algorithms, and recovered an automated paper-trading research loop after a computer crash, making sure it picked back up from its last checkpoint instead of redoing finished work."
+    },
+    {
+      "date": "2026-09-01",
+      "kind": "ship",
+      "text": "Built out the onchain terminal's watchlist and layout system — wallets and cohorts can now be saved, versioned, and reloaded, and position history is reconstructed cleanly from raw exchange fills. On the trading research side, a monthly volatility-managed exposure strategy went through the full preregistered evaluation pipeline and was rejected on statistical grounds, a clean scientific close rather than a bug. Also kicked off a new experiment repo meant to run more of these evaluations in parallel going forward."
+    },
+    {
+      "date": "2026-08-31",
+      "kind": "ship",
+      "text": "Fixed a dashboard loading bug on the trading terminal and shipped richer event filtering — cohort-level accumulation/distribution/flip signals, plus filters by direction, size, leverage, confidence, and time window. Also funded and armed a small paper-to-live canary wallet to start testing autonomous trade execution end-to-end, and wrote up research findings on factor models and borrow-rate depth for the next research lane."
+    },
+    {
+      "date": "2026-08-30",
+      "kind": "ship",
+      "text": "Built a funding and analytics screen in Commander for an experimental autonomous trading agent — a deposit view with wallet status and trackers for how money will move once funded. The agent itself stays deliberately blocked from live trading until manually funded, so for now it just runs its research loop on a timer. Also spent some time fact-checking a viral post claiming an autonomous trading bot turned a small stake into a big overnight win — the underlying article didn't hold up once actually read."
+    },
+    {
+      "date": "2026-08-29",
+      "kind": "ship",
+      "text": "Shipped versioned cohort exposure aggregates and continued building out the Hyperliquid onchain intelligence terminal, adding a strict versioned schema for comparative smart-money cohort definitions with locked-down fields and match rules. Also pushed forward the paper-trading research loop and an operational-intelligence review pass looking for evidence-backed leverage on the current bottleneck."
+    },
+    {
+      "date": "2026-08-28",
+      "kind": "ship",
+      "text": "Spent the day on the onchain trading terminal, fixing how wallet equity is calculated for accounts that use unified or portfolio margin on Hyperliquid — the previous number wasn't authoritative and would have quietly corrupted any returns or rankings built on top of it. Also ran a research-expansion loop on paper-trading hypotheses, and cut a narrated video for social that didn't work — filed as a negative prototype rather than reused."
+    },
+    {
+      "date": "2026-08-27",
+      "kind": "ship",
+      "text": "Added an evidence-backed system model for Realm and wired it into Aperture's workflow atlas, giving a clearer picture of how the pieces connect. Also validated a context-economy optimization for a low-compute agent loop — a paired-trial test showed a sizable cut in token usage and inference cost with no loss in reliability. Rounded out the day with research scaffolding for an equity data pipeline and some inspiration-gathering for trading tools."
+    },
+    {
+      "date": "2026-08-26",
+      "kind": "ship",
+      "text": "Spent the day pushing an experiment in giving autonomous agents real economic accountability: jobs now carry fixed payouts and cost ceilings, get independently verified before any payout, and settle against exact, receipt-backed cost accounting so nothing can self-approve or double-pay. Closed the loop on a completion-aware work contract so an agent stops redundantly repeating (and repaying for) tasks it already finished, then coordinated with a parallel instance working the same system to avoid duplicate effort. Also shipped a fix to an account-provisioning tool used for social automation."
+    },
+    {
+      "date": "2026-08-25",
+      "kind": "ship",
+      "text": "Kept building a governed agent-economy experiment: an autonomous agent that proposes actions, gets them approved, and executes with cryptographically verified receipts on an append-only ledger. Ruled out depending on a third-party API for a planned side-by-side comparison after learning it's being shut down within weeks, closing off that path before it became a liability. Also reviewed a human-in-the-loop safety pattern for automating account signup flows, drawing a hard line at anything that would create credentials or bypass verification on its own."
+    },
+    {
+      "date": "2026-08-24",
+      "kind": "ship",
+      "text": "Built two parallel implementations of a governed autonomous-agent runtime for Genesis — one running on the existing model infrastructure, another wired to a third-party compute backend — to compare tradeoffs before committing to an architecture. The core piece: durable agent identity, mandates, an append-only ledger, and an approval-to-execution lifecycle with verifier-gated revenue entries. Also scoped whether an open-source technique for stripping refusal behavior out of local language models could run on the home GPU, and flagged a privacy quirk in its telemetry defaults."
+    },
+    {
+      "date": "2026-08-23",
+      "kind": "ship",
+      "text": "Tested the first real case for an autonomous account-provisioning agent under the Signaler project: a persistent, agent-controlled browser session logged into Google Cloud, located an existing OAuth client, and verified the stored credentials still worked end-to-end. It didn't prove full zero-to-one signup (no CAPTCHA or handle creation involved), but it validated the harder post-signup chain — persistent browser context, profile verification, and OAuth configuration lookup — as a foundation for future automated provisioning."
+    },
+    {
+      "date": "2026-08-22",
+      "kind": "ship",
+      "text": "A mixed build day across several threads: shipped a Vulkan kernel operation to llama.cpp, and hardened release and testing tooling on a personal project — source-snapshot-only release testing, broader TOML parsing support, and provider-neutral credential hooks. Kept pushing SignalToMind's YouTube pipeline forward, getting a private canary video through the full upload-and-thumbnail flow and starting work on persisted state for the account-creation screen. Also drafted a preregistered hypothesis for a new strategy in the trading research pipeline."
+    },
+    {
+      "date": "2026-08-21",
+      "kind": "ship",
+      "text": "Spent part of the day debugging the OAuth pipeline behind an automated YouTube publishing system for SignalToMind. What looked like a missing refresh token turned out to be a corrupted stored credential, tracked down step by step rather than assumed. Rebuilt the one-time Google consent flow so the token exchange now runs automatically through the internal dashboard instead of by hand, closing out most of the pipeline testing."
+    },
+    {
+      "date": "2026-08-20",
+      "kind": "ship",
+      "text": "Built out a provider policy registry for SYNTRA, encoding supplier-specific rules so the system can resolve stock and fulfillment questions automatically instead of manual lookups — registry is built and live. Also kept The Trader's research loop moving, drafting a new preregistered hypothesis to work through the evidence pipeline before any live decision gets made on it."
+    },
+    {
+      "date": "2026-08-19",
+      "kind": "think",
+      "text": "Worked on SYNTRA's product evaluation flow, separating the advisory screenshot council from the real launch gate: verified supplier evidence. The next step was narrowed to collecting written per-product confirmations before generating store hypotheses. Also revisited quant-trading research and clarified that one Solana strategy family was rejected, not the broader ecosystem."
+    },
+    {
+      "date": "2026-08-18",
+      "kind": "think",
+      "text": "Worked on the personal build-log system, tightening how private work signals get turned into safe public notes. Also reviewed the operating dashboard with a focus on evidence-backed constraints rather than activity for its own sake."
+    },
+    {
+      "date": "2026-08-17",
+      "kind": "think",
+      "text": "Refined the daily build-log process with stricter publication rules around privacy, attribution, and tone. Also worked on a private review workflow for turning raw operating notes into clearer, evidence-backed priorities."
+    },
+    {
+      "date": "2026-08-16",
+      "kind": "ship",
+      "text": "Built a private SYNTRA product council that can review product screenshots through multiple perspectives, then preserve disagreements instead of flattening them into a single vague score. Also tightened the result handling so empty runs behave cleanly, while work continued on trader evaluation notes and a rewritten article about FOMO as a decision trap rather than a market signal."
+    },
+    {
+      "date": "2026-08-15",
+      "kind": "ship",
+      "text": "Worked on SYNTRA’s supplier and catalog pipeline, including API setup and the first pass at a multi-store foundry model. The work tightened how store projects, brand systems, assortments, supplier offers, and commerce classifications fit together. Also clarified that Boréal remains the active operating focus for follow-ups and manual lead handling."
+    },
+    {
+      "date": "2026-08-14",
+      "kind": "ship",
+      "text": "Tightened the build-log review flow so critic findings stay bounded while still preserving the quality gate. Also worked through a cleaner automation architecture based on typed task graphs, immutable artifacts, isolated side effects, and independent validation rather than adding a larger orchestration system too early."
+    },
+    {
+      "date": "2026-08-13",
+      "kind": "ship",
+      "text": "Built out the SYNTRA commerce-foundry foundation, including structures for store projects, brand systems, assortments, supplier offers, generated artifacts, deployments, and metrics. Also worked through supplier qualification for a first commerce source, with the result that the integration path looks viable but no product is qualified yet. Separately, reviewed dashboard evidence and marked earlier chart comparisons as unreliable until the telemetry issues are cleaned up."
+    },
+    {
+      "date": "2026-08-12",
+      "kind": "think",
+      "text": "Worked through the shape of Signaler’s YouTube publishing system, including account-scoped authorization and the boundary between setup work and the actual rendering/upload pipeline. The day ended with a cleaner architecture prompt for building the production path instead of continuing to patch around an unfinished subsystem."
+    },
+    {
+      "date": "2026-08-11",
+      "kind": "ship",
+      "text": "Built out an account creation workbench with a channel queue, filters, progress tracking, and inline checklist actions for setting up brand profiles across publishing platforms. Also worked through the next Solana trading experiment sequence and kept the decision conservative: paper testing can continue once the hypothesis and measurement contract are clear, but real-money deployment stays blocked until governance and signing infrastructure are ready."
+    },
+    {
+      "date": "2026-08-10",
+      "kind": "ship",
+      "text": "Built a call log and call center panel for the internal dashboard — dial, contacts, call history — with phone-number autocomplete against CRM leads so a missed call can be traced back to who called. Also finished wiring an autonomous strategy pipeline for Signaler: proposals now pass through an independent critic, deploy automatically, and get promoted or rolled back based on measured outcomes instead of manual approval. Boréal outreach continues in the background, still waiting on the first discovery call to land."
+    },
+    {
+      "date": "2026-08-09",
+      "kind": "ship",
+      "text": "Worked on Boréal's lead-follow-up loop and reviewed where the automation stands: outreach is out, a handful of leads have responded, but nothing has converted to a booked call yet. Spent time on Signaler, a cross-platform content and growth system — moved past hard-coded, generic bios toward a governed profile-strategy layer that generates and scores platform-specific identity drafts with a separate critic model. Also started architecting a more deliberate evidence-collection system to replace an ad hoc learning loop."
+    },
+    {
+      "date": "2026-08-08",
+      "kind": "ship",
+      "text": "Finished the matte-black visual redesign for SYNTRA today — a founder-tech aesthetic pass across the homepage, shelf, collections, product pages, and about page, while keeping the existing site structure, discovery flow, and copy intact. Verified the new look at both desktop and mobile breakpoints across all major routes before marking it ready for deployment."
+    },
+    {
+      "date": "2026-08-06",
+      "kind": "think",
+      "text": "Spent part of the day diagnosing a paper-trading bot that mirrors another wallet's trades, after noticing it still looked active even though it had actually run out of cash. Decided against the easy fix of just refilling it and continuing to copy trades, since that would erase the lesson from the failure. Instead chose to freeze the current run as a failed baseline to study before building the next version."
+    },
+    {
+      "date": "2026-08-05",
+      "kind": "ship",
+      "text": "Spent the day hardening the evidence and reasoning layer across several internal systems: added canary controls to Boréal's SMS automation, required evidence-backed provenance for inference in Genesis, and tightened hypothesis induction and rule-promotion logic elsewhere in the stack. Also closed out the first version of a personal trading algorithm — ended the run, reviewed the results, and built infrastructure to test multiple algorithm versions side by side. Separately, tightened remote access security on a personal server, narrowing which devices can reach it."
+    },
+    {
+      "date": "2026-08-04",
+      "kind": "ship",
+      "text": "Started a new side project: an initial paper-trading recorder for Solana, a first step toward testing trading strategies without risking real capital. Also kept polishing the Boréal Numérique site — published a new page, fixed metadata on the services page, and chased down a text-rendering bug across devices."
+    },
+    {
+      "date": "2026-08-03",
+      "kind": "ship",
+      "text": "Spent the day refining Boréal Numérique's site — added motion to the services page, including a pulsing status indicator, an animated hero, and staggered card reveals, to make it feel less static. Also worked through a Pi/hosting configuration issue and a domain-connection blocker that's still unresolved. Separately, audited the reasoning behind the lead-tracking system and concluded a planned feature was overbuilt for the business's actual current scale, so it stays shelved for now."
+    },
+    {
+      "date": "2026-08-02",
+      "kind": "ship",
+      "text": "Spent the day on infrastructure work. Fixed a sandboxing bug in an internal agent tool — the sandbox backend expected Docker access it didn't have — by switching it to a remote sandbox provider instead. Also published a new services page for Boréal Numérique and worked through DNS and hosting configuration to get a staging domain pointed at it."
+    },
+    {
+      "date": "2026-08-01",
+      "kind": "ship",
+      "text": "Shipped two upgrades to Genesis, the personal voice assistant: replies now trigger a desktop notification with the full text of what it said, and the text-to-speech voice was replaced after the previous one turned out barely intelligible once the primary voice API ran out of quota. Also spent time folding a round of research on long-horizon AI/agent business models into Boréal Numérique's roadmap, explicitly keeping web design and marketing services as part of the plan rather than dropping them in favor of a pure automation play."
+    },
+    {
+      "date": "2026-07-30",
+      "kind": "ship",
+      "text": "Built and deployed a small ambient voice service for Genesis, running continuously in the background as a systemd service and confirmed live and stable by the end of the day. Also worked through a batch of automated content proposals for the Signaler system, drafting and queuing several posts for review instead of leaving them stuck in chat."
+    },
+    {
+      "date": "2026-07-29",
+      "kind": "ship",
+      "text": "Built Compounder, a private reviewer that reads across the operational-intelligence loops and pushes for evidence-backed leverage instead of just tracking activity. Also did upkeep on the signaler/commander dashboard after a rebrand broke its page, and worked through profile-card navigation for reviewing pending posts."
+    },
+    {
+      "date": "2026-07-28",
+      "kind": "ship",
+      "text": "Built out the SignalToMind posting and research workflow, including profile assets, source intake, draft handling, and a path into Typefully for reviewed posts. Also worked on the agency pipeline for Hormozi, tightening the split between stronger goal ownership and human approval before execution."
+    },
+    {
+      "date": "2026-07-27",
+      "kind": "ship",
+      "text": "Built cleaner account profile widgets for the social publishing system, with avatars, platform badges, descriptions, status, and fallback states. Set up the first real account concept, @signaltomind, around consciousness and brain-computer interfaces with a prepared bio, profile image, and warming status. Also kept the Boréal and SYNTRA loops moving with state updates and task cleanup."
+    },
+    {
+      "date": "2026-07-26",
+      "kind": "think",
+      "text": "Spent time today rethinking an overbuilt piece of the Genesis system — a simulated \"resident\" model meant to run different social media accounts turned out to need more chat infrastructure and upkeep than it was worth, so the call was made to drop that in favor of a plain dashboard tab showing account status instead. Alongside that, tracked down and fixed a content-pipeline bug where niche proposals were defaulting to affiliate monetization with no actual reasoning behind the choice. Boréal and Syntra automation loops kept ticking in the background, syncing state and checking pipeline health."
+    },
+    {
+      "date": "2026-07-25",
+      "kind": "ship",
+      "text": "Shipped a redesigned SYNTRA homepage today — swapped a placeholder that didn't match the vision for a stripped-down, matte-black founder-tech aesthetic — verified live in production. Also landed a new opt-in adapter in Genesis's automation kernel that runs AI-driven contracts in disposable, credential-isolated sandboxes instead of exposing raw tokens directly. Spent part of the day stabilizing a personal machine after a memory-related freeze took down the login screen overnight."
+    },
+    {
+      "date": "2026-07-24",
+      "kind": "ship",
+      "text": "Verified the new authority layer for the Genesis runtime (v2) and added a learning dashboard to Aperture to track agentic QA over time. In the background, the automated loops kept running — watching the Boréal lead pipeline for anything going cold and pushing the Syntra build forward a step. A quieter day overall, mostly consolidation rather than new surfaces."
+    },
+    {
+      "date": "2026-07-23",
+      "kind": "ship",
+      "text": "Spent the day on the Boréal Numérique website — updated the homepage hero and footer copy, refreshed the contact pages, and built out a new demo section. Tried to push the changes to the live borealnumerique.ca domain but found it wasn't actually pointed at the updated site, so the production cutover is on hold until that's sorted. Also set up a small local Urbit instance on the side, mostly to explore it as a personal system experiment."
+    },
+    {
+      "date": "2026-07-22",
+      "kind": "ship",
+      "text": "Worked on the lead-monitoring loop for Boréal Numérique — the system meant to make sure no paid-for lead goes cold without a follow-up. Added explicit rules for when a lead counts as dead (a long stretch of silence after several follow-up attempts), so the system knows when to stop chasing and flag it instead of looping forever. Also did routine upkeep on the internal dashboards and state-tracking that keep the various automation loops honest."
+    },
+    {
+      "date": "2026-07-21",
+      "kind": "ship",
+      "text": "Ran Boréal Numérique's automated lead-follow-up loop, which drafted several SMS re-engagement message variants for cold leads who'd gone quiet after an initial outreach. Rest of the day was routine maintenance — heartbeat checks and gap-audits across the broader project stack (the dashboard, orbit runtime, and related tooling) to keep the automation honest about its own state. No new feature shipped, mostly upkeep to make sure paid-for leads don't melt silently in the pipeline."
+    },
+    {
+      "date": "2026-07-20",
+      "kind": "think",
+      "text": "Worked on tightening Boréal’s offer structure so the website and messaging services read as separate, understandable pieces. Also reviewed plan pricing, client dashboard direction, and the move toward a proper backend for accounts and platform features."
+    },
+    {
+      "date": "2026-07-19",
+      "kind": "ship",
+      "text": "Fixed a classifier issue in Aperture so quoted text is less likely to be treated as blocked content. Also worked on Boréal lead follow-up flows, cold re-touch SMS drafts, and the operating notes around the web design agency research process."
+    },
+    {
+      "date": "2026-07-18",
+      "kind": "ship",
+      "text": "Extended the orbit runtime with crash recovery for interrupted loops, an escalation layer, and ledger rotation. Also wired up a Framer integration and started redesigning the Boréal Numérique landing page."
+    },
     {
       "date": "2026-07-17",
       "kind": "ship",
