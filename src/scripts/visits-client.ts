@@ -92,32 +92,43 @@ async function sendFingerprint() {
 	}
 }
 
-function addVisitsTab() {
-	const current = location.pathname.replace(/\/$/, "") === "/visits";
+function addDevTabs() {
 	const arrow = '<span class="sel-arrow" aria-hidden="true">&gt;</span>';
+	const tabs = [
+		{ href: "/visits", label: "visits" },
+		{ href: "/cameras", label: "cameras" },
+	];
 
 	const siteNav = document.querySelector(".site-nav");
-	if (siteNav && !siteNav.querySelector('a[href="/visits"]')) {
-		const link = document.createElement("a");
-		link.href = "/visits";
-		link.className = "kbd-item";
-		link.innerHTML = `${arrow} visits`;
-		if (current) link.setAttribute("aria-current", "page");
-		siteNav.append(link);
+	if (siteNav) {
+		for (const tab of tabs) {
+			if (siteNav.querySelector(`a[href="${tab.href}"]`)) continue;
+			const link = document.createElement("a");
+			link.href = tab.href;
+			link.className = "kbd-item";
+			link.innerHTML = `${arrow} ${tab.label}`;
+			if (location.pathname.replace(/\/$/, "") === tab.href) {
+				link.setAttribute("aria-current", "page");
+			}
+			siteNav.append(link);
+		}
 	}
 
 	const selector = document.querySelector("#selector");
-	if (selector && !selector.querySelector('a[href="/visits"]')) {
-		const link = document.createElement("a");
-		link.href = "/visits";
-		link.className = "sel-item";
-		link.dataset.index = String(selector.querySelectorAll(".sel-item").length);
-		link.innerHTML = `${arrow}<span class="sel-label">visits</span>`;
-		selector.append(link);
+	if (selector) {
+		for (const tab of tabs) {
+			if (selector.querySelector(`a[href="${tab.href}"]`)) continue;
+			const link = document.createElement("a");
+			link.href = tab.href;
+			link.className = "sel-item";
+			link.dataset.index = String(selector.querySelectorAll(".sel-item").length);
+			link.innerHTML = `${arrow}<span class="sel-label">${tab.label}</span>`;
+			selector.append(link);
+		}
 	}
 }
 
-if (location.hostname === DEV_HOST) addVisitsTab();
+if (location.hostname === DEV_HOST) addDevTabs();
 else if (TRACKED_HOSTS.includes(location.hostname)) {
 	sendBeacon();
 	void sendFingerprint();

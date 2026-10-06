@@ -1,0 +1,660 @@
+---
+import "maplibre-gl/dist/maplibre-gl.css";
+import cameraData from "../data/cameras.json";
+
+const serializedData = JSON.stringify(cameraData).replaceAll("<", "\\u003c");
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<meta name="description" content="Explore 680 public Québec traffic-camera source listings on a clustered map." />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="theme-color" content="#090b0d" />
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<link rel="preload" href="/fonts/vt323-latin.woff2" as="font" type="font/woff2" crossorigin />
+		<title>cameras | MERULOX</title>
+	</head>
+	<body>
+		<a class="skip-link" href="#camera-results">Skip to camera list</a>
+		<div class="app-shell">
+			<aside class="sidebar" aria-label="Camera explorer">
+				<header class="app-header">
+					<a class="brand" href="/">MERULOX</a>
+					<nav class="site-nav" aria-label="Development tools">
+						<a class="nav-link" href="/visits">visits</a>
+						<a class="nav-link" href="/cameras" aria-current="page">cameras</a>
+					</nav>
+				</header>
+
+				<div class="intro">
+					<div>
+						<p class="eyebrow">PUBLIC INFRASTRUCTURE / PILOT</p>
+						<h1>Québec cameras</h1>
+					</div>
+					<span class="pilot-badge">680 listings</span>
+				</div>
+				<p class="intro-copy">Official MTMD locations and publisher pages. This Québec pilot is not a global catalog yet.</p>
+
+				<form class="search-form" id="search-form" role="search">
+					<label for="camera-search">Search name, region, route, or coordinates</label>
+					<div class="search-row">
+						<input id="camera-search" name="q" type="search" autocomplete="off" spellcheck="false" placeholder="Montréal, route 20, or 45.50, -73.56" />
+						<button type="submit" class="icon-button" aria-label="Run search">↵</button>
+					</div>
+					<p class="coordinate-hint" id="coordinate-hint" hidden>Press Enter to center on these coordinates.</p>
+				</form>
+
+				<div class="filters" aria-label="Camera filters">
+					<label>
+						<span>Region</span>
+						<select id="region-filter"><option value="">All regions</option></select>
+					</label>
+					<label>
+						<span>Status</span>
+						<select id="status-filter">
+							<option value="">Any status</option>
+							<option value="unknown">Not probed</option>
+						</select>
+					</label>
+					<label>
+						<span>Viewer</span>
+						<select id="feed-filter">
+							<option value="">Any viewer</option>
+							<option value="source_page">Source page</option>
+						</select>
+					</label>
+				</div>
+
+				<div class="result-head">
+					<p id="result-count" role="status" aria-live="polite">Loading camera catalog…</p>
+					<button id="explore-button" class="text-button" type="button">Explore random</button>
+				</div>
+				<div class="empty-state" id="empty-state" hidden>
+					<p>No cameras match these filters.</p>
+					<button type="button" id="empty-reset" class="text-button">Clear filters</button>
+				</div>
+				<ol class="camera-results" id="camera-results" aria-label="Matching cameras"></ol>
+				<p class="list-note" id="list-note"></p>
+
+				<footer class="source-footer">
+					<p>Locations: <a href="https://open.canada.ca/data/dataset/d2f1dce5-35c5-4bb5-a54c-3b8ec9ac9de9" target="_blank" rel="noopener noreferrer">Government of Québec / MTMD</a></p>
+					<p><a href="https://www.donneesquebec.ca/licence/#cc-by" target="_blank" rel="noopener noreferrer">CC BY 4.0 Québec</a> · official WFS · ingested 2026-10-06</p>
+				</footer>
+			</aside>
+
+			<main class="map-shell" aria-label="Interactive camera map">
+				<div id="map" aria-label="Map of Québec public traffic-camera listings"></div>
+				<div class="map-state" id="map-state" role="status">Loading map…</div>
+				<div class="map-actions" aria-label="Map controls">
+					<button type="button" id="fit-button">Fit results</button>
+					<button type="button" id="reset-button">Reset</button>
+				</div>
+				<div class="map-legend" aria-hidden="true">
+					<span><i class="dot cluster-dot"></i>cluster</span>
+					<span><i class="dot camera-dot"></i>source page</span>
+				</div>
+			</main>
+
+			<section class="details" id="camera-details" aria-labelledby="detail-title" aria-hidden="true" inert>
+				<div class="details-handle" aria-hidden="true"></div>
+				<div class="detail-topline">
+					<p class="eyebrow">SELECTED CAMERA</p>
+					<button id="detail-close" class="close-button" type="button" aria-label="Close camera details">×</button>
+				</div>
+				<h2 id="detail-title"></h2>
+				<div class="detail-meta">
+					<span id="detail-region"></span>
+					<span id="detail-route"></span>
+				</div>
+				<dl class="facts">
+					<div><dt>Viewer</dt><dd>source page</dd></div>
+					<div><dt>Status</dt><dd><span class="unknown-dot"></span> not probed</dd></div>
+					<div><dt>Coordinates</dt><dd id="detail-coordinates"></dd></div>
+					<div><dt>Source ID</dt><dd id="detail-id"></dd></div>
+				</dl>
+				<p class="viewer-note">The publisher page opens in a new tab. Embedding is not permitted or used, and feed health is not claimed.</p>
+				<a class="source-button" id="source-link" href="#" target="_blank" rel="noopener noreferrer">Open official publisher page ↗</a>
+				<div class="nearby">
+					<h3>Nearby cameras</h3>
+					<ul id="nearby-list"></ul>
+				</div>
+			</section>
+		</div>
+		<script id="camera-catalog" type="application/json" set:html={serializedData}></script>
+		<noscript><p class="noscript">JavaScript is required for the map. The camera catalog contains only public MTMD metadata.</p></noscript>
+
+		<script>
+			import maplibregl, { type GeoJSONSource, type LngLatBoundsLike, type MapGeoJSONFeature } from "maplibre-gl";
+
+			type Camera = {
+				id: string;
+				sourceId: string;
+				sourceCameraId: string;
+				name: string;
+				coordinates: [number, number];
+				region: string;
+				route: string;
+				sourcePageUrl: string;
+				feedType: "source_page";
+				status: "unknown";
+				lastVerified: string;
+			};
+			type Catalog = { cameras: Camera[] };
+
+			const catalogElement = document.querySelector<HTMLScriptElement>("#camera-catalog");
+			const catalog = JSON.parse(catalogElement?.textContent ?? '{"cameras":[]}') as Catalog;
+			const cameras = catalog.cameras;
+			const cameraById = new Map(cameras.map((camera) => [camera.id, camera]));
+			const defaultView = { center: [-71.8, 46.8] as [number, number], zoom: 5.2 };
+			const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+			const animation = reducedMotion ? { duration: 0 } : { duration: 850 };
+			let filtered = [...cameras];
+			let selected: Camera | null = null;
+			let mapReady = false;
+			let restoringState = false;
+
+			const searchForm = document.querySelector<HTMLFormElement>("#search-form")!;
+			const searchInput = document.querySelector<HTMLInputElement>("#camera-search")!;
+			const coordinateHint = document.querySelector<HTMLElement>("#coordinate-hint")!;
+			const regionFilter = document.querySelector<HTMLSelectElement>("#region-filter")!;
+			const statusFilter = document.querySelector<HTMLSelectElement>("#status-filter")!;
+			const feedFilter = document.querySelector<HTMLSelectElement>("#feed-filter")!;
+			const resultCount = document.querySelector<HTMLElement>("#result-count")!;
+			const results = document.querySelector<HTMLOListElement>("#camera-results")!;
+			const listNote = document.querySelector<HTMLElement>("#list-note")!;
+			const emptyState = document.querySelector<HTMLElement>("#empty-state")!;
+			const details = document.querySelector<HTMLElement>("#camera-details")!;
+			const mapState = document.querySelector<HTMLElement>("#map-state")!;
+
+			for (const region of [...new Set(cameras.map((camera) => camera.region))].sort((a, b) => a.localeCompare(b, "en"))) {
+				regionFilter.add(new Option(region, region));
+			}
+
+			const initialParams = new URLSearchParams(location.search);
+			const initialLat = numberParam(initialParams.get("lat"), defaultView.center[1], -90, 90);
+			const initialLon = numberParam(initialParams.get("lon"), defaultView.center[0], -180, 180);
+			const initialZoom = numberParam(initialParams.get("z"), defaultView.zoom, 2, 18);
+
+			const map = new maplibregl.Map({
+				container: "map",
+				style: "https://tiles.openfreemap.org/styles/liberty",
+				center: [initialLon, initialLat],
+				zoom: initialZoom,
+				minZoom: 3,
+				maxZoom: 18,
+				attributionControl: true,
+				cooperativeGestures: false,
+			});
+			map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+			map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+
+			map.once("load", () => {
+				map.addSource("cameras", {
+					type: "geojson",
+					data: featureCollection(filtered),
+					cluster: true,
+					clusterMaxZoom: 11,
+					clusterRadius: 48,
+					attribution: '<a href="https://open.canada.ca/data/dataset/d2f1dce5-35c5-4bb5-a54c-3b8ec9ac9de9" target="_blank">Québec MTMD camera locations</a> · <a href="https://www.donneesquebec.ca/licence/#cc-by" target="_blank">CC BY 4.0 Québec</a>',
+				});
+				map.addLayer({
+					id: "clusters",
+					type: "circle",
+					source: "cameras",
+					filter: ["has", "point_count"],
+					paint: {
+						"circle-color": ["step", ["get", "point_count"], "#8bd5ca", 20, "#6bbfb7", 75, "#4e9f99"],
+						"circle-radius": ["step", ["get", "point_count"], 17, 20, 22, 75, 29],
+						"circle-stroke-color": "#071010",
+						"circle-stroke-width": 2,
+					},
+				});
+				map.addLayer({
+					id: "cluster-count",
+					type: "symbol",
+					source: "cameras",
+					filter: ["has", "point_count"],
+					layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 13 },
+					paint: { "text-color": "#071010" },
+				});
+				map.addLayer({
+					id: "camera-points",
+					type: "circle",
+					source: "cameras",
+					filter: ["!", ["has", "point_count"]],
+					paint: {
+						"circle-color": "#f2c879",
+						"circle-radius": 6,
+						"circle-stroke-color": "#101317",
+						"circle-stroke-width": 2,
+					},
+				});
+				map.addLayer({
+					id: "selected-camera",
+					type: "circle",
+					source: "cameras",
+					filter: ["==", ["get", "id"], ""],
+					paint: {
+						"circle-color": "#f2c879",
+						"circle-radius": 11,
+						"circle-stroke-color": "#ffffff",
+						"circle-stroke-width": 3,
+					},
+				});
+				mapReady = true;
+				mapState.hidden = true;
+				applyStateFromUrl(false);
+			});
+
+			map.once("error", () => {
+				if (mapReady) return;
+				mapState.textContent = "The map style could not load. The accessible camera list is still available.";
+				mapState.classList.add("is-error");
+			});
+
+			map.on("click", "clusters", async (event) => {
+				const feature = map.queryRenderedFeatures(event.point, { layers: ["clusters"] })[0];
+				const clusterId = Number(feature?.properties?.cluster_id);
+				if (!feature?.geometry || feature.geometry.type !== "Point" || !Number.isFinite(clusterId)) return;
+				const zoom = await (map.getSource("cameras") as GeoJSONSource).getClusterExpansionZoom(clusterId);
+				map.easeTo({ center: feature.geometry.coordinates as [number, number], zoom, ...animation });
+			});
+			map.on("click", "camera-points", (event) => selectFeature(event.features?.[0]));
+			map.on("click", "selected-camera", (event) => selectFeature(event.features?.[0]));
+			for (const layer of ["clusters", "camera-points", "selected-camera"]) {
+				map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
+				map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
+			}
+			map.on("moveend", () => {
+				if (!restoringState) updateUrl("replace");
+			});
+
+			function featureCollection(items: Camera[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
+				return {
+					type: "FeatureCollection",
+					features: items.map((camera) => ({
+						type: "Feature",
+						id: camera.id,
+						geometry: { type: "Point", coordinates: camera.coordinates },
+						properties: { id: camera.id, name: camera.name, region: camera.region, route: camera.route },
+					})),
+				};
+			}
+
+			function selectFeature(feature?: MapGeoJSONFeature) {
+				const id = feature?.properties?.id;
+				if (typeof id === "string") selectCamera(cameraById.get(id), true);
+			}
+
+			function selectCamera(camera: Camera | undefined, pushHistory: boolean, moveMap = true) {
+				if (!camera) return;
+				const panelAlreadyOpen = selected !== null;
+				selected = camera;
+				details.setAttribute("aria-hidden", "false");
+				details.inert = false;
+				details.classList.add("is-open");
+				document.querySelector<HTMLElement>("#detail-title")!.textContent = camera.name;
+				document.querySelector<HTMLElement>("#detail-region")!.textContent = camera.region;
+				document.querySelector<HTMLElement>("#detail-route")!.textContent = `Route ${camera.route}`;
+				document.querySelector<HTMLElement>("#detail-coordinates")!.textContent = `${camera.coordinates[1].toFixed(5)}, ${camera.coordinates[0].toFixed(5)}`;
+				document.querySelector<HTMLElement>("#detail-id")!.textContent = camera.sourceCameraId;
+				document.querySelector<HTMLAnchorElement>("#source-link")!.href = camera.sourcePageUrl;
+				renderNearby(camera);
+				if (mapReady) map.setFilter("selected-camera", ["==", ["get", "id"], camera.id]);
+				if (moveMap && mapReady) map.easeTo({ center: camera.coordinates, zoom: Math.max(map.getZoom(), 12), padding: detailPadding(), ...animation });
+				const openHistoryEntry = pushHistory && !panelAlreadyOpen;
+				updateUrl(openHistoryEntry ? "push" : "replace", openHistoryEntry ? { cameraPanel: true } : undefined);
+			}
+
+			function clearSelection(updateHistory = true) {
+				selected = null;
+				details.classList.remove("is-open");
+				details.setAttribute("aria-hidden", "true");
+				details.inert = true;
+				if (mapReady) {
+					map.setFilter("selected-camera", ["==", ["get", "id"], ""]);
+					map.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
+				}
+				if (updateHistory) updateUrl("replace");
+			}
+
+			function closeDetails() {
+				if (history.state?.cameraPanel) history.back();
+				else clearSelection(true);
+			}
+
+			function renderNearby(camera: Camera) {
+				const list = document.querySelector<HTMLUListElement>("#nearby-list")!;
+				list.replaceChildren();
+				const nearby = cameras
+					.filter((candidate) => candidate.id !== camera.id)
+					.map((candidate) => ({ camera: candidate, distance: distanceKm(camera.coordinates, candidate.coordinates) }))
+					.sort((a, b) => a.distance - b.distance)
+					.slice(0, 4);
+				for (const item of nearby) {
+					const li = document.createElement("li");
+					const button = document.createElement("button");
+					button.type = "button";
+					button.textContent = `${item.camera.name} · ${item.distance.toFixed(1)} km`;
+					button.addEventListener("click", () => selectCamera(item.camera, true));
+					li.append(button);
+					list.append(li);
+				}
+			}
+
+			function applyFilters(syncUrl = true) {
+				const query = normalize(searchInput.value.trim());
+				const coordinateQuery = parseCoordinates(searchInput.value);
+				coordinateHint.hidden = !coordinateQuery;
+				filtered = cameras.filter((camera) => {
+					if (regionFilter.value && camera.region !== regionFilter.value) return false;
+					if (statusFilter.value && camera.status !== statusFilter.value) return false;
+					if (feedFilter.value && camera.feedType !== feedFilter.value) return false;
+					if (!query || coordinateQuery) return true;
+					const haystack = normalize(`${camera.name} ${camera.region} route ${camera.route} ${camera.route}`);
+					return haystack.includes(query);
+				});
+				resultCount.textContent = `${filtered.length.toLocaleString("en-CA")} of ${cameras.length.toLocaleString("en-CA")} public listings`;
+				emptyState.hidden = filtered.length !== 0;
+				results.hidden = filtered.length === 0;
+				renderResults();
+				if (mapReady) (map.getSource("cameras") as GeoJSONSource).setData(featureCollection(filtered));
+				if (selected && !filtered.some((camera) => camera.id === selected?.id)) clearSelection(false);
+				if (syncUrl) updateUrl("replace");
+			}
+
+			function renderResults() {
+				results.replaceChildren();
+				const visible = filtered.slice(0, 100);
+				for (const camera of visible) {
+					const item = document.createElement("li");
+					const button = document.createElement("button");
+					button.type = "button";
+					button.dataset.cameraId = camera.id;
+					button.setAttribute("aria-label", `${camera.name}, ${camera.region}, route ${camera.route}`);
+					const title = document.createElement("span");
+					title.className = "result-title";
+					title.textContent = camera.name;
+					const meta = document.createElement("span");
+					meta.className = "result-meta";
+					meta.textContent = `${camera.region} · route ${camera.route} · source page`;
+					button.append(title, meta);
+					button.addEventListener("click", () => selectCamera(camera, true));
+					item.append(button);
+					results.append(item);
+				}
+				listNote.textContent = filtered.length > visible.length ? `Showing the first ${visible.length} results. Refine your search to narrow the list; all ${filtered.length} remain on the map.` : "";
+			}
+
+			function fitResults() {
+				if (!mapReady || filtered.length === 0) return;
+				if (filtered.length === 1) {
+					map.easeTo({ center: filtered[0].coordinates, zoom: 13, ...animation });
+					return;
+				}
+				const bounds = new maplibregl.LngLatBounds();
+				for (const camera of filtered) bounds.extend(camera.coordinates);
+				map.fitBounds(bounds as LngLatBoundsLike, { padding: mapPadding(), maxZoom: 12, ...animation });
+			}
+
+			function reset() {
+				searchInput.value = "";
+				regionFilter.value = "";
+				statusFilter.value = "";
+				feedFilter.value = "";
+				clearSelection(false);
+				applyFilters(false);
+				if (mapReady) map.easeTo({ center: defaultView.center, zoom: defaultView.zoom, padding: 0, ...animation });
+				updateUrl("replace");
+			}
+
+			function updateUrl(mode: "push" | "replace", state?: Record<string, unknown>) {
+				if (restoringState) return;
+				const params = new URLSearchParams();
+				if (mapReady) {
+					const center = map.getCenter();
+					params.set("lat", center.lat.toFixed(5));
+					params.set("lon", center.lng.toFixed(5));
+					params.set("z", map.getZoom().toFixed(2));
+				}
+				if (selected) params.set("camera", selected.id);
+				if (searchInput.value.trim()) params.set("q", searchInput.value.trim());
+				if (regionFilter.value) params.set("region", regionFilter.value);
+				if (statusFilter.value) params.set("status", statusFilter.value);
+				if (feedFilter.value) params.set("feed", feedFilter.value);
+				const url = `${location.pathname}${params.size ? `?${params}` : ""}`;
+				const mergedState = { ...(history.state ?? {}), ...(state ?? {}) };
+				history[mode === "push" ? "pushState" : "replaceState"](mergedState, "", url);
+			}
+
+			function applyStateFromUrl(moveMap = true) {
+				restoringState = true;
+				const params = new URLSearchParams(location.search);
+				searchInput.value = params.get("q") ?? "";
+				regionFilter.value = optionValue(regionFilter, params.get("region"));
+				statusFilter.value = optionValue(statusFilter, params.get("status"));
+				feedFilter.value = optionValue(feedFilter, params.get("feed"));
+				applyFilters(false);
+				const camera = cameraById.get(params.get("camera") ?? "");
+				if (camera) selectCamera(camera, false, false);
+				else clearSelection(false);
+				if (moveMap && mapReady) {
+					const lat = numberParam(params.get("lat"), map.getCenter().lat, -90, 90);
+					const lon = numberParam(params.get("lon"), map.getCenter().lng, -180, 180);
+					const zoom = numberParam(params.get("z"), map.getZoom(), 2, 18);
+					map.jumpTo({ center: [lon, lat], zoom });
+				}
+				restoringState = false;
+			}
+
+			function optionValue(select: HTMLSelectElement, candidate: string | null) {
+				return candidate && [...select.options].some((option) => option.value === candidate) ? candidate : "";
+			}
+
+			function parseCoordinates(value: string): [number, number] | null {
+				const match = value.trim().match(/^(-?\d{1,2}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)$/);
+				if (!match) return null;
+				const lat = Number(match[1]);
+				const lon = Number(match[2]);
+				return Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? [lon, lat] : null;
+			}
+
+			function numberParam(value: string | null, fallback: number, min: number, max: number) {
+				if (value === null || value.trim() === "") return fallback;
+				const number = Number(value);
+				return Number.isFinite(number) && number >= min && number <= max ? number : fallback;
+			}
+
+			function normalize(value: string) {
+				return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("en-CA");
+			}
+
+			function distanceKm(a: [number, number], b: [number, number]) {
+				const radians = (degrees: number) => (degrees * Math.PI) / 180;
+				const dLat = radians(b[1] - a[1]);
+				const dLon = radians(b[0] - a[0]);
+				const h = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a[1])) * Math.cos(radians(b[1])) * Math.sin(dLon / 2) ** 2;
+				return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+			}
+
+			function mapPadding() {
+				return window.innerWidth <= 760 ? { top: 250, bottom: 90, left: 35, right: 35 } : { top: 55, bottom: 55, left: 55, right: details.classList.contains("is-open") ? 430 : 55 };
+			}
+
+			function detailPadding() {
+				return window.innerWidth <= 760 ? { top: 100, bottom: 310, left: 40, right: 40 } : { top: 40, bottom: 40, left: 40, right: 420 };
+			}
+
+			searchInput.addEventListener("input", () => applyFilters());
+			for (const select of [regionFilter, statusFilter, feedFilter]) select.addEventListener("change", () => applyFilters());
+			searchForm.addEventListener("submit", (event) => {
+				event.preventDefault();
+				const coordinates = parseCoordinates(searchInput.value);
+				if (coordinates && mapReady) {
+					clearSelection(false);
+					map.easeTo({ center: coordinates, zoom: 12, ...animation });
+				} else if (filtered[0]) selectCamera(filtered[0], true);
+			});
+			document.querySelector("#fit-button")!.addEventListener("click", fitResults);
+			document.querySelector("#reset-button")!.addEventListener("click", reset);
+			document.querySelector("#empty-reset")!.addEventListener("click", reset);
+			document.querySelector("#detail-close")!.addEventListener("click", closeDetails);
+			document.querySelector("#explore-button")!.addEventListener("click", () => {
+				if (filtered.length) selectCamera(filtered[Math.floor(Math.random() * filtered.length)], true);
+			});
+			window.addEventListener("popstate", () => applyStateFromUrl(true));
+			window.addEventListener("keydown", (event) => {
+				if (event.key !== "Escape") return;
+				if (selected) closeDetails();
+				else if (searchInput.value || regionFilter.value || statusFilter.value || feedFilter.value) reset();
+			});
+			window.addEventListener("resize", () => map.resize());
+
+			applyStateFromUrl(false);
+		</script>
+	</body>
+</html>
+
+<style>
+	@font-face {
+		font-family: "VT323";
+		src: url("/fonts/vt323-latin.woff2") format("woff2");
+		font-display: swap;
+	}
+
+	:global(*) { box-sizing: border-box; }
+	:global(:root) {
+		color-scheme: dark;
+		font-family: "VT323", ui-monospace, monospace;
+		background: #090b0d;
+		color: #e5e7e8;
+	}
+	:global(body) { margin: 0; min-width: 320px; overflow: hidden; background: #090b0d; }
+	:global(button), :global(input), :global(select) { font: inherit; }
+	:global(button), :global(a), :global(select) { -webkit-tap-highlight-color: transparent; }
+	:global(a) { color: #8bd5ca; }
+	:global(:focus-visible) { outline: 2px solid #f2c879; outline-offset: 2px; }
+
+	.skip-link { position: fixed; z-index: 30; top: 8px; left: 8px; transform: translateY(-150%); background: #f2c879; color: #090b0d; padding: 8px 12px; }
+	.skip-link:focus { transform: none; }
+	.app-shell { display: grid; grid-template-columns: minmax(330px, 390px) 1fr; width: 100vw; height: 100dvh; position: relative; overflow: hidden; }
+	.sidebar { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 20px 20px 14px; border-right: 1px solid #2a3037; background: #0c0f12; z-index: 3; }
+	.app-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #272d33; padding-bottom: 13px; }
+	.brand { color: #f2f3f3; text-decoration: none; letter-spacing: .12em; font-size: 1.05rem; }
+	.site-nav { display: flex; gap: 14px; }
+	.nav-link { color: #78838c; text-decoration: none; }
+	.nav-link[aria-current="page"], .nav-link:hover { color: #8bd5ca; }
+	.intro { display: flex; align-items: end; justify-content: space-between; gap: 14px; padding-top: 20px; }
+	.eyebrow { margin: 0 0 4px; color: #66737c; font-size: .8rem; letter-spacing: .12em; }
+	h1 { margin: 0; font-size: clamp(1.75rem, 3vw, 2.3rem); font-weight: 400; line-height: 1; }
+	.pilot-badge { flex: none; color: #8bd5ca; border: 1px solid #365b59; border-radius: 999px; padding: 3px 8px; font-size: .85rem; }
+	.intro-copy { color: #9099a0; line-height: 1.35; margin: 9px 0 17px; }
+	.search-form label, .filters label span { display: block; color: #a5adb3; font-size: .8rem; letter-spacing: .03em; margin-bottom: 5px; }
+	.search-row { display: flex; border: 1px solid #343b43; background: #101419; transition: border-color .15s ease; }
+	.search-row:focus-within { border-color: #8bd5ca; }
+	.search-row input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #f1f2f2; padding: 9px 10px; }
+	.search-row input::placeholder { color: #5f6870; }
+	.icon-button { width: 38px; border: 0; border-left: 1px solid #343b43; background: transparent; color: #8bd5ca; cursor: pointer; }
+	.coordinate-hint { color: #8bd5ca; font-size: .78rem; margin: 5px 0 0; }
+	.filters { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr); gap: 7px; margin-top: 12px; }
+	.filters select { width: 100%; border: 1px solid #303840; border-radius: 0; background: #101419; color: #c7cccf; padding: 7px 6px; }
+	.result-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #232a30; margin-top: 15px; padding-top: 12px; }
+	.result-head p { margin: 0; color: #b6bdc2; }
+	.text-button { border: 0; padding: 2px; background: none; color: #8bd5ca; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+	.camera-results { min-height: 0; overflow: auto; margin: 8px -6px 0; padding: 0 6px; list-style: none; scrollbar-color: #34414b transparent; }
+	.camera-results li { border-top: 1px solid #1d2328; }
+	.camera-results button { display: block; width: 100%; padding: 9px 5px; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+	.camera-results button:hover, .camera-results button:focus-visible { background: #141a1f; }
+	.result-title { display: block; line-height: 1.2; color: #dfe2e4; }
+	.result-meta { display: block; margin-top: 3px; color: #697680; font-size: .78rem; }
+	.list-note { color: #68747d; font-size: .76rem; line-height: 1.25; margin: 7px 0 0; }
+	.empty-state { border: 1px dashed #3c454d; margin-top: 12px; padding: 12px; color: #939ca3; }
+	.empty-state p { margin: 0 0 7px; }
+	.source-footer { border-top: 1px solid #282e34; margin-top: auto; padding-top: 10px; color: #66727b; font-size: .72rem; line-height: 1.3; }
+	.source-footer p { margin: 2px 0; }
+	.source-footer a { color: #829ca0; }
+
+	.map-shell { position: relative; min-width: 0; min-height: 0; background: #11161a; }
+	#map { position: absolute; inset: 0; }
+	.map-state { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 330px; border: 1px solid #3c454d; background: rgba(9, 11, 13, .94); color: #c7cdcf; padding: 12px 16px; text-align: center; }
+	.map-state[hidden], .empty-state[hidden], .coordinate-hint[hidden] { display: none !important; }
+	.map-state.is-error { color: #f2c879; }
+	.map-actions { position: absolute; z-index: 2; top: 14px; left: 14px; display: flex; gap: 6px; }
+	.map-actions button { border: 1px solid #3c454d; background: rgba(10, 13, 16, .92); color: #cdd1d3; padding: 7px 10px; cursor: pointer; box-shadow: 0 3px 12px rgba(0, 0, 0, .25); }
+	.map-actions button:hover { border-color: #8bd5ca; color: #8bd5ca; }
+	.map-legend { position: absolute; z-index: 2; left: 14px; bottom: 34px; display: flex; gap: 10px; border: 1px solid #343b42; background: rgba(10, 13, 16, .9); color: #939ba1; padding: 6px 9px; font-size: .75rem; }
+	.map-legend span { display: flex; align-items: center; gap: 5px; }
+	.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+	.cluster-dot { background: #8bd5ca; }
+	.camera-dot { background: #f2c879; }
+
+	.details { position: absolute; z-index: 5; top: 0; right: 0; width: min(390px, calc(100vw - 330px)); height: 100%; overflow: auto; border-left: 1px solid #364047; background: rgba(11, 14, 17, .98); padding: 24px; box-shadow: -15px 0 35px rgba(0, 0, 0, .32); transform: translateX(105%); visibility: hidden; transition: transform .24s ease, visibility 0s linear .24s; }
+	.details.is-open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
+	.details-handle { display: none; }
+	.detail-topline { display: flex; justify-content: space-between; align-items: center; }
+	.close-button { border: 0; background: none; color: #8e989f; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+	.close-button:hover { color: #f2c879; }
+	.details h2 { margin: 18px 0 10px; font-size: 1.7rem; font-weight: 400; line-height: 1.15; }
+	.detail-meta { display: flex; flex-wrap: wrap; gap: 7px; }
+	.detail-meta span { border: 1px solid #374048; color: #a9b0b5; padding: 3px 7px; font-size: .82rem; }
+	.facts { margin: 22px 0; border-top: 1px solid #293038; }
+	.facts div { display: grid; grid-template-columns: 110px 1fr; gap: 8px; border-bottom: 1px solid #293038; padding: 9px 0; }
+	.facts dt { color: #6e7a83; }
+	.facts dd { margin: 0; color: #d2d6d8; overflow-wrap: anywhere; }
+	.unknown-dot { display: inline-block; width: 7px; height: 7px; margin-right: 3px; border-radius: 50%; background: #8b949b; }
+	.viewer-note { color: #909aa1; line-height: 1.4; }
+	.source-button { display: block; border: 1px solid #8bd5ca; background: #10201f; color: #a7e0d9; padding: 11px 13px; text-decoration: none; text-align: center; }
+	.source-button:hover { background: #17302e; }
+	.nearby { margin-top: 26px; }
+	.nearby h3 { color: #c3c9cc; font-size: 1rem; font-weight: 400; letter-spacing: .07em; }
+	.nearby ul { list-style: none; padding: 0; }
+	.nearby li { border-top: 1px solid #282f35; }
+	.nearby button { width: 100%; border: 0; background: none; color: #92a9aa; padding: 9px 0; text-align: left; cursor: pointer; }
+	.nearby button:hover { color: #8bd5ca; }
+	.noscript { position: fixed; z-index: 50; inset: auto 20px 20px; background: #181c20; border: 1px solid #f2c879; padding: 12px; }
+	:global(.maplibregl-ctrl-group) { background: rgba(10, 13, 16, .92); }
+	:global(.maplibregl-ctrl-group button) { filter: invert(1) hue-rotate(180deg); }
+	:global(.maplibregl-ctrl-attrib) { background: rgba(10, 13, 16, .82) !important; color: #8d969d; }
+	:global(.maplibregl-ctrl-attrib a) { color: #9dbfc0; }
+
+	@media (max-width: 760px) {
+		.app-shell { display: block; }
+		.sidebar { position: absolute; inset: 0 0 auto; height: min(47dvh, 410px); padding: 13px 14px 9px; border-right: 0; border-bottom: 1px solid #374047; box-shadow: 0 12px 24px rgba(0, 0, 0, .3); }
+		.app-header { padding-bottom: 8px; }
+		.intro { padding-top: 10px; }
+		.intro-copy { margin: 5px 0 9px; font-size: .86rem; }
+		h1 { font-size: 1.65rem; }
+		.filters { margin-top: 7px; }
+		.filters label span, .search-form label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+		.result-head { margin-top: 8px; padding-top: 7px; }
+		.camera-results { margin-top: 4px; }
+		.camera-results button { padding: 6px 4px; }
+		.source-footer { display: none; }
+		.map-shell { position: absolute; inset: 0; }
+		.map-actions { top: auto; bottom: 42px; }
+		.map-legend { display: none; }
+		.details { top: auto; bottom: 0; width: 100%; max-height: 57dvh; height: auto; min-height: 285px; border-top: 1px solid #465159; border-left: 0; padding: 10px 18px max(18px, env(safe-area-inset-bottom)); transform: translateY(105%); border-radius: 14px 14px 0 0; }
+		.details.is-open { transform: translateY(0); }
+		.details-handle { display: block; width: 38px; height: 3px; border-radius: 3px; background: #4c555d; margin: 0 auto 9px; }
+		.details h2 { margin: 8px 0; font-size: 1.35rem; }
+		.facts { margin: 13px 0; }
+		.facts div { padding: 6px 0; }
+		.viewer-note { margin: 10px 0; }
+		.nearby { margin-top: 14px; }
+		.nearby h3 { margin-bottom: 4px; }
+		.nearby button { padding: 6px 0; }
+	}
+
+	@media (max-width: 440px) {
+		.pilot-badge { display: none; }
+		.filters { grid-template-columns: 1.3fr 1fr; }
+		.filters label:last-child { display: none; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		*, *::before, *::after { scroll-behavior: auto !important; transition-duration: .001ms !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+	}
+</style>
