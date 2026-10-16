@@ -4,7 +4,7 @@
     {
       "date": "2026-10-15",
       "kind": "ship",
-      "text": "Most of the day went into rebuilding Boréal's SMS layer around a single gateway. Every outbound message now goes through one dispatch path, which checks contact policy and consent and refuses any template with unfilled placeholders. On top of that sits a sequence engine with approval steps, automatic pauses when someone replies, and a cleanly reversible database migration. A thread-aware reviewer was also added that reads the whole conversation before labelling a reply, and A/B assignment can't be changed after the fact. In Commander, a read-only research pipeline for token launch data got its first build, with the hypothesis registered before any outcomes were looked at. The first evaluation came back with too small a sample to draw conclusions."
+      "text": "Most of the day went into the SMS side of Boréal Numérique. I added a sequence engine that waits for approval, pauses when someone replies and logs every send so nothing goes out twice. All outgoing messages now pass through one gateway that checks contact policy and refuses any template with unfilled placeholders. I also started a thread-aware reply reviewer that reads the whole conversation instead of single messages. In Commander, I began a read-only research pipeline for token launch data. Its hypotheses are registered before any results are computed, and the first evaluation came back with too small a sample to draw a conclusion."
     },
     {
       "date": "2026-10-14",
