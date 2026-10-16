@@ -4,7 +4,7 @@
     {
       "date": "2026-10-15",
       "kind": "ship",
-      "text": "Most of the day went into the SMS system for Boréal. I built a sequence engine with approval grants, reply pauses and an idempotent dispatch log, and made sure every outgoing message goes through a single gateway that enforces contact policy and refuses templates with unfilled placeholders. I also added a reply reviewer that reads the full conversation thread, not just the single message, so replies are judged in context. In Commander, I started Launch Lab, a read-only research pipeline for token launch data, and preregistered its first hypothesis before looking at any outcomes. The first evaluation came back with too small a sample to conclude anything."
+      "text": "Most of the day went into rebuilding the SMS side of Boréal. All outbound messages now go through a single gateway that checks contact policy and approvals when each message is sent, and it refuses any message that still has an unfilled template placeholder. On top of that I added a sequence engine that pauses when someone replies, plus a reply reviewer that reads the whole conversation instead of one message at a time. In Commander I started Launch Lab, a read-only research pipeline for pump.fun launch data, with a hypothesis registered before any outcomes were computed. The first evaluation came back with too small a sample to say anything yet."
     },
     {
       "date": "2026-10-14",
