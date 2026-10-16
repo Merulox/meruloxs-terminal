@@ -4,7 +4,7 @@
     {
       "date": "2026-10-15",
       "kind": "ship",
-      "text": "On Boréal, rebuilt the SMS outreach pipeline so every send goes through one gateway. The gateway checks consent and suppression lists, needs explicit approval for sequences, pauses a sequence when someone replies, and refuses any message with unfilled template placeholders. Also added a reply reviewer that reads the whole conversation instead of single messages, and set up experiment tracking with guardrails. In Commander, started Launch Lab, a read-only research pipeline for pump.fun launch data that fails closed. Its first hypothesis was preregistered before any outcomes were looked at, and the first evaluation came back with too small a sample to draw conclusions."
+      "text": "Most of the day went into rebuilding Boréal's SMS layer around a single gateway. Every outbound message now goes through one dispatch path, which checks contact policy and consent and refuses any template with unfilled placeholders. On top of that sits a sequence engine with approval steps, automatic pauses when someone replies, and a cleanly reversible database migration. A thread-aware reviewer was also added that reads the whole conversation before labelling a reply, and A/B assignment can't be changed after the fact. In Commander, a read-only research pipeline for token launch data got its first build, with the hypothesis registered before any outcomes were looked at. The first evaluation came back with too small a sample to draw conclusions."
     },
     {
       "date": "2026-10-14",
