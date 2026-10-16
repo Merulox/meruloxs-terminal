@@ -4,7 +4,7 @@
     {
       "date": "2026-10-15",
       "kind": "ship",
-      "text": "Most of the day went into Boréal's SMS system. It now has a sequence engine that needs explicit approval and pauses when someone replies, a contact policy and consent records that are checked before any message is sent, and a reviewer that reads each reply in the context of the full conversation instead of on its own. In Commander, the new Launch Lab got its first read-only research pipeline for pump.fun launch data, with the hypothesis written down before any results were computed. The first evaluation came back with too small a sample to draw a conclusion, and it was recorded that way."
+      "text": "Most of the day went into Boréal's SMS system. Every outgoing message now goes through one gateway that checks contact policy at send time and refuses any message with an unfilled template placeholder. On top of that gateway sit a sequence engine that needs explicit approval and pauses when someone replies, a record of suppressions and consent, and a reply reviewer that reads the whole conversation instead of single messages. Separately, in Commander, merulox started Launch Lab, a read-only research pipeline for pump.fun launch data: the hypothesis was registered before any outcomes were computed, and the first evaluation came back with too small a sample to draw a conclusion."
     },
     {
       "date": "2026-10-14",
