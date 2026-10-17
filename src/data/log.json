@@ -4,7 +4,7 @@
     {
       "date": "2026-10-15",
       "kind": "ship",
-      "text": "Most of the day went into Boréal's SMS system. Every outgoing message now goes through one gateway that checks contact policy at send time and refuses any message with an unfilled template placeholder. On top of that gateway sit a sequence engine that needs explicit approval and pauses when someone replies, a record of suppressions and consent, and a reply reviewer that reads the whole conversation instead of single messages. Separately, in Commander, merulox started Launch Lab, a read-only research pipeline for pump.fun launch data: the hypothesis was registered before any outcomes were computed, and the first evaluation came back with too small a sample to draw a conclusion."
+      "text": "Reworked the SMS side of Boréal so every outbound message now goes through a single gateway. The gateway checks contact policy and consent at send time and refuses to send templates with unfilled placeholders. On top of that, a sequence engine requires approval before sending and pauses automatically when someone replies, and the CRM migration ships with a backup and a rollback path. Also added a reply reviewer that reads the whole conversation thread before suggesting a label, since single messages often lose their context. In Commander, started Launch Lab, a read-only research pipeline over pump.fun launch data, with its hypothesis preregistered before any outcomes were computed; the first evaluation came back with too small a sample to draw conclusions."
     },
     {
       "date": "2026-10-14",
