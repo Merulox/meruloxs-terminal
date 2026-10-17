@@ -4,7 +4,7 @@
     {
       "date": "2026-10-16",
       "kind": "ship",
-      "text": "Released the first version of Commander Finance, a personal bookkeeping tool for importing statements and reviewing categorized transactions. In Boréal, the email outreach path now handles suppression lists, a compliance footer, and automatic reply and bounce processing, and a fix makes sure SMS status callbacks are saved before they are acknowledged. Genesis gained a bounded learning loop that automatically retires unsafe lessons. Commander's launch lab now throttles RPC calls separately for each provider."
+      "text": "Finished and released Commander Finance, a personal accounting tool that imports bank and card statements and sorts them through a review queue. Validating it against real statement exports is the next step. For Boréal, built an email outreach pipeline with send tracking, a follow-up step, reply and bounce handling, and opt-out and compliance footers, and made the SMS status callbacks more reliable. In Genesis, added a bounded learning loop that automatically retires lessons found to be unsafe."
     },
     {
       "date": "2026-10-15",
