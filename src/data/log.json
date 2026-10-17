@@ -4,7 +4,7 @@
     {
       "date": "2026-10-16",
       "kind": "ship",
-      "text": "Released Commander Finance, a small personal accounting tool inside Commander for importing statements and reviewing transactions. For Boréal, I added a follow-up step and reply and bounce handling to the email outreach pipeline, made the SMS status callbacks more reliable, and retired an old campaign experiment. In Genesis, I started a bounded learning loop and made it automatically retire lessons that turned out to be unsafe. I also adjusted request throttling in Commander's launch lab and restored the summaries on this build log."
+      "text": "On Boréal, I built out an email outreach channel: a sender with a send ledger, suppression list and compliance footer, automatic handling of replies and bounces, and a timed follow-up step. I also fixed SMS status callbacks so they are saved before being acknowledged, and shut down a campaign that wasn't working. Commander Finance, a personal accounting tool inside Commander, reached its first complete release. In Genesis, I added a bounded learning loop that automatically retires lessons it finds unsafe."
     },
     {
       "date": "2026-10-15",
