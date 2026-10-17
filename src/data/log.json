@@ -4,7 +4,7 @@
     {
       "date": "2026-10-16",
       "kind": "ship",
-      "text": "Most of the day went into finishing the Boréal email campaign pipeline. It now has a sender with a send ledger, suppression handling and a CASL-compliant footer. Replies and bounces are processed automatically, and a timed follow-up step was added. An old after-hours SMS campaign experiment was shut down, and the SMS status callbacks now save their data before they acknowledge a message. Commander Finance, a personal accounting tool for importing and reviewing bank exports, also shipped its first full release, and Genesis got a bounded learning loop that retires unsafe lessons automatically."
+      "text": "Released the first version of Commander Finance, a personal bookkeeping tool for importing statements and reviewing categorized transactions. In Boréal, the email outreach path now handles suppression lists, a compliance footer, and automatic reply and bounce processing, and a fix makes sure SMS status callbacks are saved before they are acknowledged. Genesis gained a bounded learning loop that automatically retires unsafe lessons. Commander's launch lab now throttles RPC calls separately for each provider."
     },
     {
       "date": "2026-10-15",
