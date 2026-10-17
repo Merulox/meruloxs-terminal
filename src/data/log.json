@@ -4,7 +4,7 @@
     {
       "date": "2026-10-16",
       "kind": "ship",
-      "text": "Finished and released Commander Finance, a personal accounting tool that imports bank and card statements and sorts them through a review queue. Validating it against real statement exports is the next step. For Boréal, built an email outreach pipeline with send tracking, a follow-up step, reply and bounce handling, and opt-out and compliance footers, and made the SMS status callbacks more reliable. In Genesis, added a bounded learning loop that automatically retires lessons found to be unsafe."
+      "text": "Most of the day went into Boréal's email outreach. I added a sender with suppression handling and a compliance footer, automated reply and bounce handling, and set up a three-day follow-up so the campaign runs as one pipeline. I also fixed SMS status callbacks so they're saved before being acknowledged, and shut down an old paid-lead campaign that wasn't working. Outside Boréal, I finished a governed release of Commander Finance, a personal accounting tool, and gave Genesis a bounded learning loop that automatically retires unsafe lessons."
     },
     {
       "date": "2026-10-15",
