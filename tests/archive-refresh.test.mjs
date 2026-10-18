@@ -524,7 +524,7 @@ test("remote changed range supplies redacted evidence and stages with PATCH", as
 		fetch: async (url, init = {}) => {
 			if (isDescriptionStateGet(url, init)) return response(descriptionState());
 			calls.push({ url, init });
-			if (url.endsWith("/projects")) return response(archiveHtml([projectRecord]), 200, "text/html");
+			if (url.endsWith("/projects/")) return response(archiveHtml([projectRecord]), 200, "text/html");
 			if (init.method === "POST") return response({ preview: "Generated fixture prose" });
 			assert.equal(init.method, "PATCH");
 			return response({ staged: true });
@@ -597,7 +597,7 @@ test("forced remote evidence requests and retains at most 30 recent commits", as
 		fetch: async (url, init = {}) => {
 			if (isDescriptionStateGet(url, init)) return response(descriptionState());
 			calls.push({ url, init });
-			if (url.endsWith("/projects")) return response(archiveHtml([projectRecord]), 200, "text/html");
+			if (url.endsWith("/projects/")) return response(archiveHtml([projectRecord]), 200, "text/html");
 			return response({ preview: "Bounded fixture preview" });
 		},
 		run: async (command, args) => {
@@ -753,6 +753,8 @@ test("first ordinary run bootstraps repository heads and performs no API mutatio
 	});
 	assert.deepEqual(result, { exitCode: 0, failures: 0, processed: 1 });
 	assert.equal(calls.length, 1);
+	assert.equal(calls[0].url, "https://dev.example.test/projects/");
+	assert.equal(calls[0].init.redirect, "error");
 	const state = JSON.parse(await readFile(files.stateFile, "utf8"));
 	assert.equal(state.items["project:sample-project"].lastStatus, "bootstrapped");
 	assert.equal(state.items["project:sample-project"].sources[fixtureRemote].head, "head-one");
@@ -777,7 +779,7 @@ test("changed-head dry-run requests an AI preview but never PATCHes, PUTs, or co
 	const fetch = async (url, init = {}) => {
 		if (isDescriptionStateGet(url, init)) return response(descriptionState());
 		calls.push({ url, init });
-		if (url.endsWith("/projects")) return response(archiveHtml([projectRecord]), 200, "text/html");
+		if (url.endsWith("/projects/")) return response(archiveHtml([projectRecord]), 200, "text/html");
 		assert.equal(init.method, "POST");
 		return response({ kind: "project", id: "sample-project", preview: "Generated fixture prose" });
 	};
@@ -863,7 +865,7 @@ test("adding a source bootstraps only that source without consuming tracked-sour
 	const methods = [];
 	const fetch = async (url, init = {}) => {
 		if (isDescriptionStateGet(url, init)) return response(descriptionState());
-		if (url.endsWith("/projects")) return response(archiveHtml([projectRecord]), 200, "text/html");
+		if (url.endsWith("/projects/")) return response(archiveHtml([projectRecord]), 200, "text/html");
 		methods.push(init.method);
 		return response({ preview: "Reviewable fixture draft" });
 	};
@@ -910,7 +912,7 @@ test("apply stages with PATCH rather than PUT and advances only the successful h
 	const fetch = async (url, init = {}) => {
 		if (isDescriptionStateGet(url, init)) return response(descriptionState());
 		calls.push({ url, init });
-		if (url.endsWith("/projects")) return response(archiveHtml([projectRecord]), 200, "text/html");
+		if (url.endsWith("/projects/")) return response(archiveHtml([projectRecord]), 200, "text/html");
 		if (init.method === "POST") return response({ preview: "Reviewable fixture draft" });
 		assert.equal(init.method, "PATCH");
 		return response({ staged: true });
@@ -975,7 +977,7 @@ test("an unresolved candidate blocks a later run before source observation and p
 				}),
 			);
 		}
-		if (url.endsWith("/projects")) return response(archiveHtml([projectRecord]), 200, "text/html");
+		if (url.endsWith("/projects/")) return response(archiveHtml([projectRecord]), 200, "text/html");
 		mutationCalls.push(init.method);
 		if (init.method === "POST") return response({ preview: "Reviewable fixture draft" });
 		pending = true;
@@ -1032,7 +1034,7 @@ test("published project and scheme overrides are the next draft bases", async (t
 				}),
 			);
 		}
-		if (url.endsWith("/projects")) return response(archiveHtml(), 200, "text/html");
+		if (url.endsWith("/projects/")) return response(archiveHtml(), 200, "text/html");
 		assert.equal(init.method, "POST");
 		const body = JSON.parse(init.body);
 		drafts.set(`${body.kind}:${body.id}`, body.draft);

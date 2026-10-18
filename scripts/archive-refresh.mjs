@@ -632,7 +632,7 @@ export async function runArchiveRefresh(options, dependencies = {}) {
 		const authorization = authorizationHeader(authContents);
 		const sources = parseSources(JSON.parse(sourcesContents));
 		const [pageResponse, descriptionsResponse] = await Promise.all([
-			fetchApi(`${options.baseUrl}/projects`, {
+			fetchApi(`${options.baseUrl}/projects/`, {
 				headers: { Authorization: authorization },
 				redirect: "error",
 			}),
