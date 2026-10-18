@@ -2,7 +2,7 @@
 import Layout from "../../layouts/Layout.astro";
 import { archiveProjects, moneySchemes } from "../../data/projects";
 
-const projectId = (name: string) =>
+const archiveId = (name: string) =>
 	name
 		.normalize("NFKD")
 		.replace(/[\u0300-\u036f]/g, "")
@@ -11,29 +11,48 @@ const projectId = (name: string) =>
 		.replace(/^-+|-+$/g, "")
 		.slice(0, 80);
 
-const projectDescriptionContext = archiveProjects.map((project) => ({
-	id: projectId(project.name),
-	name: project.name,
-	sourceDescription: project.archiveDescription,
-	description: project.description,
-	role: project.role,
-	impact: project.impact,
-	present: project.present,
-	vision: project.vision,
-	frontier: project.frontier,
-}));
-const projectNamesById = new Map<string, string>();
-for (const project of projectDescriptionContext) {
-	const existingName = projectNamesById.get(project.id);
-	if (!project.id || existingName) {
+const archiveDescriptionContext = [
+	...archiveProjects.map((project) => ({
+		kind: "project" as const,
+		id: archiveId(project.name),
+		name: project.name,
+		sourceDescription: project.archiveDescription,
+		description: project.description,
+		role: project.role,
+		impact: project.impact,
+		present: project.present,
+		vision: project.vision,
+		frontier: project.frontier,
+	})),
+	...moneySchemes.map((scheme) => ({
+		kind: "scheme" as const,
+		id: archiveId(scheme.name),
+		name: scheme.name,
+		sourceDescription: scheme.description,
+		currentState: scheme.currentState,
+		decision: scheme.decision,
+		bottleneck: scheme.bottleneck,
+		history: scheme.history
+			.map(
+				(entry) =>
+					`${entry.date} [${entry.state}] Attempt: ${entry.attemptedModel} Did: ${entry.work} Result: ${entry.result}`,
+			)
+			.join("\n"),
+	})),
+];
+const archiveNamesByKey = new Map<string, string>();
+for (const item of archiveDescriptionContext) {
+	const key = `${item.kind}:${item.id}`;
+	const existingName = archiveNamesByKey.get(key);
+	if (!item.id || existingName) {
 		throw new Error(
-			`Project ID collision: ${existingName ?? "(empty slug)"} and ${project.name} resolve to \"${project.id}\"`,
+			`Archive item collision: ${existingName ?? "(empty slug)"} and ${item.name} resolve to "${key}"`,
 		);
 	}
-	projectNamesById.set(project.id, project.name);
+	archiveNamesByKey.set(key, item.name);
 }
-const serializedProjectDescriptionContext = JSON.stringify(
-	projectDescriptionContext,
+const serializedArchiveDescriptionContext = JSON.stringify(
+	archiveDescriptionContext,
 ).replace(/</g, "\\u003c");
 ---
 
@@ -89,11 +108,16 @@ const serializedProjectDescriptionContext = JSON.stringify(
 				archiveProjects.map((project, index) => {
 					const isOpen = index === 0;
 					const bodyId = `project-body-${index}`;
-					const id = projectId(project.name);
+					const id = archiveId(project.name);
 					const descriptionId = `project-description-${id}`;
 
 					return (
-						<article class={`proj${isOpen ? " open" : ""}`} data-project-id={id}>
+						<article
+							class={`proj${isOpen ? " open" : ""}`}
+							data-project-id={id}
+							data-archive-kind="project"
+							data-archive-id={id}
+						>
 							<button
 								class="proj-head list-item"
 								aria-expanded={isOpen ? "true" : "false"}
@@ -105,7 +129,7 @@ const serializedProjectDescriptionContext = JSON.stringify(
 								<span class="proj-date">{project.date}</span>
 							</button>
 							<div id={bodyId} class="proj-body" hidden={!isOpen}>
-								<p id={descriptionId} class="project-description" data-project-description>
+								<p id={descriptionId} class="project-description" data-archive-description>
 									{project.archiveDescription}
 								</p>
 
@@ -168,9 +192,16 @@ const serializedProjectDescriptionContext = JSON.stringify(
 			{
 				moneySchemes.map((scheme, index) => {
 					const bodyId = `scheme-body-${index}`;
+					const id = archiveId(scheme.name);
+					const descriptionId = `scheme-description-${id}`;
 
 					return (
-						<article class="proj scheme">
+						<article
+							class="proj scheme"
+							data-scheme-id={id}
+							data-archive-kind="scheme"
+							data-archive-id={id}
+						>
 							<button
 								class="proj-head list-item"
 								aria-expanded="false"
@@ -185,7 +216,9 @@ const serializedProjectDescriptionContext = JSON.stringify(
 								<dl class="archive-fields scheme-summary">
 									<div class="archive-field">
 										<dt>Model</dt>
-										<dd>{scheme.description}</dd>
+										<dd id={descriptionId} class="scheme-description" data-archive-description>
+											{scheme.description}
+										</dd>
 									</div>
 									<div class="archive-field">
 										<dt>Now</dt>
@@ -263,9 +296,9 @@ const serializedProjectDescriptionContext = JSON.stringify(
 
 	<script
 		is:inline
-		id="project-description-context"
+		id="archive-description-context"
 		type="application/json"
-		set:html={serializedProjectDescriptionContext}
+		set:html={serializedArchiveDescriptionContext}
 	></script>
 
 	<style is:global>
@@ -362,19 +395,68 @@ const serializedProjectDescriptionContext = JSON.stringify(
 		.proj-body .project-description-status[data-error="true"] {
 			color: #d78080;
 		}
+		.archive-candidate {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 7px;
+			margin: -10px 0 18px;
+			padding: 8px;
+			border-left: 2px solid var(--accent);
+			color: var(--muted);
+			font-size: 12px;
+		}
+
+		.archive-candidate details,
+		.archive-candidate label {
+			flex-basis: 100%;
+		}
+
+		.archive-candidate pre {
+			margin: 7px 0 0;
+			white-space: pre-wrap;
+			overflow-wrap: anywhere;
+	}
+
+		.archive-candidate[hidden] {
+			display: none;
+		}
+
+		.archive-candidate button {
+			appearance: none;
+			border: 1px solid var(--faint);
+			border-radius: 2px;
+			background: transparent;
+			color: var(--muted);
+			cursor: pointer;
+			font: inherit;
+			padding: 4px 8px;
+		}
 	</style>
 
 	<script>
-		type ProjectDescriptionRecord = {
+		type ArchiveKind = "project" | "scheme";
+		type ArchiveDescriptionRecord = {
+			kind: ArchiveKind;
 			id: string;
 			name: string;
 			sourceDescription: string;
+			description?: string;
+			role?: string;
+			impact?: string;
+			present?: string;
+			vision?: string;
+			frontier?: string;
+			currentState?: string;
+			decision?: string;
+			bottleneck?: string;
+			history?: string;
+		};
+		type Candidate = {
 			description: string;
-			role: string;
-			impact: string;
-			present: string;
-			vision: string;
-			frontier: string;
+			version?: string | null;
+			evidence?: string;
+			updatedAt?: string | null;
 		};
 		type EditorElements = {
 			editButton: HTMLButtonElement;
@@ -383,26 +465,35 @@ const serializedProjectDescriptionContext = JSON.stringify(
 			instruction: HTMLInputElement;
 			preview: HTMLElement;
 			status: HTMLElement;
+			candidate: HTMLElement;
+			evidence: HTMLElement;
+			acknowledgment: HTMLInputElement;
+			saveButton: HTMLButtonElement;
+			busy: boolean;
 			actionButtons: HTMLButtonElement[];
 		};
 
-		const contextElement = document.getElementById("project-description-context");
-		let projectRecords: ProjectDescriptionRecord[] = [];
+		const itemKey = (kind: ArchiveKind, id: string) => `${kind}:${id}`;
+		const contextElement = document.getElementById("archive-description-context");
+		let archiveRecords: ArchiveDescriptionRecord[] = [];
 		try {
 			const parsed = JSON.parse(contextElement?.textContent ?? "[]");
-			if (Array.isArray(parsed)) projectRecords = parsed;
+			if (Array.isArray(parsed)) archiveRecords = parsed;
 		} catch {
-			projectRecords = [];
+			archiveRecords = [];
 		}
 
 		const activeDescriptions = new Map(
-			projectRecords.map((record) => [record.id, record.sourceDescription]),
+			archiveRecords.map((record) => [
+				itemKey(record.kind, record.id),
+				record.sourceDescription,
+			]),
 		);
 		const editors = new Map<string, EditorElements>();
 
 		const apiRequest = async (
-			method: "GET" | "POST" | "PUT" | "DELETE",
-			body?: Record<string, string>,
+			method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
+			body?: Record<string, unknown>,
 		) => {
 			const response = await fetch("/api/project-descriptions", {
 				method,
@@ -427,16 +518,20 @@ const serializedProjectDescriptionContext = JSON.stringify(
 			return payload;
 		};
 
-		const descriptionElement = (id: string) =>
+		const descriptionElement = (record: ArchiveDescriptionRecord) =>
 			document.querySelector<HTMLElement>(
-				`[data-project-id="${CSS.escape(id)}"] [data-project-description]`,
+				`[data-archive-kind="${record.kind}"][data-archive-id="${CSS.escape(record.id)}"] [data-archive-description]`,
 			);
 
-		const applyDescription = (id: string, description: string) => {
-			const output = descriptionElement(id);
+		const applyDescription = (
+			record: ArchiveDescriptionRecord,
+			description: string,
+		) => {
+			const output = descriptionElement(record);
 			if (output) output.textContent = description;
-			activeDescriptions.set(id, description);
-			const editor = editors.get(id);
+			const key = itemKey(record.kind, record.id);
+			activeDescriptions.set(key, description);
+			const editor = editors.get(key);
 			if (editor?.panel.hidden) {
 				editor.textarea.value = description;
 				editor.preview.textContent = description;
@@ -450,17 +545,26 @@ const serializedProjectDescriptionContext = JSON.stringify(
 			return button;
 		};
 
+		const syncSaveGate = (editor: EditorElements) => {
+			const candidatePending = !editor.candidate.hidden;
+			editor.saveButton.disabled =
+				editor.busy || (candidatePending && !editor.acknowledgment.checked);
+		};
+
 		const setEditorBusy = (
 			editor: EditorElements,
 			busy: boolean,
 			message = "",
 		) => {
+			editor.busy = busy;
 			editor.textarea.disabled = busy;
 			editor.instruction.disabled = busy;
+			editor.acknowledgment.disabled = busy;
 			editor.editButton.disabled = busy;
 			editor.actionButtons.forEach((button) => {
 				button.disabled = busy;
 			});
+			syncSaveGate(editor);
 			editor.status.dataset.error = "false";
 			editor.status.textContent = message;
 		};
@@ -472,18 +576,85 @@ const serializedProjectDescriptionContext = JSON.stringify(
 				caught instanceof Error ? caught.message : "The request failed.";
 		};
 
+		const candidateFor = (
+			payload: Record<string, any>,
+			record: ArchiveDescriptionRecord,
+		): Candidate | undefined => payload.candidates?.[record.kind]?.[record.id];
+
+		const syncCandidate = (
+			payload: Record<string, any>,
+			record: ArchiveDescriptionRecord,
+			editor: EditorElements,
+			useButton: HTMLButtonElement,
+		) => {
+			const scheduled = candidateFor(payload, record);
+			if (
+				scheduled &&
+				typeof scheduled.description === "string" &&
+				scheduled.description.trim() &&
+				typeof scheduled.version === "string"
+			) {
+				useButton.dataset.description = scheduled.description;
+				useButton.dataset.version = scheduled.version;
+				editor.evidence.textContent =
+					typeof scheduled.evidence === "string"
+						? scheduled.evidence
+						: "No repository evidence supplied.";
+				editor.acknowledgment.checked = false;
+				editor.candidate.hidden = false;
+				syncSaveGate(editor);
+				return true;
+			}
+			delete useButton.dataset.description;
+			delete useButton.dataset.version;
+			editor.evidence.textContent = "";
+			editor.acknowledgment.checked = false;
+			editor.candidate.hidden = true;
+			syncSaveGate(editor);
+			return false;
+		};
+
 		if (window.location.hostname === "dev.merulox.com") {
-			projectRecords.forEach((record) => {
-				const output = descriptionElement(record.id);
+			archiveRecords.forEach((record) => {
+				const output = descriptionElement(record);
 				if (!output) return;
+				const key = itemKey(record.kind, record.id);
 
 				const editContainer = document.createElement("div");
 				editContainer.className = "project-description-edit";
 				const editButton = makeButton("edit description");
-				const panelId = `project-description-editor-${record.id}`;
+				const panelId = `archive-description-editor-${record.kind}-${record.id}`;
 				editButton.setAttribute("aria-controls", panelId);
 				editButton.setAttribute("aria-expanded", "false");
 				editContainer.append(editButton);
+
+				const candidate = document.createElement("div");
+				candidate.className = "archive-candidate";
+				candidate.hidden = true;
+				const candidateMessage = document.createElement("span");
+				candidateMessage.textContent = "Scheduled review draft is ready.";
+				const evidenceDetails = document.createElement("details");
+				const evidenceSummary = document.createElement("summary");
+				evidenceSummary.textContent = "Repository evidence (unverified)";
+				const candidateEvidence = document.createElement("pre");
+				candidateEvidence.textContent = "";
+				evidenceDetails.append(evidenceSummary, candidateEvidence);
+				const acknowledgmentLabel = document.createElement("label");
+				const acknowledgment = document.createElement("input");
+				acknowledgment.type = "checkbox";
+				acknowledgmentLabel.append(
+					acknowledgment,
+					" I acknowledge that the repository evidence is unverified.",
+				);
+				const useCandidateButton = makeButton("Use scheduled draft");
+				const dismissCandidateButton = makeButton("Dismiss draft");
+				candidate.append(
+					candidateMessage,
+					evidenceDetails,
+					acknowledgmentLabel,
+					useCandidateButton,
+					dismissCandidateButton,
+				);
 
 				const panel = document.createElement("section");
 				panel.className = "project-description-editor";
@@ -538,7 +709,8 @@ const serializedProjectDescriptionContext = JSON.stringify(
 					status,
 				);
 				output.insertAdjacentElement("afterend", editContainer);
-				editContainer.insertAdjacentElement("afterend", panel);
+				editContainer.insertAdjacentElement("afterend", candidate);
+				candidate.insertAdjacentElement("afterend", panel);
 
 				const editor: EditorElements = {
 					editButton,
@@ -547,15 +719,31 @@ const serializedProjectDescriptionContext = JSON.stringify(
 					instruction,
 					preview,
 					status,
-					actionButtons: [generateButton, saveButton, resetButton, cancelButton],
+					candidate,
+					evidence: candidateEvidence,
+					acknowledgment,
+					saveButton,
+					busy: false,
+					actionButtons: [
+						generateButton,
+						saveButton,
+						resetButton,
+						cancelButton,
+						useCandidateButton,
+						dismissCandidateButton,
+					],
 				};
-				editors.set(record.id, editor);
+				editors.set(key, editor);
+
+				acknowledgment.addEventListener("change", () => {
+					syncSaveGate(editor);
+				});
 
 				editButton.addEventListener("click", () => {
 					const opening = panel.hidden;
 					panel.hidden = !opening;
 					editButton.setAttribute("aria-expanded", opening ? "true" : "false");
-					const current = activeDescriptions.get(record.id) ?? record.sourceDescription;
+					const current = activeDescriptions.get(key) ?? record.sourceDescription;
 					if (opening) {
 						textarea.value = current;
 						preview.textContent = current;
@@ -582,16 +770,8 @@ const serializedProjectDescriptionContext = JSON.stringify(
 					setEditorBusy(editor, true, "Generating preview…");
 					try {
 						const payload = await apiRequest("POST", {
-							id: record.id,
-							name: record.name,
+							...record,
 							draft: textarea.value,
-							sourceDescription: record.sourceDescription,
-							description: record.description,
-							role: record.role,
-							impact: record.impact,
-							present: record.present,
-							vision: record.vision,
-							frontier: record.frontier,
 							instruction: instruction.value,
 						});
 						if (typeof payload.preview !== "string" || !payload.preview.trim()) {
@@ -607,19 +787,40 @@ const serializedProjectDescriptionContext = JSON.stringify(
 				});
 
 				saveButton.addEventListener("click", async () => {
+					if (!candidate.hidden && !acknowledgment.checked) return;
 					setEditorBusy(editor, true, "Saving…");
 					try {
+						const candidateVersion = useCandidateButton.dataset.version;
 						const payload = await apiRequest("PUT", {
+							kind: record.kind,
 							id: record.id,
 							description: textarea.value,
+							clearCandidate: Boolean(candidateVersion),
+							candidateVersion,
 						});
 						if (typeof payload.description !== "string") {
 							throw new Error("Save returned an invalid description.");
 						}
-						applyDescription(record.id, payload.description);
+						applyDescription(record, payload.description);
 						textarea.value = payload.description;
 						preview.textContent = payload.description;
-						setEditorBusy(editor, false, "Saved. Public and dev pages now use this override.");
+						let saveMessage = "Saved. Public and dev pages now use this override.";
+						try {
+							const latest = await apiRequest("GET");
+							if (syncCandidate(latest, record, editor, useCandidateButton)) {
+								saveMessage =
+									"Saved. A newer or uncleared scheduled draft is ready for review.";
+							}
+						} catch {
+							if (candidateVersion) {
+								acknowledgment.checked = false;
+								candidate.hidden = false;
+								syncSaveGate(editor);
+							}
+							saveMessage =
+								"Saved. Refresh the page to confirm scheduled-draft status.";
+						}
+						setEditorBusy(editor, false, saveMessage);
 					} catch (caught) {
 						reportEditorError(editor, caught);
 					}
@@ -628,8 +829,8 @@ const serializedProjectDescriptionContext = JSON.stringify(
 				resetButton.addEventListener("click", async () => {
 					setEditorBusy(editor, true, "Resetting…");
 					try {
-						await apiRequest("DELETE", { id: record.id });
-						applyDescription(record.id, record.sourceDescription);
+						await apiRequest("DELETE", { kind: record.kind, id: record.id });
+						applyDescription(record, record.sourceDescription);
 						textarea.value = record.sourceDescription;
 						preview.textContent = record.sourceDescription;
 						setEditorBusy(editor, false, "Override removed; source description restored.");
@@ -639,7 +840,7 @@ const serializedProjectDescriptionContext = JSON.stringify(
 				});
 
 				cancelButton.addEventListener("click", () => {
-					const current = activeDescriptions.get(record.id) ?? record.sourceDescription;
+					const current = activeDescriptions.get(key) ?? record.sourceDescription;
 					output.textContent = current;
 					textarea.value = current;
 					preview.textContent = current;
@@ -649,29 +850,88 @@ const serializedProjectDescriptionContext = JSON.stringify(
 					editButton.setAttribute("aria-expanded", "false");
 					editButton.focus();
 				});
+
+				useCandidateButton.addEventListener("click", () => {
+					const scheduled = useCandidateButton.dataset.description;
+					if (!scheduled) return;
+					panel.hidden = false;
+					editButton.setAttribute("aria-expanded", "true");
+					textarea.value = scheduled;
+					preview.textContent = scheduled;
+					status.dataset.error = "false";
+					status.textContent = "Scheduled draft loaded — review and Save to publish.";
+					textarea.focus();
+				});
+
+				dismissCandidateButton.addEventListener("click", async () => {
+					setEditorBusy(editor, true, "Dismissing scheduled draft…");
+					try {
+						const version = useCandidateButton.dataset.version;
+						if (!version) throw new Error("Scheduled draft version is unavailable.");
+						await apiRequest("PATCH", {
+							kind: record.kind,
+							id: record.id,
+							action: "dismiss",
+							version,
+						});
+						try {
+							const latest = await apiRequest("GET");
+							const hasCandidate = syncCandidate(
+								latest,
+								record,
+								editor,
+								useCandidateButton,
+							);
+							setEditorBusy(
+								editor,
+								false,
+								hasCandidate
+									? "Draft dismissed; a newer scheduled draft is ready."
+									: "Scheduled draft dismissed.",
+							);
+						} catch {
+							candidate.hidden = false;
+							setEditorBusy(
+								editor,
+								false,
+								"Draft dismissed. Refresh the page to confirm scheduled-draft status.",
+							);
+						}
+					} catch (caught) {
+						reportEditorError(editor, caught);
+					}
+				});
 			});
 		}
+
 		editors.forEach((editor) => {
 			setEditorBusy(editor, true, "Loading saved description…");
 		});
 
-
 		void apiRequest("GET")
 			.then((payload) => {
-				if (!payload.overrides || typeof payload.overrides !== "object") return;
-				projectRecords.forEach((record) => {
-					const override = payload.overrides[record.id];
+				archiveRecords.forEach((record) => {
+					const overrides =
+						record.kind === "project" ? payload.overrides : payload.schemeOverrides;
+					const override = overrides?.[record.id];
 					if (
 						override &&
 						typeof override.description === "string" &&
 						override.description.trim()
 					) {
-						applyDescription(record.id, override.description);
+						applyDescription(record, override.description);
+					}
+					const editor = editors.get(itemKey(record.kind, record.id));
+					if (editor) {
+						const useButton = editor.candidate.querySelector<HTMLButtonElement>(
+							"button:first-of-type",
+						);
+						if (useButton) syncCandidate(payload, record, editor, useButton);
 					}
 				});
 			})
 			.catch(() => {
-				// The server-rendered source descriptions remain usable when overrides are unavailable.
+				// Static source descriptions remain usable when overrides are unavailable.
 			})
 			.finally(() => {
 				editors.forEach((editor) => {
