@@ -7,12 +7,20 @@ pages_build_output_dir = "./dist"
 binding = "LIVE_TWEETS"
 id = "61fa3931e29b4e0f82b2aec085a3350a"
 
+[[kv_namespaces]]
+binding = "PROJECT_DESCRIPTION_OVERRIDES"
+id = "49d288683066494497167d236fdcccca"
+
 [env.production.ai]
 binding = "AI"
 
 [[env.production.kv_namespaces]]
 binding = "LIVE_TWEETS"
 id = "61fa3931e29b4e0f82b2aec085a3350a"
+
+[[env.production.kv_namespaces]]
+binding = "PROJECT_DESCRIPTION_OVERRIDES"
+id = "49d288683066494497167d236fdcccca"
 
 [[env.production.kv_namespaces]]
 binding = "SUBSTACK_SUMMARIES"

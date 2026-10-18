@@ -1,6 +1,40 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { archiveProjects, moneySchemes } from "../../data/projects";
+
+const projectId = (name: string) =>
+	name
+		.normalize("NFKD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 80);
+
+const projectDescriptionContext = archiveProjects.map((project) => ({
+	id: projectId(project.name),
+	name: project.name,
+	sourceDescription: project.archiveDescription,
+	description: project.description,
+	role: project.role,
+	impact: project.impact,
+	present: project.present,
+	vision: project.vision,
+	frontier: project.frontier,
+}));
+const projectNamesById = new Map<string, string>();
+for (const project of projectDescriptionContext) {
+	const existingName = projectNamesById.get(project.id);
+	if (!project.id || existingName) {
+		throw new Error(
+			`Project ID collision: ${existingName ?? "(empty slug)"} and ${project.name} resolve to \"${project.id}\"`,
+		);
+	}
+	projectNamesById.set(project.id, project.name);
+}
+const serializedProjectDescriptionContext = JSON.stringify(
+	projectDescriptionContext,
+).replace(/</g, "\\u003c");
 ---
 
 <Layout
@@ -55,9 +89,11 @@ import { archiveProjects, moneySchemes } from "../../data/projects";
 				archiveProjects.map((project, index) => {
 					const isOpen = index === 0;
 					const bodyId = `project-body-${index}`;
+					const id = projectId(project.name);
+					const descriptionId = `project-description-${id}`;
 
 					return (
-						<article class={`proj${isOpen ? " open" : ""}`}>
+						<article class={`proj${isOpen ? " open" : ""}`} data-project-id={id}>
 							<button
 								class="proj-head list-item"
 								aria-expanded={isOpen ? "true" : "false"}
@@ -69,7 +105,9 @@ import { archiveProjects, moneySchemes } from "../../data/projects";
 								<span class="proj-date">{project.date}</span>
 							</button>
 							<div id={bodyId} class="proj-body" hidden={!isOpen}>
-								<p class="project-description">{project.archiveDescription}</p>
+								<p id={descriptionId} class="project-description" data-project-description>
+									{project.archiveDescription}
+								</p>
 
 								<div class="living-thesis">
 									<section class="thesis-block">
@@ -223,7 +261,424 @@ import { archiveProjects, moneySchemes } from "../../data/projects";
 		</div>
 	</section>
 
+	<script
+		is:inline
+		id="project-description-context"
+		type="application/json"
+		set:html={serializedProjectDescriptionContext}
+	></script>
+
+	<style is:global>
+		.project-description-edit {
+			margin: -10px 0 18px;
+		}
+
+		.project-description-edit > button,
+		.project-description-actions button {
+			appearance: none;
+			border: 1px solid var(--faint);
+			border-radius: 2px;
+			background: transparent;
+			color: var(--muted);
+			cursor: pointer;
+			font: inherit;
+			font-size: 12px;
+			padding: 4px 8px;
+		}
+
+		.project-description-edit > button:hover,
+		.project-description-edit > button:focus-visible,
+		.project-description-actions button:hover,
+		.project-description-actions button:focus-visible {
+			border-color: var(--accent);
+			color: var(--text);
+			outline: none;
+		}
+
+		.project-description-actions button:disabled {
+			cursor: wait;
+			opacity: 0.5;
+		}
+
+		.project-description-editor {
+			display: grid;
+			gap: 10px;
+			margin: 0 0 22px;
+			padding: 14px;
+			border: 1px solid var(--line);
+		}
+
+		.project-description-editor[hidden] {
+			display: none;
+		}
+
+		.project-description-editor label {
+			display: grid;
+			gap: 4px;
+			color: var(--muted);
+			font-size: 12px;
+		}
+
+		.project-description-editor textarea,
+		.project-description-editor input {
+			width: 100%;
+			border: 1px solid var(--faint);
+			border-radius: 2px;
+			background: var(--bg);
+			color: var(--text);
+			font: inherit;
+			font-size: 13px;
+			padding: 7px 8px;
+		}
+
+		.project-description-editor textarea:focus,
+		.project-description-editor input:focus {
+			border-color: var(--accent);
+			outline: none;
+		}
+
+		.proj-body .project-description-preview {
+			min-height: 2.5em;
+			margin: 0;
+			padding-left: 9px;
+			border-left: 2px solid var(--accent);
+			color: var(--text);
+			white-space: pre-wrap;
+		}
+
+		.project-description-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 7px;
+		}
+
+		.proj-body .project-description-status {
+			min-height: 1.5em;
+			margin: 0;
+			color: var(--muted);
+			font-size: 12px;
+		}
+
+		.proj-body .project-description-status[data-error="true"] {
+			color: #d78080;
+		}
+	</style>
+
 	<script>
+		type ProjectDescriptionRecord = {
+			id: string;
+			name: string;
+			sourceDescription: string;
+			description: string;
+			role: string;
+			impact: string;
+			present: string;
+			vision: string;
+			frontier: string;
+		};
+		type EditorElements = {
+			editButton: HTMLButtonElement;
+			panel: HTMLElement;
+			textarea: HTMLTextAreaElement;
+			instruction: HTMLInputElement;
+			preview: HTMLElement;
+			status: HTMLElement;
+			actionButtons: HTMLButtonElement[];
+		};
+
+		const contextElement = document.getElementById("project-description-context");
+		let projectRecords: ProjectDescriptionRecord[] = [];
+		try {
+			const parsed = JSON.parse(contextElement?.textContent ?? "[]");
+			if (Array.isArray(parsed)) projectRecords = parsed;
+		} catch {
+			projectRecords = [];
+		}
+
+		const activeDescriptions = new Map(
+			projectRecords.map((record) => [record.id, record.sourceDescription]),
+		);
+		const editors = new Map<string, EditorElements>();
+
+		const apiRequest = async (
+			method: "GET" | "POST" | "PUT" | "DELETE",
+			body?: Record<string, string>,
+		) => {
+			const response = await fetch("/api/project-descriptions", {
+				method,
+				cache: "no-store",
+				credentials: "same-origin",
+				headers: body ? { "Content-Type": "application/json" } : undefined,
+				body: body ? JSON.stringify(body) : undefined,
+			});
+			let payload: Record<string, any> = {};
+			try {
+				payload = await response.json();
+			} catch {
+				// The status below remains useful when an intermediary returns non-JSON.
+			}
+			if (!response.ok) {
+				throw new Error(
+					typeof payload.error === "string"
+						? payload.error
+						: `Request failed (${response.status})`,
+				);
+			}
+			return payload;
+		};
+
+		const descriptionElement = (id: string) =>
+			document.querySelector<HTMLElement>(
+				`[data-project-id="${CSS.escape(id)}"] [data-project-description]`,
+			);
+
+		const applyDescription = (id: string, description: string) => {
+			const output = descriptionElement(id);
+			if (output) output.textContent = description;
+			activeDescriptions.set(id, description);
+			const editor = editors.get(id);
+			if (editor?.panel.hidden) {
+				editor.textarea.value = description;
+				editor.preview.textContent = description;
+			}
+		};
+
+		const makeButton = (label: string) => {
+			const button = document.createElement("button");
+			button.type = "button";
+			button.textContent = label;
+			return button;
+		};
+
+		const setEditorBusy = (
+			editor: EditorElements,
+			busy: boolean,
+			message = "",
+		) => {
+			editor.textarea.disabled = busy;
+			editor.instruction.disabled = busy;
+			editor.editButton.disabled = busy;
+			editor.actionButtons.forEach((button) => {
+				button.disabled = busy;
+			});
+			editor.status.dataset.error = "false";
+			editor.status.textContent = message;
+		};
+
+		const reportEditorError = (editor: EditorElements, caught: unknown) => {
+			setEditorBusy(editor, false);
+			editor.status.dataset.error = "true";
+			editor.status.textContent =
+				caught instanceof Error ? caught.message : "The request failed.";
+		};
+
+		if (window.location.hostname === "dev.merulox.com") {
+			projectRecords.forEach((record) => {
+				const output = descriptionElement(record.id);
+				if (!output) return;
+
+				const editContainer = document.createElement("div");
+				editContainer.className = "project-description-edit";
+				const editButton = makeButton("edit description");
+				const panelId = `project-description-editor-${record.id}`;
+				editButton.setAttribute("aria-controls", panelId);
+				editButton.setAttribute("aria-expanded", "false");
+				editContainer.append(editButton);
+
+				const panel = document.createElement("section");
+				panel.className = "project-description-editor";
+				panel.id = panelId;
+				panel.hidden = true;
+				panel.setAttribute("aria-label", `Edit ${record.name} description`);
+
+				const descriptionLabel = document.createElement("label");
+				descriptionLabel.textContent = "Description";
+				const textarea = document.createElement("textarea");
+				textarea.rows = 6;
+				textarea.maxLength = 2000;
+				textarea.value = record.sourceDescription;
+				textarea.setAttribute("aria-label", `${record.name} description`);
+				descriptionLabel.append(textarea);
+
+				const instructionLabel = document.createElement("label");
+				instructionLabel.textContent = "AI instruction (optional)";
+				const instruction = document.createElement("input");
+				instruction.type = "text";
+				instruction.maxLength = 1000;
+				instruction.placeholder = "e.g. make it clearer and more concise";
+				instruction.setAttribute("aria-label", `${record.name} AI instruction`);
+				instructionLabel.append(instruction);
+
+				const previewLabel = document.createElement("span");
+				previewLabel.textContent = "Preview (not saved)";
+				const preview = document.createElement("p");
+				preview.className = "project-description-preview";
+				preview.textContent = record.sourceDescription;
+				preview.setAttribute("aria-label", `${record.name} unsaved preview`);
+
+				const actions = document.createElement("div");
+				actions.className = "project-description-actions";
+				const generateButton = makeButton("Generate Preview");
+				const saveButton = makeButton("Save");
+				const resetButton = makeButton("Reset to source");
+				const cancelButton = makeButton("Cancel");
+				actions.append(generateButton, saveButton, resetButton, cancelButton);
+
+				const status = document.createElement("p");
+				status.className = "project-description-status";
+				status.setAttribute("role", "status");
+				status.setAttribute("aria-live", "polite");
+
+				panel.append(
+					descriptionLabel,
+					instructionLabel,
+					previewLabel,
+					preview,
+					actions,
+					status,
+				);
+				output.insertAdjacentElement("afterend", editContainer);
+				editContainer.insertAdjacentElement("afterend", panel);
+
+				const editor: EditorElements = {
+					editButton,
+					panel,
+					textarea,
+					instruction,
+					preview,
+					status,
+					actionButtons: [generateButton, saveButton, resetButton, cancelButton],
+				};
+				editors.set(record.id, editor);
+
+				editButton.addEventListener("click", () => {
+					const opening = panel.hidden;
+					panel.hidden = !opening;
+					editButton.setAttribute("aria-expanded", opening ? "true" : "false");
+					const current = activeDescriptions.get(record.id) ?? record.sourceDescription;
+					if (opening) {
+						textarea.value = current;
+						preview.textContent = current;
+						status.textContent = "";
+						status.dataset.error = "false";
+						textarea.focus();
+					} else {
+						output.textContent = current;
+						textarea.value = current;
+						preview.textContent = current;
+						instruction.value = "";
+						status.textContent = "";
+					}
+				});
+
+				textarea.addEventListener("input", () => {
+					preview.textContent = textarea.value;
+					output.textContent = textarea.value;
+					status.dataset.error = "false";
+					status.textContent = "Local preview only — not saved.";
+				});
+
+				generateButton.addEventListener("click", async () => {
+					setEditorBusy(editor, true, "Generating preview…");
+					try {
+						const payload = await apiRequest("POST", {
+							id: record.id,
+							name: record.name,
+							draft: textarea.value,
+							sourceDescription: record.sourceDescription,
+							description: record.description,
+							role: record.role,
+							impact: record.impact,
+							present: record.present,
+							vision: record.vision,
+							frontier: record.frontier,
+							instruction: instruction.value,
+						});
+						if (typeof payload.preview !== "string" || !payload.preview.trim()) {
+							throw new Error("AI returned an invalid preview.");
+						}
+						textarea.value = payload.preview;
+						preview.textContent = payload.preview;
+						output.textContent = payload.preview;
+						setEditorBusy(editor, false, "AI preview ready — not saved.");
+					} catch (caught) {
+						reportEditorError(editor, caught);
+					}
+				});
+
+				saveButton.addEventListener("click", async () => {
+					setEditorBusy(editor, true, "Saving…");
+					try {
+						const payload = await apiRequest("PUT", {
+							id: record.id,
+							description: textarea.value,
+						});
+						if (typeof payload.description !== "string") {
+							throw new Error("Save returned an invalid description.");
+						}
+						applyDescription(record.id, payload.description);
+						textarea.value = payload.description;
+						preview.textContent = payload.description;
+						setEditorBusy(editor, false, "Saved. Public and dev pages now use this override.");
+					} catch (caught) {
+						reportEditorError(editor, caught);
+					}
+				});
+
+				resetButton.addEventListener("click", async () => {
+					setEditorBusy(editor, true, "Resetting…");
+					try {
+						await apiRequest("DELETE", { id: record.id });
+						applyDescription(record.id, record.sourceDescription);
+						textarea.value = record.sourceDescription;
+						preview.textContent = record.sourceDescription;
+						setEditorBusy(editor, false, "Override removed; source description restored.");
+					} catch (caught) {
+						reportEditorError(editor, caught);
+					}
+				});
+
+				cancelButton.addEventListener("click", () => {
+					const current = activeDescriptions.get(record.id) ?? record.sourceDescription;
+					output.textContent = current;
+					textarea.value = current;
+					preview.textContent = current;
+					instruction.value = "";
+					status.textContent = "";
+					panel.hidden = true;
+					editButton.setAttribute("aria-expanded", "false");
+					editButton.focus();
+				});
+			});
+		}
+		editors.forEach((editor) => {
+			setEditorBusy(editor, true, "Loading saved description…");
+		});
+
+
+		void apiRequest("GET")
+			.then((payload) => {
+				if (!payload.overrides || typeof payload.overrides !== "object") return;
+				projectRecords.forEach((record) => {
+					const override = payload.overrides[record.id];
+					if (
+						override &&
+						typeof override.description === "string" &&
+						override.description.trim()
+					) {
+						applyDescription(record.id, override.description);
+					}
+				});
+			})
+			.catch(() => {
+				// The server-rendered source descriptions remain usable when overrides are unavailable.
+			})
+			.finally(() => {
+				editors.forEach((editor) => {
+					setEditorBusy(editor, false);
+				});
+			});
+
 		const archiveSwitches = Array.from(
 			document.querySelectorAll<HTMLButtonElement>("[data-archive-target]"),
 		);
