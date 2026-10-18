@@ -1,6 +1,11 @@
 {
-  "generated": "2026-10-17",
+  "generated": "2026-10-18",
   "entries": [
+    {
+      "date": "2026-10-17",
+      "kind": "ship",
+      "text": "Worked on data capture for Launch Lab inside Commander. pump.fun events carry no field tags, so if the program is upgraded and fields move, decoding could quietly go wrong. The decoder now only reads transactions from slot ranges with a verified event layout and sets aside unknown ranges instead of guessing. Capture also runs on a time-based window now, and a replay over the existing transactions matched the earlier results exactly. Separately, a first landing page went up for a new project, Mon Artisan."
+    },
     {
       "date": "2026-10-16",
       "kind": "ship",
