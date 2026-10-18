@@ -4,7 +4,7 @@
     {
       "date": "2026-10-16",
       "kind": "ship",
-      "text": "Built out the Boréal email campaign pipeline: a sender with a send ledger, suppression list and compliance footer, a day-three follow-up, and automatic handling of replies and bounces. Also fixed the SMS side so delivery status callbacks are saved before they are acknowledged, and retired an old campaign. Released Commander Finance, a self-hosted accounting module, and fixed rate limiting in Commander's launch lab. In Genesis, added a bounded learning loop that automatically retires lessons flagged as unsafe."
+      "text": "Released Commander Finance, a self-hosted accounting tool for importing bank and card statements and categorizing transactions through a review queue. Validating it against real bank exports is the next step. For Boréal, finished the cold email pipeline: a sender with suppression handling and compliance footers, automatic reply and bounce handling, and a three-day follow-up step, with Commander's reporting updated to count follow-up sends. Separately, Genesis got a bounded learning loop that automatically retires lessons it judges unsafe."
     },
     {
       "date": "2026-10-15",
