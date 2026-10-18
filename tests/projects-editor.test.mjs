@@ -200,7 +200,7 @@ test("AI POST creates a preview with the required model and never persists it", 
 	assert.equal(response.status, 200);
 	assert.deepEqual(await payload(response), { preview: "Generated preview only." });
 	assert.equal(ai.calls.length, 1);
-	assert.equal(ai.calls[0].model, "@cf/meta/llama-3.1-8b-instruct");
+	assert.equal(ai.calls[0].model, "@cf/meta/llama-3.1-8b-instruct-fp8");
 	assert.equal(kv.putCalls.length, 0);
 	const systemPrompt = ai.calls[0].input.messages[0].content;
 	const userPrompt = ai.calls[0].input.messages[1].content;
