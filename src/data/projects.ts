@@ -52,6 +52,158 @@ export interface MoneyScheme {
 
 export const archiveProjects: Project[] = [
 	{
+		name: "Sonic Genome",
+		state: "prototype",
+		date: "2026-10–now",
+		description:
+			"A standalone browser sound foundry where spectral drawings become playable audio, mutate into related variants, persist as local genomes, and export as stereo WAV files.",
+		role: "Built the dependency-free spectral canvas, additive synthesis engine, brush and mutation operators, browser playback, local genome library, WAV encoder, and engine invariant tests.",
+		impact:
+			"Creates a direct visual way to explore reproducible sound families without requiring a commercial DAW or pretending procedural synthesis is neural generation.",
+		archiveDescription:
+			"Sonic Genome treats a sound as something that can be drawn, inherited, mutated, auditioned, and adopted. The goal is not another prompt-to-song machine, but a personal instrument whose strange outputs can survive into real music.",
+		present:
+			"Version 0.1 is live as a self-contained browser instrument with spectral drawing, stereo playback, four mutation families, an 18-item local library, and 44.1 kHz WAV export. It uses synchronous additive oscillation rather than neural synthesis or exact STFT inversion; durable genome files, DAW integration, and an agent remain future work.",
+		vision:
+			"A personal experimental-music environment joining deterministic DSP, visual creation, human-guided evolution, owned-sample instruments, and an independent arrangement workflow.",
+		frontier:
+			"Pass the musical-utility gate outside the prototype: finish three short passages, identify a reusable sound family, then harden rendering, lineage, durable files, and phase-consistent synthesis.",
+		proof: [
+			{ label: "Live browser instrument", href: "https://genome.merulox.com" },
+			{ label: "WAV export and engine invariant tests" },
+		],
+		tags: ["JavaScript", "Web Audio", "Canvas", "DSP", "Generative music"],
+	},
+	{
+		name: "Entertainment Foundry",
+		state: "prototype",
+		date: "2026-10–now",
+		description:
+			"A governed original-IP studio that carries a story from canon and immutable scripts through mock audio, rights-cleared creative treatments, manual release packaging, synthetic audience evidence, and a human investment decision.",
+		role: "Built the typed studio console, FastAPI domain API and worker, PostgreSQL model, durable jobs, content-addressed artifacts, rights and cost gates, experiment reporting, and clean-seed browser acceptance path.",
+		impact:
+			"Turns AI-assisted entertainment production into an inspectable pipeline where approval, rights, costs, distribution, evidence, and funding decisions remain distinct.",
+		archiveDescription:
+			"Entertainment Foundry asks whether original worlds can be developed as a measurable studio rather than a content mill. Every script, sound, creative, release, experiment, and funding choice keeps its lineage, while automation stops before publishing or spending.",
+		present:
+			"Phase 0 and Phase 1 are accepted from a clean seed. One local slice creates original IP, evaluates immutable scripts, renders deterministic mock audio, clears rights, exports a manual-only release, imports labelled synthetic evidence, and records a human decision. Real providers, production identity, external publishing, and paid media remain absent.",
+		vision:
+			"A governed AI-native studio that repeatedly develops original IP, preserves creative continuity, measures audience response, and allocates capital without confusing generated output or synthetic metrics for cultural demand.",
+		frontier:
+			"Cross from a verified local mock-and-manual slice to real creative providers and bounded distribution without weakening rights, identity, cost, causality, or human investment gates.",
+		proof: [
+			{ label: "Phase 0/1 clean-seed acceptance" },
+			{ label: "Manual-only release; external effects absent" },
+		],
+		tags: ["Next.js", "FastAPI", "PostgreSQL", "TypeScript", "Original IP"],
+	},
+	{
+		name: "Acquisition Lab",
+		state: "prototype",
+		date: "2026-10–now",
+		description:
+			"An independent partnership-first demand-acquisition system for selecting contractor partners, running bounded local-demand experiments, qualifying requests, and measuring collected contribution.",
+		role: "Designed the separate PostgreSQL domain, exact-money economic loop, consent and allocation contracts, transactional outbox, evidence gates, project-control service, and deployed read-only Commander surface.",
+		impact:
+			"Separates consumer demand, partner capacity, accepted-lead obligations, settlement, and contribution from Boréal’s CRM so the economics can be tested without inventing commercial proof.",
+		archiveDescription:
+			"Acquisition Lab begins with partnership rather than traffic: choose one capable local contractor, agree on acceptance and capacity, acquire one bounded stream of demand, and let collected contribution and lead quality decide what deserves to scale.",
+		present:
+			"The synthetic economic loop and a production Commander control projection are verified. Plumbing in Trois-Rivières and Shawinigan is the first market, and Mon Artisan is the chosen brand. Real partner commitment, reviewed intake, provider delivery, live spend, cash, and contribution remain unestablished.",
+		vision:
+			"A selective local-services demand network that owns measurable acquisition assets, routes qualified requests under explicit capacity and economics, and compounds market knowledge without becoming a generic lead reseller.",
+		frontier:
+			"Convert verified synthetic mechanics into one lawful, tightly bounded real pilot with a registered operator, vetted plumbing partner, reviewed disclosure, loss ceiling, and reconciled payment evidence.",
+		proof: [
+			{ label: "102-test synthetic and control-plane receipt" },
+			{ label: "Live read-only Commander project-control surface" },
+		],
+		tags: ["Python", "PostgreSQL", "Commander", "Lead generation", "Evidence"],
+	},
+	{
+		name: "Commander Finance",
+		state: "active",
+		date: "2026-10–now",
+		description:
+			"An independently deployed bookkeeping system with entity-scoped operations, immutable double-entry posting, imports, close, and deterministic financial reporting.",
+		role: "Built the TypeScript/PostgreSQL accounting core, invoice and bill workflows, reconciliation, close, aging and runway projections, signed service authentication, and encrypted recovery path.",
+		impact:
+			"Gives the wider operation a real financial truth boundary instead of mixing accounting invariants into the general Commander dashboard.",
+		archiveDescription:
+			"Commander Finance treats every number as a claim that must survive posting rules, scope checks, audit history, and recovery. It is separate from Commander because financial integrity should not share a lifecycle with a fast-moving operational cockpit.",
+		present:
+			"The web and API are live behind the private gateway. Journals, reversals, imports, reconciliation, period close, counterparties, invoices, bills, recurring obligations, aging, runway evidence, and bounded cash scenarios are implemented. External payments, live bank feeds, tax filing, payroll, and continuous point-in-time recovery remain deferred.",
+		vision:
+			"A dependable financial system of record for every Merulox venture, where cash, obligations, entity boundaries, and operating runway are explainable from immutable evidence.",
+		frontier:
+			"Move from a complete internal accounting core to approved production policy, repeated off-host recovery evidence, and carefully bounded real bank and payment integrations.",
+		proof: [{ label: "Live private deployment and verified restore drill" }],
+		tags: ["TypeScript", "PostgreSQL", "Fastify", "Accounting", "Ed25519"],
+	},
+	{
+		name: "Fashion Engine",
+		state: "active",
+		date: "2026-10–now",
+		description:
+			"A local-first Roblox classic-clothing design and market-intelligence engine combining deterministic garment composition, topology-aware QA, evidence-labelled catalog observation, visual retrieval, and an authenticated operator console.",
+		role: "Built strict garment contracts, official-template-derived rendering, component and variation systems, QA and quarantine, marketplace ingestion, SQLite provenance, FastAPI queries, and the local Next.js command center.",
+		impact:
+			"Makes reproducible fashion experiments reviewable from editable source through rendered artifact and market evidence without pretending local previews prove compatibility, originality, sales, or demand.",
+		archiveDescription:
+			"Fashion Engine treats digital garments as engineered artifacts: a design has parameters and lineage, a texture must survive geometry and quality checks, and market observations retain provenance instead of becoming trend folklore.",
+		present:
+			"Composition, repair, QA, reports, bounded catalog observation, local visual similarity, and a password-gated loopback workflow are implemented. The API and web services run locally. Publishing, Robux spend, authoritative sales, semantic aesthetics, comprehensive originality, and official Roblox Studio validation remain unsupported or unverified.",
+		vision:
+			"A production foundry that can discover visual opportunities, generate distinctive editable garments, validate them in the real platform, learn from creator-owned outcomes, and publish only through explicit human and financial authority.",
+		frontier:
+			"Earn the missing external truth: official Studio receipts, authorized visual corpora, measured originality and demand, durable multi-user infrastructure, and a separately governed publish-and-spend boundary.",
+		proof: [
+			{ label: "152 Python tests and 46 web tests" },
+			{ label: "Persistent local API and authenticated web services" },
+		],
+		tags: ["Python", "FastAPI", "Next.js", "SQLite", "Roblox"],
+	},
+	{
+		name: "Trace Supply",
+		state: "active",
+		date: "2026-10–now",
+		description:
+			"A buyer-first AI data brokerage probe selling a paid feasibility and sourcing sprint before recruiting suppliers or acquiring speculative data inventory.",
+		role: "Built the public buyer and supplier intake, dedicated lead store, buyer research and outreach ledger, rights-first offer, channel-partner gate, and Telegram-assisted response path.",
+		impact:
+			"Tests whether AI teams will pay to define and source rights-cleared action-and-outcome datasets without mislabelling outreach, introductions, or generic interest as brokerage proof.",
+		archiveDescription:
+			"Trace Supply starts with a model failure, not a warehouse of scraped data. It freezes the exact episode, rights path, schema, acceptance test, likely suppliers, economics, and blockers before any sample or supplier recruitment is allowed.",
+		present:
+			"The first wedge is customer-support resolution trajectories and the paid offer is a USD 500 feasibility sprint. Buyer probes have dated send receipts, but the canonical state remains zero learning signals, zero brokerage passes, and zero completed data transactions; supplier recruitment is locked.",
+		vision:
+			"A demand-led exchange for difficult, rights-cleared training and evaluation data where specifications, provenance, supplier authority, acceptance criteria, and payment precede transfer.",
+		frontier:
+			"Obtain one evidence-bearing buyer specification or channel agreement and one paid feasibility receipt, then test a bounded compliant sample without relaxing rights.",
+		proof: [{ label: "Dated outreach receipts; no transaction claim" }],
+		tags: ["Cloudflare Workers", "D1", "Data brokerage", "AI datasets", "Provenance"],
+	},
+	{
+		name: "DickFit",
+		state: "prototype",
+		date: "2026-10–now",
+		description:
+			"A bilingual pelvic-floor education app prototype whose content, review, publication, enrollment, and private-device storage boundaries fail closed.",
+		role: "Built the Expo application, bounded starter-week contracts, signed bundle and qualified-review verification, native-only enrollment boundary, and SQLCipher vault interfaces.",
+		impact:
+			"Demonstrates how a sensitive health-adjacent product can separate polished synthetic review from clinically reviewed release and reject unsigned, stale, mismatched, or web-originated enrollment attempts.",
+		archiveDescription:
+			"DickFit explores whether intimate health education can feel approachable without becoming reckless. The product’s central work is the trust chain that keeps draft exercises from silently becoming health guidance.",
+		present:
+			"The Expo app and synthetic reviewer fixture exist, along with one draft starter-week candidate and controlled native verification paths. No checked-in bundle is clinically approved or released; production trust registries are empty, web cannot open production enrollment, and demo state remains memory-only.",
+		vision:
+			"A private, bilingual educational companion whose programs are authored conservatively, independently reviewed, cryptographically bound to the reviewed bytes, and stored locally under a transparent evidence boundary.",
+		frontier:
+			"Move from a signed test fixture to qualified clinical and editorial review, externally controlled production keys, validated program content, native persistence, and a release whose trust claims match real evidence.",
+		proof: [{ label: "Signed publication and enrollment boundary" }],
+		tags: ["Expo", "React Native", "TypeScript", "Ed25519", "SQLCipher"],
+	},
+	{
 		name: "Genesis",
 		state: "active",
 		date: "2026–now",
