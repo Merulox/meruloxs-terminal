@@ -11,6 +11,10 @@ id = "61fa3931e29b4e0f82b2aec085a3350a"
 binding = "PROJECT_DESCRIPTION_OVERRIDES"
 id = "49d288683066494497167d236fdcccca"
 
+[[kv_namespaces]]
+binding = "SITE_CONTROL"
+id = "0900cc23117e44849709c6168baece49"
+
 [env.production.ai]
 binding = "AI"
 
@@ -25,6 +29,10 @@ id = "49d288683066494497167d236fdcccca"
 [[env.production.kv_namespaces]]
 binding = "SUBSTACK_SUMMARIES"
 id = "b54b7e6037804aec93c8f9d1422833e3"
+
+[[env.production.kv_namespaces]]
+binding = "SITE_CONTROL"
+id = "0900cc23117e44849709c6168baece49"
 
 [[d1_databases]]
 binding = "VISITS_DB"
