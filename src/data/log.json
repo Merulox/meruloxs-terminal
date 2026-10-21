@@ -4,7 +4,7 @@
     {
       "date": "2026-10-20",
       "kind": "ship",
-      "text": "Started building PARITY v4.3 from its handoff package: kept the inherited baseline intact, audited it, and began fixing a local-approval bypass and weak input validation it turned up. The integrated candidate now passes its test suite, and a PARITY tab in an isolated Commander preview shows real local phase, evidence and coverage state. Operational adapters are still clearly labeled as declared, not live. Separately, I removed the auth layer from a self-hosted PrivateBin instance and confirmed that anonymous encrypted pastes work and survive a restart."
+      "text": "Started PARITY v4.3 from a handoff package. I committed the inherited baseline as-is, then worked through the first engineering gate. The audit there found a local-approval bypass and weak input validation, so I fixed both, along with a few malformed-input defects in the console that review turned up. Separately, I removed the auth proxy from my self-hosted PrivateBin instance so it's open to anonymous use, and confirmed that encrypted pastes still survive a restart."
     },
     {
       "date": "2026-10-19",
