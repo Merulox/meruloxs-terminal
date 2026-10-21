@@ -1,10 +1,25 @@
 {
-  "generated": "2026-10-18",
+  "generated": "2026-10-21",
   "entries": [
+    {
+      "date": "2026-10-20",
+      "kind": "ship",
+      "text": "Started building PARITY v4.3 from a preserved handoff baseline. An early audit found a local-approval bypass and weak input validation, which I'm fixing before running adversarial tests on the integrated build. Separately, I opened up a self-hosted PrivateBin instance for anonymous use and checked that encrypted pastes survive a restart."
+    },
+    {
+      "date": "2026-10-19",
+      "kind": "think",
+      "text": "Looked at whether to launch a supplement brand and decided not to hold inventory yet. The plan is to test the idea first as a small creative research and production service for one existing ecommerce brand, run as a four-week pilot on a product that already sells. Also tracked down a scrolling problem when working remotely: it only shows up inside tmux, so the fix belongs on the client side and the agent sessions stay where they are."
+    },
+    {
+      "date": "2026-10-18",
+      "kind": "ship",
+      "text": "Worked on the personal website: the archive now shows the latest projects, there's a dev-only editor for project descriptions, and archive refreshes go through a review step before anything is published. In Genesis, I audited how autonomous the system really is and added a bounded offline engine, then published sanitized audit evidence and verified it from a fresh clone. In Realm, I hardened a read-only MCP bridge and closed the gaps a review turned up. I also put access checks on the SMS lab's write actions as a separate candidate, but it isn't integrated yet."
+    },
     {
       "date": "2026-10-17",
       "kind": "ship",
-      "text": "Worked on data capture for Launch Lab inside Commander. pump.fun events carry no field tags, so if the program is upgraded and fields move, decoding could quietly go wrong. The decoder now only reads transactions from slot ranges with a verified event layout and sets aside unknown ranges instead of guessing. Capture also runs on a time-based window now, and a replay over the existing transactions matched the earlier results exactly. Separately, a first landing page went up for a new project, Mon Artisan."
+      "text": "In Commander's Launch Lab, transaction decoding now only runs on event layouts that have been verified. Transactions in unknown ranges are set aside instead of being guessed at, which keeps the data clean if the on-chain program is upgraded and its fields move. Data capture also moved to a time-based window, and a re-check against the existing transaction history gave identical results. Separately, a landing page went up for Mon Artisan, a new project, while its business registration is still being processed."
     },
     {
       "date": "2026-10-16",
