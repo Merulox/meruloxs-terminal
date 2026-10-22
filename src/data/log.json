@@ -4,7 +4,7 @@
     {
       "date": "2026-10-21",
       "kind": "ship",
-      "text": "Added a switch to Commander that turns the public merulox.com site on or off without a redeploy. Built phases 0 and 1 of Entertainment Foundry, and wrote down the phase 2 decisions on providers, budget, scope and a player privacy contract. Started PARITY, a paper-only research project: its first gate has fail-closed checks, reproducible CI and fixes to fixture handling and ledger validation."
+      "text": "Started PARITY, a paper-only financial research project. Its first gate has fail-closed checks, reproducible CI, tighter fixture installs, and rejection of malformed ledger entries before they are committed. Built the first two phases of Entertainment Foundry and wrote down its player privacy rules, scope limits and provider decisions for the next phase. Also added a switch to take the public site offline or bring it back from the Commander dashboard."
     },
     {
       "date": "2026-10-20",
