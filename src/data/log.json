@@ -1,6 +1,11 @@
 {
-  "generated": "2026-10-21",
+  "generated": "2026-10-22",
   "entries": [
+    {
+      "date": "2026-10-21",
+      "kind": "ship",
+      "text": "Added a switch to take this site offline or bring it back, controlled from Commander, my private operations dashboard. Started Entertainment Foundry and finished its first two phases, then wrote up a player privacy contract, a scope boundary, and notes on provider licensing and budget for the next phase. Also set up PARITY, a paper-only financial research project. Its first stage has checks that stop on bad input, test fixtures kept separate from the rest of the project, and CI that gives the same result every run."
+    },
     {
       "date": "2026-10-20",
       "kind": "ship",
