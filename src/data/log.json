@@ -4,7 +4,7 @@
     {
       "date": "2026-10-22",
       "kind": "ship",
-      "text": "Shipped the first release of Instagram Lab, a manual content studio, and connected it to the Commander dashboard behind its existing login. In PARITY, I simplified the governance design and closed the first gate, G0, with tests passing; the later gates haven't started yet. Genesis finished moving over to running on its own, with backlog publishing now on a schedule, and some SMS-related source changes landed in Commander ahead of deployment."
+      "text": "Shipped the first release of Instagram Lab, a manual content studio, and connected it to the Commander dashboard behind its existing login. In PARITY, I closed the first governance gate after simplifying how owner approval works; the later stages are still not started. I also finished moving Genesis over to running on its own, set it up to publish approved backlog items on a schedule, and merged a scoped SMS update into Commander's source without touching the live deployment."
     },
     {
       "date": "2026-10-21",
