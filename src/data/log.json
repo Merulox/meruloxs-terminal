@@ -4,7 +4,7 @@
     {
       "date": "2026-10-21",
       "kind": "ship",
-      "text": "Started PARITY, a paper-only financial research project. Its first gate has fail-closed checks, reproducible CI, tighter fixture installs, and rejection of malformed ledger entries before they are committed. Built the first two phases of Entertainment Foundry and wrote down its player privacy rules, scope limits and provider decisions for the next phase. Also added a switch to take the public site offline or bring it back from the Commander dashboard."
+      "text": "I added a public on/off switch for this site, so it can now be toggled from Commander, my internal control panel. I started PARITY, a paper-only financial research project, with fail-closed integrity checks and reproducible CI, then tightened fixture handling and ledger validation. I also built phases 0 and 1 of Entertainment Foundry and wrote down the provider, budget and privacy boundaries for its next phase."
     },
     {
       "date": "2026-10-20",
