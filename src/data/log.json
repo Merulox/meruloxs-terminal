@@ -4,7 +4,7 @@
     {
       "date": "2026-10-22",
       "kind": "ship",
-      "text": "Shipped the first release of Instagram Lab, a manual content studio, and connected it to Commander's authenticated front door. Recorded acceptance and recovery evidence for that release. Closed the first governance gate on PARITY after simplifying its design; the full test suite passed locally and in CI, and later stages haven't started yet. Also finished moving Genesis to autonomous operation, merged SMS-related changes into Commander's source, and scheduled publishing for the authorized backlog."
+      "text": "Shipped the first release of Instagram Lab, a manual content studio. I wrote down a verified baseline and acceptance contract before building it, and it now sits behind the authenticated Commander front door. On PARITY, the first governance gate was simplified, then accepted and published, with the full test suite passing in CI and a rollback rehearsal to back it up. Genesis also finished its move to autonomous operation and now publishes approved backlog items on a schedule."
     },
     {
       "date": "2026-10-21",
