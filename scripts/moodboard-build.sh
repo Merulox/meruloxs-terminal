@@ -7,9 +7,17 @@
 # categorized under <name> (e.g. moodboard/lil-peep/*.png -> category
 # "lil-peep"). Subdirectories are not recursed further.
 #
-# Output: public/moodboard/<category-or-general>/<NN>.webp (optimized,
-# resized, committed to git) + public/moodboard/manifest.json (ordered
-# list of { src, category } consumed by the autoscroll strip on /music).
+# Output: public/moodboard/<category-or-general>/<content-hash>.webp
+# (optimized, resized, committed to git) + public/moodboard/manifest.json
+# (ordered list of { src, category } consumed by the autoscroll strip on
+# /music). Filenames are a hash of the SOURCE file's bytes, not a sequence
+# position — this matters because Cloudflare's default image cache-control
+# is ~4h: with positional filenames (01.webp, 02.webp...), inserting any
+# file earlier in sort order shifts every later file onto a URL that used
+# to mean different content, and browsers serve stale bytes under that
+# reused URL until the cache expires. Content-addressed filenames mean a
+# given URL's bytes never change, so caching (however aggressive) can never
+# go stale — a genuinely new/changed image always gets a new URL.
 #
 # Safe to re-run anytime after adding/removing files in moodboard/.
 set -euo pipefail
@@ -31,7 +39,7 @@ mkdir -p "$OUT_DIR"
 manifest_entries=()
 
 process_file() {
-	local filepath="$1" category="$2" index="$3"
+	local filepath="$1" category="$2"
 	local mime
 	mime=$(file --brief --mime-type "$filepath" 2>/dev/null || echo "")
 	case "$mime" in
@@ -40,9 +48,16 @@ process_file() {
 	esac
 	local cat_dir="$OUT_DIR/$category"
 	mkdir -p "$cat_dir"
-	local out="$cat_dir/$(printf '%02d' "$index").webp"
+	local hash
+	hash=$(sha256sum "$filepath" | cut -c1-16)
+	local out="$cat_dir/$hash.webp"
+	if [[ -f "$out" ]]; then
+		manifest_entries+=("{\"src\":\"/moodboard/$category/$hash.webp\",\"category\":\"$category\"}")
+		echo "exists (same content elsewhere): $out"
+		return
+	fi
 	if magick "$filepath" -auto-orient -resize "${MAX_DIM}>" -strip -quality "$QUALITY" "$out" 2>/dev/null; then
-		manifest_entries+=("{\"src\":\"/moodboard/$category/$(printf '%02d' "$index").webp\",\"category\":\"$category\"}")
+		manifest_entries+=("{\"src\":\"/moodboard/$category/$hash.webp\",\"category\":\"$category\"}")
 		echo "built: $out"
 	else
 		echo "failed to convert: $filepath" >&2
@@ -50,19 +65,15 @@ process_file() {
 }
 
 # Top-level loose files -> "general" category
-i=0
 while IFS= read -r -d '' f; do
-	i=$((i + 1))
-	process_file "$f" "general" "$i"
+	process_file "$f" "general"
 done < <(find "$SRC_DIR" -maxdepth 1 -type f -print0 | sort -z)
 
 # One level of subdirectories -> category = directory name
 while IFS= read -r -d '' dir; do
 	category=$(basename "$dir")
-	i=0
 	while IFS= read -r -d '' f; do
-		i=$((i + 1))
-		process_file "$f" "$category" "$i"
+		process_file "$f" "$category"
 	done < <(find "$dir" -maxdepth 1 -type f -print0 | sort -z)
 done < <(find "$SRC_DIR" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
 
