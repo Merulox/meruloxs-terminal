@@ -1,0 +1,146 @@
+<!doctype html>
+<!--
+  Direction B — "Full reskin"
+  Same content as Direction A, staged inside Commander's actual approved
+  DOM idiom (status bar + icon rail + bordered panes with pane-head bars),
+  using the real hybrid.css tokens verbatim: bg #111016/#19171f/#272330,
+  lavender chrome #c6b1e4/#9782b3/#cbb8e1, green #b0df9b, JetBrains Mono,
+  0-radius + 2px/2px pixel-shadow on every pane.
+  Built to test one question: does audience-facing personal-site content
+  still read as "a person" once it's wrapped in product/dashboard chrome —
+  the exact failure mode merulox.com's own DESIGN.md already named and
+  rejected ("must NOT feel like a SaaS dashboard... or any performance of
+  technical identity").
+-->
+<html lang="en" data-theme="full-reskin">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>MERULOX — Direction B: Full Reskin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#111016; --bg-pane:#19171f; --bg-head:#272330; --bg-sel:#302b3b;
+    --fg:#e6e3ec; --fg-dim:#b0a8bd; --line:#494151;
+    --accent:#b0df9b; --warn:#e9cf93; --run:#c6b1e4;
+    --chrome:#cbb8e1; --chrome-strong:#9782b3;
+    --font:'JetBrains Mono','DejaVu Sans Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--fg); font-family:var(--font);
+    font-size:13px; display:flex; flex-direction:column;
+  }
+  #statusbar{
+    display:flex; align-items:center; gap:14px; padding:6px 12px;
+    background:#24202e; border-bottom:1px solid var(--chrome-strong);
+    font-size:12px; flex:0 0 auto;
+  }
+  .sb-brand{color:#e6d9f7; font-weight:600;}
+  .sb-brand::before{content:'['; color:var(--accent);}
+  .sb-brand::after{content:']'; color:var(--accent);}
+  .sb-host{color:var(--accent);}
+  .sb-spacer{flex:1;}
+  .sb-mode{color:var(--fg-dim); font-size:11px;}
+
+  #body{display:flex; flex:1 1 auto; min-height:0;}
+  #rail{
+    width:64px; flex:0 0 auto; background:#15121c; border-right:1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; gap:4px; padding-top:10px;
+  }
+  .rail-item{
+    width:44px; height:38px; display:flex; align-items:center; justify-content:center;
+    color:var(--fg-dim); border:1px solid transparent; font-size:16px;
+  }
+  .rail-item.current{background:var(--chrome); color:#1c1525; border-color:var(--chrome);}
+
+  #main{flex:1 1 auto; padding:10px; display:flex; flex-direction:column; gap:8px; overflow:auto;}
+  .pane{border:1px solid var(--line); background:var(--bg-pane); box-shadow:2px 2px 0 #0a090d;}
+  .pane-head{
+    min-height:34px; padding:6px 12px; background:var(--bg-head); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .pane-title{color:var(--chrome); font-size:12px;}
+  .pane-title::before{content:'─ '; color:#887a99;}
+  .pane-body{padding:20px 22px;}
+
+  .wordmark{font-size:40px; margin:0 0 8px; color:var(--fg); letter-spacing:.02em;}
+  .role{color:var(--accent); font-size:12px; margin:0 0 16px;}
+  .lede{max-width:58ch; color:var(--fg-dim); font-size:13px; margin:0 0 20px;}
+
+  .focus-grid{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 4px; padding:0; list-style:none;}
+  .focus-grid li{border:1px solid var(--line); padding:5px 9px; font-size:11px; color:var(--fg-dim); background:var(--bg-head);}
+
+  table.grid{width:100%; border-collapse:collapse; font-size:12px;}
+  table.grid th{text-align:left; color:var(--fg-dim); font-weight:400; font-size:11px; padding:6px 10px; border-bottom:1px solid var(--line);}
+  table.grid td{padding:8px 10px; border-bottom:1px solid var(--line); color:var(--fg);}
+  .st{display:inline-flex; gap:5px; font-size:10px;}
+  .st.shipped{color:var(--accent);}
+  .st.active{color:var(--warn);}
+  .st.archived{color:var(--fg-dim);}
+
+  #keys{
+    flex:0 0 auto; padding:5px 12px; border-top:1px solid var(--line); background:#15121c;
+    font-size:11px; color:var(--fg-dim); display:flex; gap:16px;
+  }
+  kbd{border:1px solid var(--line); padding:1px 5px; color:var(--fg);}
+</style>
+</head>
+<body>
+  <header id="statusbar">
+    <span class="sb-brand">navi</span>
+    <span class="sb-host">merulox</span>
+    <span class="sb-spacer"></span>
+    <span class="sb-mode">PRESENT DAY · PRESENT TIME</span>
+  </header>
+  <div id="body">
+    <nav id="rail" aria-label="Navigation">
+      <div class="rail-item current" title="home">⌂</div>
+      <div class="rail-item" title="projects">▣</div>
+      <div class="rail-item" title="writing">✎</div>
+      <div class="rail-item" title="music">♫</div>
+      <div class="rail-item" title="reading">▤</div>
+      <div class="rail-item" title="log">≡</div>
+    </nav>
+    <main id="main">
+      <section class="pane">
+        <div class="pane-head"><span class="pane-title">identity</span></div>
+        <div class="pane-body">
+          <h1 class="wordmark">MERULOX</h1>
+          <p class="role">Software developer and AI systems builder.</p>
+          <p class="lede">Focused on automation, internal tooling, and technical operations — AI infrastructure, automation pipelines, commerce and product systems, full-stack development.</p>
+          <ul class="focus-grid">
+            <li>manual workflows need automation</li>
+            <li>ambiguous systems need to be mapped and built</li>
+            <li>AI needs to be integrated into real operations</li>
+            <li>internal tooling matters more than presentation</li>
+            <li>fast prototyping and iteration are valuable</li>
+          </ul>
+        </div>
+      </section>
+      <section class="pane" style="flex:1;">
+        <div class="pane-head"><span class="pane-title">recent</span><span style="color:var(--fg-dim); font-size:11px;">3 entries</span></div>
+        <div class="pane-body" style="padding:0;">
+          <table class="grid">
+            <thead><tr><th>state</th><th>name</th><th>description</th><th>date</th></tr></thead>
+            <tbody>
+              <tr><td><span class="st shipped">◆ shipped</span></td><td>Boréal Numérique</td><td>Operational scaffolding for Quebec trades — missed-call-text-back, lead triage, quote follow-up.</td><td>2026-10</td></tr>
+              <tr><td><span class="st active">○ active</span></td><td>Commander</td><td>Self-hosted operational nervous system — leads, services, agents, one surface.</td><td>2026-10</td></tr>
+              <tr><td><span class="st archived">· archived</span></td><td>Fashion Engine</td><td>Garment geometry and generation pipeline, parked after validation.</td><td>2026-09</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <footer id="keys">
+    <span><kbd>j</kbd>/<kbd>k</kbd> move</span>
+    <span><kbd>enter</kbd> open</span>
+    <span><kbd>⌘K</kbd> command palette</span>
+    <span>direction B of 2, noindex preview</span>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!doctype html>
+<!--
+  Direction A — "Shared Dialect"
+  Keeps merulox.com's own SPECSHEET identity (column layout, teal primary
+  accent, VT323 reserved for display wordmark only, system mono body).
+  Borrows three structural primitives from Commander's approved restrained
+  TTY×WIRED hybrid (sim/hybrid.css), nothing decorative:
+    - 0-radius hard edges + offset 2px/2px pixel-shadow (no blur) on
+      hover/active chrome, from .pane { box-shadow:2px 2px 0 #0a090d }
+    - bracket-wrapped wordmark `[ ]`, from .sb-brand::before/::after
+    - a second accent reserved for exactly one meaning: lavender #9c86c4
+      for hover/selection chrome only; green stays shipped-state only;
+      primary teal is untouched everywhere else.
+  No panes, no rail, no status bar, no host-prompt branding — this stays a
+  personal site, not a product dashboard.
+-->
+<html lang="en" data-theme="shared-dialect">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>MERULOX — Direction A: Shared Dialect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0e12; --surface:#131720; --line:#1e2530; --line-strong:#2a3444;
+    --text:#d6dde8; --muted:#6b7a8e; --faint:#3d4a5a;
+    --accent:#3ab8c4;            /* site's own teal — untouched, primary */
+    --chrome:#9c86c4;            /* borrowed lavender — hover/selection ONLY */
+    --chrome-dim:#4a4160;
+    --shipped:#2d9e6b; --active-col:#b08c3e; --arch:#3d4a5a;
+    --shadow:#06070a;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--bg);}
+  body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",ui-monospace,monospace;
+    font-size:14px; line-height:1.55;
+  }
+  .shell{width:min(100%,720px); margin:0 auto; padding:72px 24px 64px;}
+  .nav{display:flex; flex-wrap:wrap; justify-content:flex-end; gap:18px; margin-bottom:64px; font-size:12px;}
+  .nav a{color:var(--muted); text-decoration:none; position:relative; padding:2px 1px;}
+  .nav a::before{content:">"; color:var(--chrome); margin-right:5px; opacity:0;}
+  .nav a:hover, .nav a.active{color:var(--text);}
+  .nav a:hover::before, .nav a.active::before{opacity:1;}
+  .nav a:hover{box-shadow:2px 2px 0 var(--shadow); background:var(--surface); outline:1px solid var(--chrome-dim);}
+
+  .wordmark{
+    font-family:"VT323",monospace; font-size:72px; line-height:.92;
+    letter-spacing:.03em; margin:0 0 10px; color:var(--text);
+  }
+  .wordmark .bracket{color:var(--chrome);}
+  .role{color:var(--accent); font-size:13px; margin:0 0 28px; letter-spacing:.02em;}
+  .lede{max-width:58ch; color:var(--muted); font-size:14px; margin:0 0 48px;}
+
+  .section-label{font-size:11px; color:var(--faint); text-transform:uppercase; letter-spacing:.08em; margin:0 0 14px;}
+
+  .focus-grid{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 56px; padding:0; list-style:none;}
+  .focus-grid li{
+    border:1px solid var(--line-strong); padding:6px 10px; font-size:12px; color:var(--muted);
+    background:var(--surface);
+  }
+
+  .entries{list-style:none; margin:0; padding:0; border-top:1px solid var(--line);}
+  .entry{
+    display:flex; align-items:baseline; gap:12px; padding:13px 4px;
+    border-bottom:1px solid var(--line); cursor:default;
+  }
+  .entry:hover{
+    background:var(--surface); box-shadow:2px 2px 0 var(--shadow);
+    outline:1px solid var(--chrome-dim); outline-offset:-1px;
+  }
+  .st{display:inline-flex; align-items:center; gap:5px; font-size:10px; width:84px; flex:0 0 auto;}
+  .st i{font-style:normal; font-size:10px;}
+  .st.shipped{color:var(--shipped);}
+  .st.active{color:var(--active-col);}
+  .st.archived{color:var(--arch);}
+  .entry-name{color:var(--text); font-size:13px; font-weight:600; flex:0 0 auto; min-width:160px;}
+  .entry-desc{color:var(--muted); font-size:12.5px; flex:1 1 auto;}
+  .entry-date{color:var(--faint); font-size:11px; flex:0 0 auto;}
+
+  footer{margin-top:64px; font-size:11px; color:var(--faint);}
+  footer a{color:var(--chrome);}
+</style>
+</head>
+<body>
+  <div class="shell">
+    <nav class="nav" aria-label="Navigation">
+      <a href="#" class="active">projects</a>
+      <a href="#">writing</a>
+      <a href="#">music</a>
+      <a href="#">reading</a>
+      <a href="#">links</a>
+      <a href="#">log</a>
+    </nav>
+
+    <h1 class="wordmark"><span class="bracket">[</span>MERULOX<span class="bracket">]</span></h1>
+    <p class="role">Software developer and AI systems builder.</p>
+    <p class="lede">Focused on automation, internal tooling, and technical operations — AI infrastructure, automation pipelines, commerce and product systems, full-stack development.</p>
+
+    <p class="section-label">Useful when</p>
+    <ul class="focus-grid">
+      <li>manual workflows need automation</li>
+      <li>ambiguous systems need to be mapped and built</li>
+      <li>AI needs to be integrated into real operations</li>
+      <li>internal tooling matters more than presentation</li>
+      <li>fast prototyping and iteration are valuable</li>
+    </ul>
+
+    <p class="section-label">Recent</p>
+    <ul class="entries">
+      <li class="entry">
+        <span class="st shipped"><i>◆</i> shipped</span>
+        <span class="entry-name">Boréal Numérique</span>
+        <span class="entry-desc">Operational scaffolding for Quebec trades — missed-call-text-back, lead triage, quote follow-up.</span>
+        <span class="entry-date">2026-10</span>
+      </li>
+      <li class="entry">
+        <span class="st active"><i>○</i> active</span>
+        <span class="entry-name">Commander</span>
+        <span class="entry-desc">Self-hosted operational nervous system — leads, services, agents, one surface.</span>
+        <span class="entry-date">2026-10</span>
+      </li>
+      <li class="entry">
+        <span class="st archived"><i>·</i> archived</span>
+        <span class="entry-name">Fashion Engine</span>
+        <span class="entry-desc">Garment geometry and generation pipeline, parked after validation.</span>
+        <span class="entry-date">2026-09</span>
+      </li>
+    </ul>
+
+    <footer>merultox@gmail.com — direction A of 2, noindex preview</footer>
+  </div>
+</body>
+</html>
