@@ -32,3 +32,7 @@ extension/config.local.js
 # jetbrains setting folder
 .idea/
 .agent/
+
+# moodboard raw source images (large, personal, curated locally — not served directly)
+/moodboard/
+

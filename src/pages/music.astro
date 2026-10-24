@@ -35,6 +35,14 @@ const periodButtons = `
 		</div>
 	</div>
 
+	<section class="section mood-section">
+		<h2 class="eyebrow">mood</h2>
+		<div class="mood-strip">
+			<div class="mood-track" id="mood-track"></div>
+			<div class="mood-veil" aria-hidden="true"></div>
+		</div>
+	</section>
+
 	<section class="section">
 		<h2 class="eyebrow">recently played</h2>
 		<div id="recent-tracks" class="track-scroll">
@@ -141,6 +149,26 @@ const periodButtons = `
 				return data.image || "";
 			} catch {
 				return "";
+			}
+		}
+
+		async function loadMood() {
+			const track = document.getElementById("mood-track");
+			if (!track) return;
+			try {
+				const res = await fetch("/moodboard/manifest.json");
+				if (!res.ok) throw new Error("no manifest");
+				const items: any[] = await res.json();
+				if (!items.length) return;
+				const shuffled = [...items].sort(() => Math.random() - 0.5);
+				const figHtml = (it: any) =>
+					`<figure class="mood-item"><img src="${it.src}" alt="" loading="lazy" /></figure>`;
+				const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+				const figs = shuffled.map(figHtml).join("");
+				// duplicate once for a seamless looping marquee (skip when autoscroll is disabled)
+				track.innerHTML = reduceMotion ? figs : figs + figs;
+			} catch {
+				track.innerHTML = "";
 			}
 		}
 
@@ -285,6 +313,7 @@ const periodButtons = `
 		});
 
 		loadUserInfo();
+		loadMood();
 		loadRecent();
 		loadTracks("7day");
 		loadArtists("7day");
