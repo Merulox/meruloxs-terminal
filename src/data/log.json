@@ -4,7 +4,7 @@
     {
       "date": "2026-10-23",
       "kind": "ship",
-      "text": "Most of the day went into PARITY. A provenance check turned up an assumption about a timestamp boundary that the source didn't support, so I removed it, made the helper return unknown before the explicitly documented transition, reran verification and published a clean checkpoint. Separately, I set up the foundation for a project called cyberops, with a canonical API entrypoint and documented acceptance and rollback procedures, and added a small authenticated file-drop service. The first release of the Instagram creative engine passed its release checks, including rollback and failure recovery, and I wrote up some design directions for a hacker-style look for Commander."
+      "text": "Added an authenticated file-drop service, and in cyberops imported a verified foundation, set up a single canonical API entrypoint, and wrote up the acceptance evidence and rollback handoff for its first milestone. On PARITY, a provenance check found a timezone assumption that the source notice didn't support; I removed it so those earlier requests now come back as unknown, then re-verified and published the checkpoint. The Instagram creative engine's first release went through verification, including a rollback test that restores the previous version cleanly. I also wrote some research notes on design directions for Commander."
     },
     {
       "date": "2026-10-22",
