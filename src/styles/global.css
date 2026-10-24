@@ -79,9 +79,11 @@ ul {
 
 .site-header {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: baseline;
 	justify-content: space-between;
-	gap: 24px;
+	row-gap: 6px;
+	column-gap: 24px;
 	margin-bottom: 0;
 	padding: 14px 28px;
 	background: #272330;
@@ -126,12 +128,8 @@ ul {
 	flex-wrap: wrap;
 	justify-content: flex-end;
 	gap: 11px;
-}
-
-@media (min-width: 601px) {
-	.site-nav {
-		flex-wrap: nowrap;
-	}
+	flex: 1 1 auto;
+	min-width: 0;
 }
 
 .site-nav a {
