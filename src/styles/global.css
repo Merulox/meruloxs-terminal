@@ -336,6 +336,40 @@ h2 {
 	color: var(--accent);
 }
 
+.proj-drag-handle {
+	color: var(--faint);
+	font-size: 13px;
+	cursor: grab;
+	margin-right: 2px;
+	user-select: none;
+}
+
+.proj.dragging {
+	opacity: 0.4;
+}
+
+.proj-tier {
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	color: var(--faint);
+	min-width: 2.2em;
+	text-align: center;
+}
+
+.proj[data-tier="!!!"] .proj-tier {
+	color: var(--accent);
+}
+
+.proj[data-tier="!!"] .proj-tier {
+	color: var(--muted);
+}
+
+.proj[data-tier="!"] .proj-tier {
+	color: var(--faint);
+}
+
 .proj-name {
 	min-width: 0;
 	font-size: 15px;

@@ -14,6 +14,7 @@ const MAX_EVIDENCE = 6_000;
 const ITEM_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CANDIDATE_VERSION_PATTERN = /^[A-Za-z0-9._:-]{1,100}$/;
 const KINDS = new Set(["project", "scheme"]);
+const VALID_TIERS = new Set(["!!!", "!!", "!"]);
 
 function json(body, status = 200, extraHeaders = {}) {
 	return new Response(JSON.stringify(body), {
@@ -175,10 +176,17 @@ function normalizedDescription(stored) {
 	) {
 		return null;
 	}
-	return {
+	const result = {
 		description: stored.description,
 		updatedAt: typeof stored.updatedAt === "string" ? stored.updatedAt : null,
 	};
+	if (typeof stored.tier === "string" && VALID_TIERS.has(stored.tier)) {
+		result.tier = stored.tier;
+	}
+	if (typeof stored.order === "number" && Number.isFinite(stored.order)) {
+		result.order = stored.order;
+	}
+	return result;
 }
 
 function normalizedCandidate(stored) {
@@ -369,11 +377,33 @@ async function handlePut(context) {
 		}
 	}
 	const description = boundedString(body.description, "description", MAX_DESCRIPTION);
+	let tier;
+	let order;
+	let existing;
+	if (body.tier === undefined || body.order === undefined) {
+		existing = await kv.get(`${prefixFor(kind)}${body.id}`, "json");
+	}
+	if (body.tier !== undefined) {
+		if (typeof body.tier !== "string" || !VALID_TIERS.has(body.tier)) {
+			throw new RequestError("tier must be one of !!!, !!, !", 400);
+		}
+		tier = body.tier;
+	} else if (existing && typeof existing.tier === "string" && VALID_TIERS.has(existing.tier)) {
+		tier = existing.tier;
+	}
+	if (body.order !== undefined) {
+		if (typeof body.order !== "number" || !Number.isFinite(body.order)) {
+			throw new RequestError("order must be a finite number", 400);
+		}
+		order = body.order;
+	} else if (existing && typeof existing.order === "number" && Number.isFinite(existing.order)) {
+		order = existing.order;
+	}
 	const updatedAt = new Date().toISOString();
-	await kv.put(
-		`${prefixFor(kind)}${body.id}`,
-		JSON.stringify({ description, updatedAt }),
-	);
+	const record = { description, updatedAt };
+	if (tier) record.tier = tier;
+	if (order !== undefined) record.order = order;
+	await kv.put(`${prefixFor(kind)}${body.id}`, JSON.stringify(record));
 	let candidateCleared = null;
 	if (body.clearCandidate === true && candidateVersion) {
 		try {
@@ -385,7 +415,15 @@ async function handlePut(context) {
 	} else if (body.clearCandidate === true) {
 		candidateCleared = false;
 	}
-	return json({ kind, id: body.id, description, updatedAt, candidateCleared });
+	return json({
+		kind,
+		id: body.id,
+		description,
+		tier: tier ?? null,
+		order: order ?? null,
+		updatedAt,
+		candidateCleared,
+	});
 }
 
 async function handleDelete(context) {

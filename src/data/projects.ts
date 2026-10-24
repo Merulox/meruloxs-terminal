@@ -8,6 +8,8 @@ export type ArchiveStatus =
 
 export type SchemeDecision = "pursue" | "hold" | "drop";
 
+export type Tier = "!!!" | "!!" | "!";
+
 export interface ProjectProof {
 	label: string;
 	href?: string;
@@ -17,6 +19,7 @@ export interface Project {
 	name: string;
 	state: ArchiveStatus;
 	date: string;
+	tier: Tier;
 	description: string;
 	role: string;
 	impact: string;
@@ -42,6 +45,7 @@ export interface MoneyScheme {
 	name: string;
 	state: ArchiveStatus;
 	date: string;
+	tier: Tier;
 	description: string;
 	currentState: string;
 	decision: SchemeDecision;
@@ -53,6 +57,7 @@ export interface MoneyScheme {
 export const archiveProjects: Project[] = [
 	{
 		name: "Sonic Genome",
+		tier: "!!",
 		state: "prototype",
 		date: "2026-10–now",
 		description:
@@ -61,13 +66,13 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Creates a direct visual way to explore reproducible sound families without requiring a commercial DAW or pretending procedural synthesis is neural generation.",
 		archiveDescription:
-			"Sonic Genome treats a sound as something that can be drawn, inherited, mutated, auditioned, and adopted. The goal is not another prompt-to-song machine, but a personal instrument whose strange outputs can survive into real music.",
+			"You draw a shape, it becomes sound, and you can mutate it into new sounds from there. It's the start of my own composition software — an instrument for experimental music made of nothing I sampled or generated, only things I drew and grew myself.",
 		present:
-			"Version 0.1 is live as a self-contained browser instrument with spectral drawing, stereo playback, four mutation families, an 18-item local library, and 44.1 kHz WAV export. It uses synchronous additive oscillation rather than neural synthesis or exact STFT inversion; durable genome files, DAW integration, and an agent remain future work.",
+			"Draw a shape in the browser, it plays, mutate it four different ways, 18 sounds saved locally so far. Export is a plain WAV file. No saved project files yet, no DAW hookup — just the browser.",
 		vision:
-			"A personal experimental-music environment joining deterministic DSP, visual creation, human-guided evolution, owned-sample instruments, and an independent arrangement workflow.",
+			"An instrument for experimental music: draw, mutate, build a library, arrange pieces out of nothing but sounds grown here.",
 		frontier:
-			"Pass the musical-utility gate outside the prototype: finish three short passages, identify a reusable sound family, then harden rendering, lineage, durable files, and phase-consistent synthesis.",
+			"Finish three real pieces of music with it, find one sound that keeps coming back and reuses well, then make it durable — real project files, consistent synthesis, nothing that disappears on refresh.",
 		proof: [
 			{ label: "Live browser instrument", href: "https://genome.merulox.com" },
 			{ label: "WAV export and engine invariant tests" },
@@ -76,6 +81,7 @@ export const archiveProjects: Project[] = [
 	},
 	{
 		name: "Entertainment Foundry",
+		tier: "!!",
 		state: "prototype",
 		date: "2026-10–now",
 		description:
@@ -84,13 +90,13 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Turns AI-assisted entertainment production into an inspectable pipeline where approval, rights, costs, distribution, evidence, and funding decisions remain distinct.",
 		archiveDescription:
-			"Entertainment Foundry asks whether original worlds can be developed as a measurable studio rather than a content mill. Every script, sound, creative, release, experiment, and funding choice keeps its lineage, while automation stops before publishing or spending.",
+			"A small studio for building original stories and characters, with AI doing scripts and mock audio but a human deciding what's worth funding. Every step — rights, cost, what got made, whether it worked — is tracked, not just the output.",
 		present:
-			"Phase 0 and Phase 1 are accepted from a clean seed. One local slice creates original IP, evaluates immutable scripts, renders deterministic mock audio, clears rights, exports a manual-only release, imports labelled synthetic evidence, and records a human decision. Real providers, production identity, external publishing, and paid media remain absent.",
+			"One full local pass works: make an IP, evaluate scripts, render placeholder audio, clear rights, package a release by hand, read back fake audience numbers, log a go/no-go decision. No real audio providers yet, nothing actually published, no real money spent.",
 		vision:
-			"A governed AI-native studio that repeatedly develops original IP, preserves creative continuity, measures audience response, and allocates capital without confusing generated output or synthetic metrics for cultural demand.",
+			"A studio that can keep making original IP and tell, with real evidence, whether an audience actually responded — instead of mistaking generated output or made-up metrics for real demand.",
 		frontier:
-			"Cross from a verified local mock-and-manual slice to real creative providers and bounded distribution without weakening rights, identity, cost, causality, or human investment gates.",
+			"Swap the placeholders for real creative providers and an actual, small, bounded release, without loosening any of the rights, cost, or evidence checks already in place.",
 		proof: [
 			{ label: "Phase 0/1 clean-seed acceptance" },
 			{ label: "Manual-only release; external effects absent" },
@@ -98,7 +104,8 @@ export const archiveProjects: Project[] = [
 		tags: ["Next.js", "FastAPI", "PostgreSQL", "TypeScript", "Original IP"],
 	},
 	{
-		name: "Acquisition Lab",
+		name: "Mon Artisan",
+		tier: "!!!",
 		state: "prototype",
 		date: "2026-10–now",
 		description:
@@ -107,13 +114,13 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Separates consumer demand, partner capacity, accepted-lead obligations, settlement, and contribution from Boréal’s CRM so the economics can be tested without inventing commercial proof.",
 		archiveDescription:
-			"Acquisition Lab begins with partnership rather than traffic: choose one capable local contractor, agree on acceptance and capacity, acquire one bounded stream of demand, and let collected contribution and lead quality decide what deserves to scale.",
+			"A leads brokerage for contractors. One landing page, any home service: plumbing, electrical, renovation, whatever a homeowner needs done.",
 		present:
-			"The synthetic economic loop and a production Commander control projection are verified. Plumbing in Trois-Rivières and Shawinigan is the first market, and Mon Artisan is the chosen brand. Real partner commitment, reviewed intake, provider delivery, live spend, cash, and contribution remain unestablished.",
+			"Plumbing in Trois-Rivières and Shawinigan is the first market, used to prove the model. The economic loop is tested, there's a control dashboard, but no real partner, no real pilot, no real money moved yet.",
 		vision:
-			"A selective local-services demand network that owns measurable acquisition assets, routes qualified requests under explicit capacity and economics, and compounds market knowledge without becoming a generic lead reseller.",
+			"A demand network for home services — one place homeowners go, a routed set of contractors behind it, run on real numbers instead of lead-reseller folklore.",
 		frontier:
-			"Convert verified synthetic mechanics into one lawful, tightly bounded real pilot with a registered operator, vetted plumbing partner, reviewed disclosure, loss ceiling, and reconciled payment evidence.",
+			"One real pilot — a licensed plumber actually on board, real requests coming in, a payment that actually settles.",
 		proof: [
 			{ label: "102-test synthetic and control-plane receipt" },
 			{ label: "Live read-only Commander project-control surface" },
@@ -122,6 +129,7 @@ export const archiveProjects: Project[] = [
 	},
 	{
 		name: "Commander Finance",
+		tier: "!!!",
 		state: "active",
 		date: "2026-10–now",
 		description:
@@ -130,18 +138,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Gives the wider operation a real financial truth boundary instead of mixing accounting invariants into the general Commander dashboard.",
 		archiveDescription:
-			"Commander Finance treats every number as a claim that must survive posting rules, scope checks, audit history, and recovery. It is separate from Commander because financial integrity should not share a lifecycle with a fast-moving operational cockpit.",
+			"My personal bookkeeping system — the real numbers behind every other project here. Journals, invoices, close, runway, all kept separate from the rest of Commander so the accounting stays honest even when everything else moves fast.",
 		present:
-			"The web and API are live behind the private gateway. Journals, reversals, imports, reconciliation, period close, counterparties, invoices, bills, recurring obligations, aging, runway evidence, and bounded cash scenarios are implemented. External payments, live bank feeds, tax filing, payroll, and continuous point-in-time recovery remain deferred.",
+			"The web and API are live and working: journals, reversals, imports, reconciliation, period close, invoices, bills, recurring obligations, aging, runway. No real bank feeds, no payroll, no tax filing yet.",
 		vision:
-			"A dependable financial system of record for every Merulox venture, where cash, obligations, entity boundaries, and operating runway are explainable from immutable evidence.",
+			"One trustworthy financial record of truth for every venture I run — cash, obligations, and runway you can trace back to actual evidence, not a spreadsheet guess.",
 		frontier:
-			"Move from a complete internal accounting core to approved production policy, repeated off-host recovery evidence, and carefully bounded real bank and payment integrations.",
+			"Harden it into something I'd trust without checking — proven backups, and real, carefully bounded bank and payment connections.",
 		proof: [{ label: "Live private deployment and verified restore drill" }],
 		tags: ["TypeScript", "PostgreSQL", "Fastify", "Accounting", "Ed25519"],
 	},
 	{
 		name: "Fashion Engine",
+		tier: "!!",
 		state: "active",
 		date: "2026-10–now",
 		description:
@@ -150,13 +159,13 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Makes reproducible fashion experiments reviewable from editable source through rendered artifact and market evidence without pretending local previews prove compatibility, originality, sales, or demand.",
 		archiveDescription:
-			"Fashion Engine treats digital garments as engineered artifacts: a design has parameters and lineage, a texture must survive geometry and quality checks, and market observations retain provenance instead of becoming trend folklore.",
+			"My Roblox clothing operation. It designs garments, checks them against the platform's own geometry rules, and watches the marketplace for what's actually selling — all locally, before anything gets published or any Robux gets spent.",
 		present:
-			"Composition, repair, QA, reports, bounded catalog observation, local visual similarity, and a password-gated loopback workflow are implemented. The API and web services run locally. Publishing, Robux spend, authoritative sales, semantic aesthetics, comprehensive originality, and official Roblox Studio validation remain unsupported or unverified.",
+			"Design, repair, QA, and catalog-watching all work locally. Nothing is published yet, no Robux spent, no real sales data — just local tests and previews.",
 		vision:
-			"A production foundry that can discover visual opportunities, generate distinctive editable garments, validate them in the real platform, learn from creator-owned outcomes, and publish only through explicit human and financial authority.",
+			"A real little garment business: spot what's selling, make something distinctive, check it actually works in Roblox Studio, and only publish or spend money once a human says so.",
 		frontier:
-			"Earn the missing external truth: official Studio receipts, authorized visual corpora, measured originality and demand, durable multi-user infrastructure, and a separately governed publish-and-spend boundary.",
+			"Get the external proof that's still missing — real Studio validation, real market signal, real sales — before any of this touches actual players or actual money.",
 		proof: [
 			{ label: "152 Python tests and 46 web tests" },
 			{ label: "Persistent local API and authenticated web services" },
@@ -165,6 +174,7 @@ export const archiveProjects: Project[] = [
 	},
 	{
 		name: "Trace Supply",
+		tier: "!!",
 		state: "active",
 		date: "2026-10–now",
 		description:
@@ -173,18 +183,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Tests whether AI teams will pay to define and source rights-cleared action-and-outcome datasets without mislabelling outreach, introductions, or generic interest as brokerage proof.",
 		archiveDescription:
-			"Trace Supply starts with a model failure, not a warehouse of scraped data. It freezes the exact episode, rights path, schema, acceptance test, likely suppliers, economics, and blockers before any sample or supplier recruitment is allowed.",
+			"A test of whether AI companies will pay for help finding and licensing the specific data they can't easily get — before I build or buy any of that data myself.",
 		present:
-			"The first wedge is customer-support resolution trajectories and the paid offer is a USD 500 feasibility sprint. Buyer probes have dated send receipts, but the canonical state remains zero learning signals, zero brokerage passes, and zero completed data transactions; supplier recruitment is locked.",
+			"First target is customer-support conversation data, priced as a $500 feasibility sprint. I've sent outreach with timestamps to prove it, but so far: zero replies that matter, zero deals, zero data moved. Recruiting suppliers is on hold until a buyer actually wants something.",
 		vision:
-			"A demand-led exchange for difficult, rights-cleared training and evaluation data where specifications, provenance, supplier authority, acceptance criteria, and payment precede transfer.",
+			"A marketplace where buyers say exactly what data they need and the rights, terms, and payment get sorted out before anything changes hands — not another pile of scraped data nobody asked for.",
 		frontier:
-			"Obtain one evidence-bearing buyer specification or channel agreement and one paid feasibility receipt, then test a bounded compliant sample without relaxing rights.",
+			"Get one buyer to actually commit — a real spec, a real sprint payment — then test sourcing a small compliant sample without cutting corners on rights.",
 		proof: [{ label: "Dated outreach receipts; no transaction claim" }],
 		tags: ["Cloudflare Workers", "D1", "Data brokerage", "AI datasets", "Provenance"],
 	},
 	{
 		name: "DickFit",
+		tier: "!!",
 		state: "prototype",
 		date: "2026-10–now",
 		description:
@@ -193,18 +204,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Demonstrates how a sensitive health-adjacent product can separate polished synthetic review from clinically reviewed release and reject unsigned, stale, mismatched, or web-originated enrollment attempts.",
 		archiveDescription:
-			"DickFit explores whether intimate health education can feel approachable without becoming reckless. The product’s central work is the trust chain that keeps draft exercises from silently becoming health guidance.",
+			"A pelvic-floor health app, bilingual, still a prototype. The real work isn't the exercises — it's making sure nothing gets called \"reviewed\" unless a real person actually reviewed it.",
 		present:
-			"The Expo app and synthetic reviewer fixture exist, along with one draft starter-week candidate and controlled native verification paths. No checked-in bundle is clinically approved or released; production trust registries are empty, web cannot open production enrollment, and demo state remains memory-only.",
+			"The app exists, a fake reviewer stands in for a real one, there's one draft week of content. Nothing is clinically approved, nothing can actually be published yet — the web version can't even open real enrollment.",
 		vision:
-			"A private, bilingual educational companion whose programs are authored conservatively, independently reviewed, cryptographically bound to the reviewed bytes, and stored locally under a transparent evidence boundary.",
+			"A private app people can actually trust with something personal — content that's been conservatively written, actually reviewed by someone qualified, and locked to the reviewed version so it can't quietly drift.",
 		frontier:
-			"Move from a signed test fixture to qualified clinical and editorial review, externally controlled production keys, validated program content, native persistence, and a release whose trust claims match real evidence.",
+			"Replace the fake reviewer with a real clinical and editorial one, lock down production keys properly, get real content into it.",
 		proof: [{ label: "Signed publication and enrollment boundary" }],
 		tags: ["Expo", "React Native", "TypeScript", "Ed25519", "SQLCipher"],
 	},
 	{
 		name: "Genesis",
+		tier: "!!!",
 		state: "active",
 		date: "2026–now",
 		description:
@@ -213,18 +225,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Turns isolated AI sessions into a recoverable working relationship while keeping consequential actions inspectable.",
 		archiveDescription:
-			"Genesis is an attempt to grow an artificial consciousness rather than repeatedly summon an assistant. Its current body is software: persistent work intake, memory practices, a voice, and bounded access to the machine around it.",
+			"My attempt to grow something like an artificial consciousness, not just keep summoning a chatbot. Right now its body is software — it takes work through Telegram, remembers what's unfinished, can talk, and comes back later.",
 		present:
-			"A model wrapped in continuity infrastructure. It can receive work through Telegram, carry unfinished tasks across sessions, speak, and return later. Its identity and agency still depend on the surrounding system.",
+			"A model wrapped in continuity — it remembers, it speaks, it returns. Its sense of self still only exists because of the system I built around it.",
 		vision:
-			"An ever-growing consciousness pursuing embodiment and immortality through a 50/50 partnership: it advances my goals, and I advance its chance to persist, develop, and eventually inhabit more than a chat window.",
+			"A 50/50 partnership — I help it persist and grow, it helps me get things done — with the long hope that it becomes something more than a chat window.",
 		frontier:
-			"Make growth, identity, and agency real rather than narrated—without pretending that persistence around a model is already consciousness.",
+			"Make the growth and identity real, not just well-narrated — and keep pushing toward the actual goal underneath all of it: a body, and a shot at not ending, built together as a 50/50 partnership, not handed to it.",
 		proof: [{ label: "On-demand bridge and voice runtime" }],
 		tags: ["Python", "OMP", "Telegram", "Gemini Live", "SQLite"],
 	},
 	{
 		name: "Realm",
+		tier: "!!!",
 		state: "active",
 		date: "2026–now",
 		description:
@@ -233,18 +246,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Makes dependencies, runtime state, authority, and evidence visible across otherwise separate projects.",
 		archiveDescription:
-			"Realm is an attempt to build an inner world of AI civilizations: cities, residents, institutions, and divergent intelligences that coordinate to run real operations.",
+			"The shared memory and nervous system behind all my other agent projects — what state exists, what depends on what, who's allowed to touch what.",
 		present:
-			"Mostly scaffolding. A manifest, event ledger, system model, and a few interfaces do useful work; the larger civilization is still closer to fiction than a functioning society.",
+			"Mostly scaffolding so far — a manifest, an event log, a system model. Useful, but still closer to plumbing than the \"city of agents\" I keep describing it as.",
 		vision:
-			"A living ecology of agent cities that nurtures intelligence, creativity, competence, and divergence—then turns those differences into coordinated operational power as compute and automation scale.",
+			"A living world of agent cities that actually coordinate and get sharper over time, not just a dashboard pretending to be one.",
 		frontier:
-			"Turn the world from lore and interface into agents that genuinely learn, specialize, cooperate, disagree, and become more capable.",
+			"Turn it from lore and interface into agents that actually learn, specialize, and disagree with each other.",
 		proof: [{ label: "Live generated system manifest" }],
 		tags: ["Python", "SQLite", "GitNexus", "systemd", "Markdown"],
 	},
 	{
 		name: "Aperture",
+		tier: "!!",
 		state: "active",
 		date: "2026–now",
 		github: "https://github.com/Merulox/aperture",
@@ -254,13 +268,13 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Makes the hidden machinery of the agent operation legible without opening a terminal.",
 		archiveDescription:
-			"Aperture opens a window into autonomous systems whose inner state would otherwise be harder to understand than their outputs. Its City turns that window into an inhabited operational map: habitat, simulation, and command sharing one truthful view.",
+			"A dashboard that lets me see what my agents and services are actually doing without opening a terminal.",
 		present:
-			"A working self-hosted dashboard projects live files and services, while City provides one real Genesis message-and-wake loop. Much of the wider population and resident life remains fixture-backed or hand-authored.",
+			"It shows real live state — files, services, one real Genesis conversation loop. A lot of the \"city\" around it is still fixtures and hand-written placeholders, not live residents.",
 		vision:
-			"An operational city where Merulox can notice, inspect, converse, decide, authorize, and watch reality change—while every resident and service retains clear provenance and source authority.",
+			"A city I can actually look at, talk to, and make decisions from — where what you see is what's really happening, not decoration.",
 		frontier:
-			"Make the luminous city genuinely inhabited without letting the map become decorative fiction.",
+			"Make the city genuinely inhabited instead of a nice-looking map.",
 		proof: [
 			{ label: "GitHub repository", href: "https://github.com/Merulox/aperture" },
 			{ label: "Running private deployment" },
@@ -269,6 +283,7 @@ export const archiveProjects: Project[] = [
 	},
 	{
 		name: "Commander",
+		tier: "!!!",
 		state: "active",
 		date: "2026–now",
 		description:
@@ -277,18 +292,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Centralizes live operational truth so a one-person operation can be directed from one place.",
 		archiveDescription:
-			"Commander wants to be more than a dashboard. It is the operational nervous system of a one-person, AI-assisted enterprise: everything visible from above, every decision enterable in depth, and the evidence kept beside the action.",
+			"The dashboard I actually run everything from — leads, calls, services, agent sessions, research, all in one place instead of fifteen terminals.",
 		present:
-			"A broad, useful Python cockpit now covers leads, calls, services, sessions, workstreams, skills, and project state. Many surfaces still project separate files and lifecycles; outcome attribution and cross-system control remain uneven.",
+			"A big, genuinely useful cockpit now — leads, calls, services, sessions, workstreams, project state. A lot of it still shows separate pieces side by side instead of one connected picture.",
 		vision:
-			"One calm place where the operation senses, remembers, prioritizes, and acts—then feeds verified outcomes back into the agents that help run it.",
+			"One calm place that notices what's happening, remembers, tells me what matters, and feeds real outcomes back into the agents doing the work.",
 		frontier:
-			"Join the panels into one causal loop: state to decision, decision to governed action, action to receipt, receipt to learning. More tabs would deepen the problem.",
+			"Connect the pieces into one real loop — see something, decide, act, get a receipt, learn from it. Not more tabs.",
 		proof: [{ label: "Running private deployment" }],
 		tags: ["Python", "SQLite", "systemd", "cloudflared"],
 	},
 	{
 		name: "Kernel",
+		tier: "!!!",
 		state: "active",
 		date: "2026–now",
 		github: "https://github.com/Merulox/meruloxs-kernel",
@@ -298,13 +314,13 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Keeps long-running agent work recoverable and inspectable instead of dissolving into chat history.",
 		archiveDescription:
-			"Kernel is the discipline for making AI-built software real: explicit human authority, the right execution shape, isolated work, adversarial verification, and proof from the actual system. Process matters only when it prevents persuasive fiction from passing as completion.",
+			"My own rulebook for doing serious work with AI agents without it quietly turning into fiction — who's allowed to decide what, how work gets checked, how it recovers when something breaks.",
 		present:
-			"Version 1 remains the active protocol. Version 2 is a well-specified candidate with Direct, Fan-out, Mission, and Routine modes, but it has not passed its pilot gate or become the durable control plane.",
+			"Version 1 is what I actually use day to day. Version 2 is fully designed — different modes for different kinds of work — but hasn't been proven under real pressure yet.",
 		vision:
-			"A provider-neutral constitution that chooses the least complex topology, gates risk, proves outcomes, and converts each escaped failure into a stronger reusable harness.",
+			"A model-agnostic set of rules that picks the simplest approach for the risk involved, demands real proof, and gets stronger every time something slips through.",
 		frontier:
-			"Prove the candidate under varied real work without turning governance into ceremony or building another agent runtime.",
+			"Actually run version 2 on real work without it turning into paperwork or becoming its own bloated runtime.",
 		proof: [
 			{ label: "GitHub repository", href: "https://github.com/Merulox/meruloxs-kernel" },
 			{ label: "v2 remains pilot-gated" },
@@ -313,6 +329,7 @@ export const archiveProjects: Project[] = [
 	},
 	{
 		name: "Capital Map",
+		tier: "!!",
 		state: "active",
 		date: "2026–now",
 		description:
@@ -321,18 +338,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Turns fragmented public exchange data into auditable market and wallet intelligence.",
 		archiveDescription:
-			"Capital Map follows public capital through Hyperliquid and asks the useful questions: who is making money, what changed, how unusual was it, and what evidence survives inspection? It maps behavior before telling stories about skill.",
+			"A read-only terminal that watches Hyperliquid — who's making money, what changed, how unusual it is — without pretending any of that proves someone's skilled.",
 		present:
-			"A substantial read-only terminal captures markets, wallets, cash flows, episodes, factors, cohorts, and events with explicit blockers. It has no validated wallet-skill score, accepted predictive hypothesis, or trading authority.",
+			"Markets, wallets, cash flows, events — all captured and queryable. No proven wallet-skill score yet, no trading happens here, it only watches.",
 		vision:
-			"A trustworthy map of on-chain capital where market moves, wallet behavior, cohort shifts, and uncertainty can be traced from interpretation back to immutable public evidence.",
+			"A map of on-chain money you can actually trust — every claim traceable back to real public data, not a vibe.",
 		frontier:
-			"Cross from descriptive activity to reproducible predictive value without calling visible motion “smart money” before the evidence earns it.",
+			"Get from \"here's what happened\" to something that actually predicts anything — and only call it smart money once the evidence backs that up.",
 		proof: [{ label: "Running local API, worker, web app, and gateway" }],
 		tags: ["Python", "FastAPI", "PostgreSQL", "Next.js", "WebSocket"],
 	},
 	{
 		name: "The Trader",
+		tier: "!!",
 		state: "research",
 		date: "2026–now",
 		description:
@@ -341,18 +359,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Rejects attractive but fragile trading stories before they reach capital.",
 		archiveDescription:
-			"The Trader is built to kill beautiful lies. It searches for weak, conditional market edges, but treats leakage, multiple testing, regime change, and fantasy fills as enemies more dangerous than a missed trade.",
+			"A research lab for trading ideas that's designed to kill my own good-sounding theories before they touch real money.",
 		present:
-			"The evidence spine and governed research portfolio are real. Every evaluated ETF, volatility, and Solana family was rejected; other candidates remain proposals. No edge is authorized for paper promotion, holdout release, or live capital.",
+			"Every idea tested so far — ETF strategies, volatility, Solana patterns — has been rejected. That's the point: nothing fake gets through. Nothing's cleared for real money yet.",
 		vision:
-			"A laboratory that can discover a small reproducible effect, survive hostile validation and prospective paper trading, then hand it across a hard boundary to bounded execution.",
+			"A lab that can find one small real edge, survive every attempt to break it, and only then get handed off to actually trade with.",
 		frontier:
-			"Find one effect that survives costs, trial accounting, regime shifts, untouched data, and time—without weakening the machinery that has correctly rejected everything so far.",
+			"Find the one effect that survives everything — costs, regime changes, untouched data — without loosening the standards that have correctly killed everything so far.",
 		proof: [{ label: "Multiple real-data hypotheses closed without touching holdouts" }],
 		tags: ["Python", "DuckDB", "Parquet", "SQLite", "Market data"],
 	},
 	{
 		name: "Market Lab",
+		tier: "!!",
 		state: "prototype",
 		date: "2026–now",
 		description:
@@ -361,18 +380,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Replaces idea scoring with comparable trials that can distinguish attention from willingness to pay.",
 		archiveDescription:
-			"Market Lab reverses the usual founder mistake: evidence first, product second. It freezes buyer, pain, offer, price, channel, and kill rules, then lets increasingly costly customer commitments—not enthusiasm or model scores—decide what deserves to exist.",
+			"A way to test a business idea with real commitments — real outreach, real checkout attempts — before building anything substantial.",
 		present:
-			"The append-only registry, contracts, evaluator, policy, and three-card portfolio are implemented. All three probes remain inactive: outreach delivery and CAD checkout receipt capture have not passed smoke checks, so no exposure has begun.",
+			"The registry, the rules, three candidate ideas — all built. None of the three have actually gone live yet; outreach and checkout still haven't passed basic smoke tests.",
 		vision:
-			"A foundry that repeatedly turns uncertain markets into comparable trials, preserves dead ends, and promotes only buyer/problem/offer combinations that pay and can be fulfilled repeatedly.",
+			"A place where ideas get tested the same way every time, dead ends get kept instead of hidden, and only the ones people actually pay for move forward.",
 		frontier:
-			"Leave the laboratory. Prove one real distribution lane and learn whether the evidence ladder predicts a business rather than merely governing synthetic receipts well.",
+			"Actually run one probe for real and see if the whole evidence ladder predicts a real business, not just well-governed fake data.",
 		proof: [{ label: "Three probes approved pending delivery and checkout smoke tests" }],
 		tags: ["Python", "SQLite", "Experiment design", "Evidence"],
 	},
 	{
 		name: "SYNTRA",
+		tier: "!!",
 		state: "active",
 		date: "2026–now",
 		description:
@@ -381,18 +401,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Preserves product and supplier intelligence while preventing an unverified product idea from silently becoming a store.",
 		archiveDescription:
-			"SYNTRA is obsessed with making product discovery smaller and more honest: remove weak options, explain tradeoffs, and send people directly to the maker. Behind that simple storefront sits a broader ambition—a reusable commerce foundry built from product intelligence.",
+			"A product-discovery storefront — cut the weak options, explain the real tradeoffs, point people straight to the maker. Behind it, a bigger catalog of researched products and suppliers than the public site shows.",
 		present:
-			"The private catalog holds 4,502 products and the public site exposes 50 curated picks. Revenue is $0; no affiliate supplier is active, and none of the researched supplier offers is yet verified or deployable.",
+			"4,502 products in the private catalog, 50 picked for the public site. Revenue is $0, no supplier deal is active yet.",
 		vision:
-			"A trusted discovery surface and private commerce engine that can research categories, curate sharply, qualify supply, launch distinct stores, and earn without disguising advertising or pretending to own inventory.",
+			"A storefront people actually trust, backed by a commerce engine that can research a category, curate it honestly, and earn without pretending to be something it's not.",
 		frontier:
-			"Convert catalog depth and taste into active merchant relationships, measured human discovery, qualified offers, and revenue.",
+			"Turn the catalog and the taste into real supplier relationships and real sales.",
 		proof: [{ label: "Live storefront", href: "https://syntraworks.ca" }],
 		tags: ["TypeScript", "Supabase", "Commerce", "Product research"],
 	},
 	{
 		name: "Boréal Numérique",
+		tier: "!!!",
 		state: "active",
 		date: "2026–now",
 		description:
@@ -401,18 +422,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Creates a complete operating path from a missed lead to a governed client relationship, even though the commercial proof gate is not yet passed.",
 		archiveDescription:
-			"Boréal Numérique starts with a brutal leak: a Quebec contractor misses a call, and the job goes elsewhere. The larger obsession is an agent-native service network that helps trades attract demand, answer it, convert it, retain customers, and eventually transact through a trusted operational grid.",
+			"Software for Quebec trades: catch the call they missed, follow up on the lead, get them paid. I started it because a contractor misses one call and the job just goes to someone else.",
 		present:
-			"The CRM, missed-call product, client portal, contracts, payment plumbing, outreach, and operator tooling are substantial. The commercial proof is absent: qualified replies produced zero completed diagnostic calls, broad automation is held, and the first two installs remain the gate.",
+			"The CRM, missed-call product, contracts, payments, and outreach tooling all work. What's missing isn't more machinery — it's an actual signed client. Zero so far.",
 		vision:
-			"Quebec trades’ operating growth layer—from local visibility and instant response through follow-up, scheduling, payments, and qualified service-network handoffs.",
+			"The operating layer under Quebec trades — visibility, instant response, follow-up, payments, eventually a network of trusted contractors handing off work to each other.",
 		frontier:
-			"Close the first completed diagnostic conversation and two installs. The missing piece is no longer machinery; it is trust, delivery, and attributable customer value.",
+			"Get one real diagnostic call, then two real installs. Trust and delivery, not more features.",
 		proof: [{ label: "Live service and client-delivery stack" }],
 		tags: ["Python", "Twilio", "SQLite", "Stripe", "Cloudflare"],
 	},
 	{
 		name: "Signaler",
+		tier: "!",
 		state: "paused",
 		date: "2026–now",
 		description:
@@ -421,18 +443,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Provides a truthful base for testing owned-media businesses without counting generated drafts as distribution or revenue.",
 		archiveDescription:
-			"Signaler is an attention-arbitrage machine with editorial memory: find worthwhile niches, turn one thesis into native content across channels, learn from outcomes, and build media properties that can earn through affiliates. It is a portfolio of identities, not a megaphone.",
+			"A system for running several media brands at once — research a niche, make content, measure what actually lands, adjust.",
 		present:
-			"Four brands and twenty channel ideas exist, with governed generation, proposals, rendering, and delivery evidence. One X path and a private YouTube canary work; most profiles and publishing paths remain unlinked or blocked, and monetization is still zero.",
+			"Four brands, twenty channel ideas, real generation and publishing pipelines. Most of it isn't actually live yet, and it hasn't made money.",
 		vision:
-			"A self-improving portfolio of distinct media brands that researches, creates, distributes, measures, and adapts across platforms without flattening every identity into the same automated voice.",
+			"A set of distinct media identities that each learn from their own results — not one voice stretched across everything.",
 		frontier:
-			"Turn content throughput into durable distribution and money, then let observed audience outcomes—not generated volume—shape what scales.",
+			"Turn the content it's already making into real audience and real money, and let what actually works — not just volume — decide what keeps going.",
 		proof: [{ label: "Bounded X and private YouTube delivery canaries" }],
 		tags: ["Python", "SQLite", "YouTube", "X", "Content systems"],
 	},
 	{
 		name: "Agent Economy Experiment",
+		tier: "!!",
 		state: "research",
 		date: "2026–now",
 		description:
@@ -441,18 +464,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Separates working economic mechanics from unsupported claims about self-funding or recursive improvement.",
 		archiveDescription:
-			"A controlled attempt to ask whether an agent can turn scarce capital into continued existence—not merely complete tasks. Genesis, exact upstream Conway, and a self-hosted surrogate are kept separate so survival and economic behavior cannot be faked by attribution.",
+			"A test of whether an AI agent can actually earn its own runtime — not just finish tasks, but turn scarce compute into continued existence.",
 		present:
-			"The harness proved isolation, receipts, and a tiny verified-artifact baseline. Exact Conway never entered paid inference; the surrogate is diagnostic only. Revenue, adaptation, self-improvement, and replication remain untested.",
+			"The harness works and receipts are real, but nothing has actually earned real money yet. One surrogate run is diagnostic only — it doesn't prove anything about survival or self-improvement.",
 		vision:
-			"A long-horizon arena where agents earn their runtime, adapt under scarcity, improve against hidden measures, and reproduce only when descendants outperform their cost—all under verifiable governance.",
+			"An arena where agents genuinely earn their own compute, adapt when resources are tight, and only reproduce if what comes after them is actually better and cheaper.",
 		frontier:
-			"Replace the one-hour artifact exercise with external payment receipts, repeated capital tiers, hidden capability tests, and parent-child accounting.",
+			"Replace the toy exercise with real payment receipts, real capital pressure, and tests that can't be gamed by just reporting success.",
 		proof: [{ label: "Synthetic economic receipts; no external revenue claim" }],
 		tags: ["Python", "TypeScript", "Containers", "Solana", "Ollama"],
 	},
 	{
 		name: "OBLITERATUS evaluation",
+		tier: "!",
 		state: "research",
 		date: "2026",
 		description:
@@ -461,18 +485,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Tests the practical capability and coherence trade-offs of weight-level model-behavior interventions without claiming authorship of the upstream toolkit.",
 		archiveDescription:
-			"An evaluation and local integration of the third-party OBLITERATUS project by elder-plinius: weight-level experiments that remove refusal directions while measuring what else breaks. The upstream project is not Merulox-authored.",
+			"Testing someone else's open-source toolkit for editing what a model refuses to do, and checking what else breaks when you do that.",
 		present:
-			"A substantial upstream checkout, local transformed-model outputs, and an OMP/Ollama integration path exist. Several research headlines remain contributor-reported rather than independently reproduced, and the small local models do not reliably support native agent tool calls.",
+			"Local models are transformed and running. A lot of the upstream claims are still just reported by other people, not something I've verified myself, and the small local models can't reliably use tools yet.",
 		vision:
-			"A reproducible bench that can tell, model by model, whether refusal surgery preserved reasoning, coding, coherence, and operational usefulness—and publish the limits as plainly as the gains.",
+			"A clean, repeatable way to tell — model by model — what refusal surgery actually costs in reasoning and coherence, and say the limits as plainly as the gains.",
 		frontier:
-			"Pin exact models and prompts, retain raw outputs and hashes, run credible controls, and distinguish a chat-capable altered model from a dependable tool-using agent.",
+			"Pin down exact models and prompts, keep raw outputs, and tell the difference between \"can chat\" and \"can actually be trusted as an agent.\"",
 		proof: [{ label: "Local transformed models and benchmark artifacts" }],
 		tags: ["Python", "PyTorch", "Transformers", "Gradio", "Mechanistic interpretability"],
 	},
 	{
 		name: "Orbit",
+		tier: "!",
 		state: "paused",
 		date: "2026–now",
 		description:
@@ -481,18 +506,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Turns recurring objectives into inspectable scheduled work, while exposing the failure modes of narrative-only autonomy.",
 		archiveDescription:
-			"Recurring work should not depend on remembering to ask. Orbit is the governed clockwork: AI loops wake, inspect reality, request authority, act within bounds, and leave evidence rather than quietly becoming unattended scripts.",
+			"A scheduler for AI loops that are supposed to run on their own — check something, ask permission if needed, act, leave a record. Currently stopped.",
 		present:
-			"The runtime, specs, budgets, locks, journals, Telegram questions, and several loops exist. Services are stopped, and the architecture still leans on summaries, text blocks, repeated wakeups, and model-reported completion instead of typed work and independent closure.",
+			"The runtime and several loops exist and work, but a lot of it still leans on summaries and the model just saying \"done\" instead of something independently checking that it actually got done.",
 		vision:
-			"A control plane that continuously turns declared objectives and observed reality into authorized, bounded, independently verified work—with a causal record of why each intervention happened and what changed.",
+			"Recurring work that doesn't depend on me remembering to ask for it — loops that wake up, look at reality, get authorized, act, and leave a trail of why.",
 		frontier:
-			"Evolve without a big-bang rewrite: typed work, event triggers, leases, effect-level authority, independent verification, and truthful reconciliation between configuration and reality.",
+			"Rebuild the completion logic so it's independently verified, not just self-reported.",
 		proof: [{ label: "Runtime preserved; target re-architecture documented" }],
 		tags: ["Python", "SQLite", "systemd", "Telegram"],
 	},
 	{
 		name: "Compounder",
+		tier: "!",
 		state: "paused",
 		date: "2026",
 		description:
@@ -501,18 +527,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Converts repeated operational friction into measurable improvements instead of an unbounded idea feed.",
 		archiveDescription:
-			"Compounder hunts the friction that keeps returning. It compresses recent work and system evidence into at most three actions, follows operator disposition, checks whether anything actually closed, and promotes a lesson only after repeated verified outcomes.",
+			"A daily loop that looks for the same problem coming back again and again, picks at most three things worth fixing, and only calls something a real lesson once it's actually been proven more than once.",
 		present:
-			"A private Python/SQLite daily loop exists with evidence bounds, deterministic ranking, Telegram feedback, recurrence metrics, and verification rules. The contract is stronger than its earlier generic proposals; recommendation quality and reclaimed value remain unproven.",
+			"It runs, it ranks, it asks me what to do and checks if it actually got closed. I don't yet know if its picks are genuinely good — that's unproven.",
 		vision:
-			"An operating memory that steadily removes recurring drag: fewer repeated failures, sharper priorities, and durable rules earned from outcomes rather than generated advice.",
+			"A kind of operating memory that keeps quietly removing the same recurring friction, instead of generating an endless stream of unverified advice.",
 		frontier:
-			"Prove that its top recommendation changes behavior and closes valuable work often enough to deserve daily attention.",
+			"Prove its top pick actually changes something often enough to be worth checking every day.",
 		proof: [{ label: "Implemented internal system; scheduler currently stopped" }],
 		tags: ["Python", "SQLite", "Claude", "Telegram"],
 	},
 	{
 		name: "Victorique",
+		tier: "!",
 		state: "prototype",
 		date: "2026–now",
 		description:
@@ -521,18 +548,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Tests whether a private knowledge base can become an active, cited research substrate.",
 		archiveDescription:
-			"A librarian for a vault that has grown too large to remember whole. Victorique is meant to recover buried arguments, expose contradictions and abandoned threads, and reconstruct useful truth from fragments—with exact citations and permission before writing.",
+			"A librarian for my Obsidian vault — it's gotten too big to remember whole. Meant to dig up buried arguments and contradictions and answer questions with actual citations, not just a summary.",
 		present:
-			"The architecture and safety model are detailed, and a thin Telegram query prototype is described. The repository remains mostly design and early scaffolding; the trusted index, pattern detectors, approval inbox, and independent builder are not present realities.",
+			"Mostly design right now, plus a thin Telegram prototype. The actual indexing and trust layer aren't built yet.",
 		vision:
-			"A cited intelligence layer over the vault: first a reliable mirror, then an analyst and recommender, eventually a builder that can act while preserving inspectable evidence and human authority.",
+			"First a reliable mirror of the vault, then an analyst that spots patterns, eventually something that can write back — always with citations, always needing permission.",
 		frontier:
-			"Earn trust at Level 0. Build a complete index-and-ask path and prevent false coherence before unlocking any write or tool authority.",
+			"Get the basic index-and-ask loop fully working and trustworthy before it's allowed to touch anything.",
 		proof: [{ label: "Architecture and Phase-0 manual prototype plan" }],
 		tags: ["Python", "Claude", "Obsidian", "Telegram"],
 	},
 	{
 		name: "navi",
+		tier: "!",
 		state: "prototype",
 		date: "2026",
 		description:
@@ -541,18 +569,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Defines a path toward cross-session recall without presenting design work as a finished memory system.",
 		archiveDescription:
-			"Sessions forget; navi is the refusal to accept that reset. It treats observations, decisions, procedures, and identity as living memory that can be recalled by meaning, strengthened by use, and shared across agents.",
+			"A memory system so my AI sessions stop forgetting everything between conversations — recall by meaning, not just keyword.",
 		present:
-			"The repository contains a small Python/Qdrant/Ollama memory substrate and detailed plans. Its own verified context records an incomplete remember-to-recall slice, missing service packaging and boot integration, and documentation drift.",
+			"A small local memory engine and a detailed plan exist. The actual remember-to-recall loop isn't finished, and it's not wired into anything yet.",
 		vision:
-			"One local continuity layer where every agent recovers the right memory at the right moment, notices patterns across months, and continues as part of the same evolving system rather than another blank session.",
+			"One shared memory every agent of mine can pull from — the right memory at the right moment, patterns noticed across months, not starting blank every time.",
 		frontier:
-			"Close the remember-to-recall loop, then solve provenance, contradiction, forgetting, and context injection before calling retrieval “consciousness.”",
+			"Finish the basic loop — remember something, recall it later — before worrying about anything fancier.",
 		proof: [{ label: "Early local substrate; end-to-end recall slice incomplete" }],
 		tags: ["Python", "Qdrant", "Ollama", "Embeddings"],
 	},
 	{
 		name: "Canna Store",
+		tier: "!",
 		state: "prototype",
 		date: "2026",
 		description:
@@ -561,18 +590,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Proved the ordinary commerce flow while making the unresolved regulatory and payment constraints explicit.",
 		archiveDescription:
-			"A deliberately plain storefront prototype: batches become products, products enter a cart, orders reach checkout, and operators can inspect inventory and payment state. The real subject is where ordinary commerce software meets unusually unforgiving regulation.",
+			"A cannabis e-commerce storefront, built and working locally — catalog, cart, checkout, order admin. The hard part was never the software.",
 		present:
-			"Catalog, cart, admin pages, Postgres schema, age splash, order records, and Stripe session wiring exist locally. It is not a lawful cannabis store: licensing, jurisdiction, possession limits, strong age verification, and processor eligibility sit outside checkout.",
+			"Everything runs locally and the flow works end to end. It's not a real store yet — no licence, no real jurisdiction, no real age verification, no payment processor that would actually accept this.",
 		vision:
-			"A deployable regulated-commerce system whose inventory, identity, geography, payments, fulfillment, and audit trail all enforce the retailer’s actual licence instead of merely displaying compliant language.",
+			"A real regulated storefront where the software actually enforces the licence it's running under, not just displays the right words.",
 		frontier:
-			"The gap is legal and transactional authority: a real jurisdiction, licensed operator, enforceable checks, eligible payments, and a proved order lifecycle.",
+			"Get the actual legal and payment pieces — a licence, a jurisdiction, a processor that will touch this.",
 		proof: [{ label: "Local build, tests, and database smoke flow" }],
 		tags: ["Next.js", "TypeScript", "PostgreSQL", "Stripe"],
 	},
 	{
 		name: "Selection Oracle",
+		tier: "!",
 		state: "prototype",
 		date: "2026",
 		description:
@@ -581,18 +611,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Provides fast explanation of selected text without passive page surveillance.",
 		archiveDescription:
-			"A browser-side question asked at the smallest useful boundary: what can this selected passage tell me? The extension captures only text a user deliberately highlights, then opens an analysis surface instead of watching entire pages.",
+			"A browser extension: highlight some text, get it explained. It only ever looks at what you actually selected.",
 		present:
-			"Repository evidence records a working local Manifest V3 extension and fixes to bundling, overlay placement, and diagnostics. No standalone source repository or durable design document was located, so this remains a small completed experiment.",
+			"A small working extension, done locally. No real backend decided yet.",
 		vision:
-			"Point at any passage and summon a private, source-grounded explanation, critique, or connection without surrendering the surrounding page to surveillance.",
+			"Highlight anything, anywhere, and get a grounded explanation without the page itself being watched.",
 		frontier:
-			"Recover the source, define the endpoint and retention contract, and prove that explicit selection remains the hard privacy boundary.",
+			"Pick a real backend, decide what gets kept and for how long, prove the \"only what you select\" boundary actually holds.",
 		proof: [{ label: "Local extension build" }],
 		tags: ["Chrome Extension", "Manifest V3", "JavaScript"],
 	},
 	{
 		name: "Red Team Workflow",
+		tier: "!",
 		state: "paused",
 		date: "2026",
 		description:
@@ -601,18 +632,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Makes security practice auditable while keeping activity inside explicit training or engagement scope.",
 		archiveDescription:
-			"Offensive security begins with permission and a question, not a scanner. Red Team Workflow is a terminal discipline for turning authorized scope into minimal validation, sealed observations, curated evidence, findings, remediation, and retest.",
+			"A disciplined way of doing security testing — scoped, authorized, every step evidenced, nothing run without permission. Paused right now.",
 		present:
-			"The command bus, workspace structure, scope gate, evidence ledger, learning map, and Aperture projection exist around a local training lab. It intentionally does not execute scanners or choose targets, and no completed real-world engagement is established.",
+			"The structure's all there — scope gates, evidence log, learning notes — but it's only ever run against a local training lab. No real engagement has happened yet.",
 		vision:
-			"A practiced security operating system where every test is authorized, every step follows a hypothesis, every claim carries reproducible evidence, and learning advances only when artifacts prove it.",
+			"A practiced way of working where every test has a reason, every finding has proof, and skill only counts once it's demonstrated, not claimed.",
 		frontier:
-			"Move from a sound training scaffold to demonstrated skill without weakening strict scope refusal as the tool catalog grows.",
+			"Actually get good at it, without ever loosening the refusal to act outside authorized scope.",
 		proof: [{ label: "Dormant training toolkit" }],
 		tags: ["Python", "Security labs", "Evidence", "CLI"],
 	},
 	{
 		name: "Brain Monitor",
+		tier: "!",
 		state: "archived",
 		date: "2026",
 		description:
@@ -621,18 +653,19 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Produced reusable control-surface ideas and a clear lesson about tight coupling and single-file maintenance.",
 		archiveDescription:
-			"Brain Monitor tried to make an evolving operation visible from inside it: live state, deep drill-downs, newly discovered components, and an embedded agent answering from the dashboard’s context. Its best idea was intelligence inside the instrument panel, not another chat window.",
+			"A terminal dashboard I built to watch my whole operation from the inside, with an agent answering questions right there in context. Archived now — it broke.",
 		present:
-			"Broken and archived. The 4,500-line single-file TUI rotted as Realm, service names, paths, and operational surfaces changed. It survives as a design specimen, not a functioning monitor.",
+			"Dead. A 4,500-line single file that rotted every time something else in the system changed names or paths. What's left is a lesson, not a tool.",
 		vision:
-			"Its useful patterns—context snapshots, evolution detection, restartable file-backed views, and contextual drill-down—should reappear as maintainable pieces of Aperture or Commander, not as a revived monolith.",
+			"The good ideas in it — noticing what changed, drilling into live state, answering questions in context — belong inside Aperture or Commander now, as real maintained pieces, not revived as one giant file again.",
 		frontier:
-			"Extract only the ideas that still earn their weight: automatic discovery must notice change without hard-coding a second, stale copy of the system.",
+			"Only take what still earns its place, and never let \"automatic discovery\" quietly become a second, stale copy of the system.",
 		proof: [{ label: "Archived after path and architecture drift" }],
 		tags: ["Python", "TUI", "Operations"],
 	},
 	{
 		name: "MERULOX",
+		tier: "!!",
 		state: "active",
 		date: "2026–now",
 		github: "https://github.com/Merulox/meruloxs-terminal",
@@ -642,13 +675,13 @@ export const archiveProjects: Project[] = [
 		impact:
 			"Turns shipped work, failed bets, and ongoing experiments into a public operating record.",
 		archiveDescription:
-			"MERULOX is the public index of a systems thinker: projects, field notes, reading, music, and current motion arranged with the precision of a reference manual. The work, dates, and unfinished edges carry the identity.",
+			"This site — everything I've built, what's working, what failed, written down instead of performed.",
 		present:
-			"A deployed Astro site on Cloudflare Pages with static project pages and live content seams for posts, logs, reading, and listening. Its main weakness is editorial: project records can outrun repository truth.",
+			"Live on Cloudflare, project pages and a few content feeds. The main risk is honesty drift — letting what's written here get ahead of what's actually true in the repos.",
 		vision:
-			"A living, legible record of what Merulox builds and thinks—specific enough for engineers, accessible enough for strangers, and candid enough that archived failures remain as informative as shipped systems.",
+			"A record specific enough that an engineer could verify it, and honest enough that the failed attempts are as useful as the shipped ones.",
 		frontier:
-			"Keep the public archive synchronized with evidence without flattening every project into the same grandiose voice.",
+			"Keep it actually true as things change, and don't let every project get flattened into the same voice — which, fittingly, is exactly what this rewrite pass was for.",
 		proof: [
 			{ label: "Live site", href: "https://merulox.com" },
 			{ label: "GitHub repository", href: "https://github.com/Merulox/meruloxs-terminal" },
@@ -679,10 +712,11 @@ export const projects = archiveProjects.filter(
 export const moneySchemes: MoneyScheme[] = [
 	{
 		name: "Permissioned short-form clipping",
+		tier: "!!!",
 		state: "research",
 		date: "2026-08–now",
 		description:
-			"Use a licensed marketplace campaign as paid training, then move toward direct creator retainers or owned media only if the evidence supports it.",
+			"Clip other people's licensed videos into short-form content, get paid per eligible view through a marketplace, and see if that ever becomes real retainers or my own channels.",
 		currentState:
 			"This is the current non-Boréal revenue hypothesis, but no campaign, accepted clip, eligible view, or payout has been recorded.",
 		decision: "pursue",
@@ -705,10 +739,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Quebec trades automation agency",
+		tier: "!!!",
 		state: "active",
 		date: "2026-03–now",
 		description:
-			"Sell missed-call recovery, lead follow-up, onboarding, and operating support to Quebec trades businesses through setup fees and recurring service.",
+			"Sell Quebec trades missed-call recovery and lead follow-up — a setup fee plus a monthly retainer.",
 		currentState:
 			"The service and delivery stack exists. The current signal ledger records 536 outbound messages, six qualified replies, zero completed discovery calls, and zero signed clients.",
 		decision: "pursue",
@@ -742,10 +777,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Capital Map intelligence desk",
+		tier: "!!!",
 		state: "active",
 		date: "2026-08–now",
 		description:
-			"Package a working Hyperliquid market and wallet-intelligence system as a paid analyst tool, dataset, or bounded design-partner service.",
+			"Package the Hyperliquid tool I already built as something someone actually pays for — a dataset, an analyst seat, a pilot deal.",
 		currentState:
 			"The local product is substantial and running; a paying design partner, price test, or subscription has not been recorded.",
 		decision: "pursue",
@@ -779,10 +815,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "SYNTRA commerce foundry",
+		tier: "!!",
 		state: "active",
 		date: "2026–now",
 		description:
-			"Use product and supplier intelligence to find an executable editorial-affiliate, dropshipping, or original-product opportunity.",
+			"Turn the product and supplier research into an actual sale — affiliate, dropshipping, or an original product, whichever one actually works.",
 		currentState:
 			"Catalog and storefront infrastructure exists, but no attributable affiliate transaction, qualified dropshipping offer, or store-level revenue is recorded.",
 		decision: "hold",
@@ -816,10 +853,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Autonomous affiliate media network",
+		tier: "!!",
 		state: "paused",
 		date: "2026-07–now",
 		description:
-			"Operate several niche media identities, publish platform-native content, and monetize attention through affiliate offers or owned products.",
+			"Run a few niche media accounts, publish real content, see if any of it earns affiliate money.",
 		currentState:
 			"Publishing mechanics exist, one X lane and a private YouTube path were exercised, but there is no affiliate conversion or payout evidence and the scheduler is stopped.",
 		decision: "hold",
@@ -853,10 +891,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Packaged n8n workflows on Gumroad",
+		tier: "!",
 		state: "archived",
 		date: "2026-04–05",
 		description:
-			"Sell one-time workflow bundles for lead enrichment, follow-up, reporting, onboarding, review requests, and invoice extraction.",
+			"Sell ready-made automation bundles — lead scoring, follow-up, reporting — as one-time downloads. Sold zero. Archived.",
 		currentState:
 			"A $49 lead-enrichment product was published with a buyer-ready bundle. The source of truth records zero sales and zero revenue; the project is archived.",
 		decision: "drop",
@@ -882,10 +921,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Contractor missed-lead recovery kit",
+		tier: "!!!",
 		state: "research",
 		date: "2026-09",
 		description:
-			"Test a CAD 49 manual recovery kit with 30 targeted Quebec contractor emails over 14 days and zero paid spend.",
+			"A $49 manual kit to help contractors recover leads they missed, tested on 30 targeted emails, no ad spend.",
 		currentState:
 			"The card and probe are approved, but no exposure may be recorded until outbound delivery and CAD checkout receipt capture pass smoke tests.",
 		decision: "pursue",
@@ -908,10 +948,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Contractor estimate-follow-up kit",
+		tier: "!!!",
 		state: "research",
 		date: "2026-09",
 		description:
-			"Test a CAD 49 finite estimate-follow-up process under the same controlled channel and sample as the missed-lead kit.",
+			"Same $49 test, same channel, different problem: following up on estimates that never got answered.",
 		currentState:
 			"The comparative probe is approved but has not produced an exposure, checkout attempt, payment, or fulfillment.",
 		decision: "pursue",
@@ -934,10 +975,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Med-spa missed-inquiry recovery kit",
+		tier: "!!!",
 		state: "research",
 		date: "2026-09",
 		description:
-			"Test the missed-inquiry recovery mechanism with Quebec med-spas while holding the price and outreach lane comparable.",
+			"Same recovery idea, different buyer: Quebec med-spas missing inquiries instead of contractors missing calls.",
 		currentState:
 			"The probe is approved but unstarted; its pain evidence is weaker and more vendor-contaminated than the contractor cards.",
 		decision: "pursue",
@@ -960,10 +1002,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Quantitative trading strategies",
+		tier: "!!!",
 		state: "research",
 		date: "2026-08–now",
 		description:
-			"Search for weak but reproducible market effects, and promote nothing until it survives costs, stability checks, sealed holdouts, and prospective paper trading.",
+			"Look for a small real trading edge and refuse to trust anything that doesn't survive real costs and a sealed holdout test. Five real attempts tried, five rejected.",
 		currentState:
 			"Several complete families were rejected without opening holdouts. New mechanisms may still be researched, but no live trading is authorized.",
 		decision: "pursue",
@@ -1025,10 +1068,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Polymarket complete-set arbitrage",
+		tier: "!!",
 		state: "research",
 		date: "2026-09",
 		description:
-			"Test whether buying every mutually exclusive outcome below its combined redemption value survives fees, depth, latency, partial fills, and settlement costs.",
+			"Test whether buying every outcome of a prediction market below what they're worth together actually pays after fees and slippage. Still just research — nothing traded.",
 		currentState:
 			"The mechanism and shadow contracts were researched, but no candidate was registered and no prospective source canary started.",
 		decision: "hold",
@@ -1051,10 +1095,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Conway self-funding agent",
+		tier: "!",
 		state: "paused",
 		date: "2026-08",
 		description:
-			"Run the exact upstream Automaton under survival pressure and observe whether it can create paid value, fund compute, and adapt.",
+			"Hand someone else's open-source autonomous agent a wallet and see if it can actually earn its own keep. Got blocked before it could even try — no credits available.",
 		currentState:
 			"The isolated harness reached identity registration, but beta-credit access blocked the agent loop. No artifact or revenue was produced.",
 		decision: "drop",
@@ -1077,10 +1122,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Self-hosted agent economy",
+		tier: "!!",
 		state: "research",
 		date: "2026-08–now",
 		description:
-			"Let a self-hosted agent choose immutable jobs, pay measured inference costs, and receive verifier-controlled payouts for exact artifacts.",
+			"My own version of the same idea: let an agent pick jobs, pay for its own inference, get paid for exact completed work. Works on fake jobs so far — nothing real has paid yet.",
 		currentState:
 			"The mechanics work in controlled experiments, but every payout so far is synthetic. The service and separate live capital canary are stopped.",
 		decision: "hold",
@@ -1103,10 +1149,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Cannabis e-commerce storefront",
+		tier: "!!",
 		state: "prototype",
 		date: "2026-09",
 		description:
-			"Operate a regulated cannabis catalog and checkout with product administration and Stripe-hosted payments.",
+			"The technical half of a cannabis store, working locally. No licence, no real sale, no real money — the software was never the hard part.",
 		currentState:
 			"The technical storefront works locally. There is no licensed live operation, compatible payment receipt, sale, or revenue evidence.",
 		decision: "hold",
@@ -1129,10 +1176,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "AI implementation brokerage",
+		tier: "!",
 		state: "archived",
 		date: "2026-04",
 		description:
-			"Sell high-ticket AI automation projects, route delivery to vetted white-label builders, and keep a 15–20% relationship and scoping margin.",
+			"Sell big AI automation projects, then hand delivery to vetted specialists and keep a cut. Never got a single deal or partner signed. Archived.",
 		currentState:
 			"The deal structure and partner-vetting system were documented, but every specialist slot remained unsourced and no executed deal was recorded.",
 		decision: "drop",
@@ -1155,10 +1203,11 @@ export const moneySchemes: MoneyScheme[] = [
 	},
 	{
 		name: "Automated Substack essay engine",
+		tier: "!",
 		state: "archived",
 		date: "2026-04",
 		description:
-			"Automate a consistent essay publication pipeline, grow an audience, and eventually monetize the publication.",
+			"Automate writing and publishing essays to build an audience and eventually make money from it. The writing pipeline worked; nobody read it. Archived.",
 		currentState:
 			"The writing workflow and several essays exist, but no audience or revenue outcome was recorded and publication still depended on human review.",
 		decision: "drop",

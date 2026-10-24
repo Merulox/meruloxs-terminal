@@ -2,6 +2,13 @@
 import Layout from "../../layouts/Layout.astro";
 import { archiveProjects, moneySchemes } from "../../data/projects";
 
+const tierRank: Record<string, number> = { "!!!": 0, "!!": 1, "!": 2 };
+function byTier(a: { tier: string }, b: { tier: string }): number {
+	return (tierRank[a.tier] ?? 9) - (tierRank[b.tier] ?? 9);
+}
+const sortedProjects = [...archiveProjects].sort(byTier);
+const sortedSchemes = [...moneySchemes].sort(byTier);
+
 const archiveId = (name: string) =>
 	name
 		.normalize("NFKD")
@@ -12,10 +19,12 @@ const archiveId = (name: string) =>
 		.slice(0, 80);
 
 const archiveDescriptionContext = [
-	...archiveProjects.map((project) => ({
+	...sortedProjects.map((project, i) => ({
 		kind: "project" as const,
 		id: archiveId(project.name),
 		name: project.name,
+		tier: project.tier,
+		order: i,
 		sourceDescription: project.archiveDescription,
 		description: project.description,
 		role: project.role,
@@ -24,10 +33,12 @@ const archiveDescriptionContext = [
 		vision: project.vision,
 		frontier: project.frontier,
 	})),
-	...moneySchemes.map((scheme) => ({
+	...sortedSchemes.map((scheme, i) => ({
 		kind: "scheme" as const,
 		id: archiveId(scheme.name),
 		name: scheme.name,
+		tier: scheme.tier,
+		order: i,
 		sourceDescription: scheme.description,
 		currentState: scheme.currentState,
 		decision: scheme.decision,
@@ -105,7 +116,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 
 		<div class="proj-list">
 			{
-				archiveProjects.map((project, index) => {
+				sortedProjects.map((project, index) => {
 					const isOpen = index === 0;
 					const bodyId = `project-body-${index}`;
 					const id = archiveId(project.name);
@@ -117,6 +128,8 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 							data-project-id={id}
 							data-archive-kind="project"
 							data-archive-id={id}
+							data-tier={project.tier}
+							data-order={index}
 						>
 							<button
 								class="proj-head row-item"
@@ -124,6 +137,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 								aria-controls={bodyId}
 							>
 								<span class="proj-caret" aria-hidden="true">›</span>
+								<span class="proj-tier" data-archive-tier>{project.tier}</span>
 								<span class="proj-name">{project.name}</span>
 								<span class={`proj-state ${project.state}`}>{project.state}</span>
 								<span class="proj-date">{project.date}</span>
@@ -190,7 +204,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 
 		<div class="proj-list scheme-list">
 			{
-				moneySchemes.map((scheme, index) => {
+				sortedSchemes.map((scheme, index) => {
 					const bodyId = `scheme-body-${index}`;
 					const id = archiveId(scheme.name);
 					const descriptionId = `scheme-description-${id}`;
@@ -201,6 +215,8 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 							data-scheme-id={id}
 							data-archive-kind="scheme"
 							data-archive-id={id}
+							data-tier={scheme.tier}
+							data-order={index}
 						>
 							<button
 								class="proj-head row-item"
@@ -208,6 +224,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 								aria-controls={bodyId}
 							>
 								<span class="proj-caret" aria-hidden="true">›</span>
+								<span class="proj-tier" data-archive-tier>{scheme.tier}</span>
 								<span class="proj-name">{scheme.name}</span>
 								<span class={`proj-state ${scheme.state}`}>{scheme.state}</span>
 								<span class="proj-date">{scheme.date}</span>
@@ -441,6 +458,8 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 			id: string;
 			name: string;
 			sourceDescription: string;
+			tier?: string;
+			order?: number;
 			description?: string;
 			role?: string;
 			impact?: string;
@@ -462,6 +481,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 			editButton: HTMLButtonElement;
 			panel: HTMLElement;
 			textarea: HTMLTextAreaElement;
+			tierSelect: HTMLSelectElement;
 			instruction: HTMLInputElement;
 			preview: HTMLElement;
 			status: HTMLElement;
@@ -536,6 +556,38 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 				editor.textarea.value = description;
 				editor.preview.textContent = description;
 			}
+		};
+
+		const tierRankClient: Record<string, number> = { "!!!": 0, "!!": 1, "!": 2 };
+		const sortListByTierOrder = (list: Element) => {
+			const items = Array.from(list.children) as HTMLElement[];
+			items.sort((a, b) => {
+				const tierDiff =
+					(tierRankClient[a.dataset.tier ?? "!!"] ?? 9) -
+					(tierRankClient[b.dataset.tier ?? "!!"] ?? 9);
+				if (tierDiff !== 0) return tierDiff;
+				return Number(a.dataset.order ?? 0) - Number(b.dataset.order ?? 0);
+			});
+			items.forEach((item) => list.append(item));
+		};
+		const applyTier = (
+			record: ArchiveDescriptionRecord,
+			tier: string,
+			order?: number,
+		) => {
+			const article = document.querySelector<HTMLElement>(
+				`[data-archive-kind="${record.kind}"][data-archive-id="${CSS.escape(record.id)}"]`,
+			);
+			if (!article) return;
+			article.dataset.tier = tier;
+			if (typeof order === "number") article.dataset.order = String(order);
+			const badge = article.querySelector<HTMLElement>("[data-archive-tier]");
+			if (badge) badge.textContent = tier;
+			const list = article.parentElement;
+			if (list) sortListByTierOrder(list);
+			const key = itemKey(record.kind, record.id);
+			const editor = editors.get(key);
+			if (editor) editor.tierSelect.value = tier;
 		};
 
 		const makeButton = (label: string) => {
@@ -671,6 +723,20 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 				textarea.setAttribute("aria-label", `${record.name} description`);
 				descriptionLabel.append(textarea);
 
+				const tierLabel = document.createElement("label");
+				tierLabel.textContent = "Importance tier";
+				const tierSelect = document.createElement("select");
+				for (const value of ["!!!", "!!", "!"]) {
+					const option = document.createElement("option");
+					option.value = value;
+					option.textContent = value;
+					tierSelect.append(option);
+				}
+				tierSelect.value =
+					typeof record.tier === "string" ? record.tier : "!!";
+				tierSelect.setAttribute("aria-label", `${record.name} importance tier`);
+				tierLabel.append(tierSelect);
+
 				const instructionLabel = document.createElement("label");
 				instructionLabel.textContent = "AI instruction (optional)";
 				const instruction = document.createElement("input");
@@ -702,6 +768,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 
 				panel.append(
 					descriptionLabel,
+					tierLabel,
 					instructionLabel,
 					previewLabel,
 					preview,
@@ -716,6 +783,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 					editButton,
 					panel,
 					textarea,
+					tierSelect,
 					instruction,
 					preview,
 					status,
@@ -795,6 +863,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 							kind: record.kind,
 							id: record.id,
 							description: textarea.value,
+							tier: tierSelect.value,
 							clearCandidate: Boolean(candidateVersion),
 							candidateVersion,
 						});
@@ -802,6 +871,13 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 							throw new Error("Save returned an invalid description.");
 						}
 						applyDescription(record, payload.description);
+						if (typeof payload.tier === "string") {
+							applyTier(
+								record,
+								payload.tier,
+								typeof payload.order === "number" ? payload.order : undefined,
+							);
+						}
 						textarea.value = payload.description;
 						preview.textContent = payload.description;
 						let saveMessage = "Saved. Public and dev pages now use this override.";
@@ -902,6 +978,89 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 					}
 				});
 			});
+
+			document
+				.querySelectorAll<HTMLElement>(".proj-list")
+				.forEach((list) => {
+					let dragged: HTMLElement | null = null;
+
+					list.querySelectorAll<HTMLElement>(":scope > article").forEach((article) => {
+						const head = article.querySelector<HTMLElement>(".proj-head");
+						if (!head) return;
+						const handle = document.createElement("span");
+						handle.className = "proj-drag-handle";
+						handle.textContent = "⠿";
+						handle.title = "Drag to reorder";
+						handle.setAttribute("aria-hidden", "true");
+						head.prepend(handle);
+						article.draggable = true;
+
+						article.addEventListener("dragstart", (event) => {
+							dragged = article;
+							article.classList.add("dragging");
+							event.dataTransfer?.setData("text/plain", "");
+							if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+						});
+						article.addEventListener("dragend", () => {
+							article.classList.remove("dragging");
+							dragged = null;
+						});
+						article.addEventListener("dragover", (event) => {
+							if (!dragged || dragged === article) return;
+							event.preventDefault();
+							const rect = article.getBoundingClientRect();
+							const before = event.clientY - rect.top < rect.height / 2;
+							list.insertBefore(dragged, before ? article : article.nextSibling);
+						});
+						article.addEventListener("drop", (event) => {
+							event.preventDefault();
+						});
+					});
+
+					list.addEventListener("dragend", async () => {
+						const items = Array.from(
+							list.querySelectorAll<HTMLElement>(":scope > article"),
+						);
+						const updates: Promise<unknown>[] = [];
+						items.forEach((item, index) => {
+							const prevTier = item.dataset.tier;
+							const prevOrder = item.dataset.order;
+							let nextTier = prevTier ?? "!!";
+							const neighbor = items[index + 1] ?? items[index - 1];
+							if (neighbor && neighbor !== item && neighbor.dataset.tier) {
+								// Adopt the tier of the position dropped into so a drag across
+								// a tier boundary promotes/demotes the item.
+								nextTier = neighbor.dataset.tier;
+							}
+							const changed =
+								nextTier !== prevTier || String(index) !== (prevOrder ?? "");
+							item.dataset.tier = nextTier;
+							item.dataset.order = String(index);
+							const badge = item.querySelector<HTMLElement>("[data-archive-tier]");
+							if (badge) badge.textContent = nextTier;
+							if (!changed) return;
+							const kind = item.dataset.archiveKind as ArchiveKind | undefined;
+							const id = item.dataset.archiveId;
+							if (!kind || !id) return;
+							const key = itemKey(kind, id);
+							const description = activeDescriptions.get(key);
+							if (description === undefined) return;
+							updates.push(
+								apiRequest("PUT", {
+									kind,
+									id,
+									description,
+									tier: nextTier,
+									order: index,
+								}).catch(() => {
+									// Best-effort; a failed reorder write leaves the DOM order
+									// as the source of truth until the next reload.
+								}),
+							);
+						});
+						await Promise.all(updates);
+					});
+				});
 		}
 
 		editors.forEach((editor) => {
@@ -920,6 +1079,13 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 						override.description.trim()
 					) {
 						applyDescription(record, override.description);
+					}
+					if (override && typeof override.tier === "string") {
+						applyTier(
+							record,
+							override.tier,
+							typeof override.order === "number" ? override.order : undefined,
+						);
 					}
 					const editor = editors.get(itemKey(record.kind, record.id));
 					if (editor) {
