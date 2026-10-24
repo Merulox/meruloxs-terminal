@@ -162,7 +162,11 @@ const periodButtons = `
 				if (!items.length) return;
 				const shuffled = [...items].sort(() => Math.random() - 0.5);
 				const figHtml = (it: any) =>
-					`<figure class="mood-item"><img src="${it.src}" alt="" loading="lazy" /></figure>`;
+					// eager, not lazy: images sit inside a transform-animated track
+					// (not real scroll), so the browser's lazy-load intersection
+					// heuristic never fires until something else forces a layout
+					// recalc (e.g. :hover) — total payload is ~1MB, eager is cheap.
+					`<figure class="mood-item"><img src="${it.src}" alt="" loading="eager" /></figure>`;
 				const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 				const figs = shuffled.map(figHtml).join("");
 				// duplicate once for a seamless looping marquee (skip when autoscroll is disabled)

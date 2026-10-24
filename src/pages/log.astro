@@ -21,12 +21,14 @@ const entries = logData.entries;
 	<ul class="log-list">
 		{
 			entries.map((e) => (
-				<li class="log-entry">
-					<div class="log-meta">
-						<time class="log-date">{e.date}</time>
-						<span class="log-kind">{e.kind}</span>
+				<li class="log-entry kbd-row">
+					<div class="log-entry-inner row-item" tabindex="0">
+						<div class="log-meta">
+							<time class="log-date">{e.date}</time>
+							<span class="log-kind">{e.kind}</span>
+						</div>
+						<p class="log-text">{e.text}</p>
 					</div>
-					<p class="log-text">{e.text}</p>
 				</li>
 			))
 		}

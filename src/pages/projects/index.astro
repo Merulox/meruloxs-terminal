@@ -67,10 +67,10 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 			what I tried, what I actually did, how it went, where it stands, and what
 			stopped it.
 		</p>
-		<div class="archive-index" role="group" aria-label="Archive view">
+		<div class="archive-index kbd-row" role="group" aria-label="Archive view">
 			<button
 				type="button"
-				class="archive-switch"
+				class="archive-switch row-item"
 				data-archive-target="projects"
 				aria-pressed="true"
 			>
@@ -80,7 +80,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 			</button>
 			<button
 				type="button"
-				class="archive-switch"
+				class="archive-switch row-item"
 				data-archive-target="money-schemes"
 				aria-pressed="false"
 			>
@@ -113,13 +113,13 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 
 					return (
 						<article
-							class={`proj${isOpen ? " open" : ""}`}
+							class={`proj kbd-row${isOpen ? " open" : ""}`}
 							data-project-id={id}
 							data-archive-kind="project"
 							data-archive-id={id}
 						>
 							<button
-								class="proj-head list-item"
+								class="proj-head row-item"
 								aria-expanded={isOpen ? "true" : "false"}
 								aria-controls={bodyId}
 							>
@@ -197,13 +197,13 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 
 					return (
 						<article
-							class="proj scheme"
+							class="proj scheme kbd-row"
 							data-scheme-id={id}
 							data-archive-kind="scheme"
 							data-archive-id={id}
 						>
 							<button
-								class="proj-head list-item"
+								class="proj-head row-item"
 								aria-expanded="false"
 								aria-controls={bodyId}
 							>
@@ -963,7 +963,6 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 		};
 
 		archiveSwitches.forEach((control) => {
-			control.addEventListener("keydown", (event) => event.stopPropagation());
 			control.addEventListener("click", () => {
 				activateArchivePanel(control.dataset.archiveTarget ?? "projects");
 			});

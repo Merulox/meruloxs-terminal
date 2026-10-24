@@ -60,36 +60,73 @@ const navItems = customNavItems ?? defaultNavItems;
 		/>
 	</head>
 	<body>
+		<header class="home-statusbar">
+			<span class="home-brand">[navi]</span>
+			<span class="home-host">merulox</span>
+			<span class="home-tagline">cyberia's schemer boy</span>
+			<span class="home-statusbar-spacer"></span>
+			<span class="home-now-playing" id="now-playing" hidden></span>
+			<span class="home-clock" id="home-clock"></span>
+			<span class="home-visits" id="home-visits" hidden></span>
+			<button
+				class="home-shortcuts-btn"
+				id="shortcuts-btn"
+				type="button"
+				aria-haspopup="dialog"
+			>
+				? shortcuts
+			</button>
+		</header>
+		<dialog class="shortcuts-dialog" id="shortcuts-dialog">
+			<div class="shortcuts-dialog-head">
+				<span>keyboard shortcuts</span>
+				<button id="shortcuts-close" type="button" aria-label="Close">×</button>
+			</div>
+			<dl class="shortcuts-list">
+				<dt><kbd>j</kbd> <kbd>k</kbd> / <kbd><span class="glyph-fallback">↓</span></kbd> <kbd><span class="glyph-fallback">↑</span></kbd></dt>
+				<dd>move through the list / rows</dd>
+				<dt><kbd>h</kbd> <kbd>l</kbd> / <kbd><span class="glyph-fallback">←</span></kbd> <kbd><span class="glyph-fallback">→</span></kbd></dt>
+				<dd>move across the top nav</dd>
+				<dt><kbd>Enter</kbd></dt>
+				<dd>open the highlighted item</dd>
+				<dt><kbd>?</kbd></dt>
+				<dd>toggle this panel</dd>
+				<dt><kbd>Esc</kbd></dt>
+				<dd>close</dd>
+			</dl>
+		</dialog>
 		{
 			homepage ? (
 				<slot />
 			) : (
 				<div class="site-shell">
-					<header class="site-header">
-						<a class="site-name kbd-item" href={homeHref}>
-							MERULOX
-						</a>
-						<nav class="site-nav" aria-label="Primary navigation">
-							{navItems.map((item) => {
-								const itemPath = item.href.replace(/\/$/, "");
-								const currentPath = pathname.replace(/\/$/, "");
-								const isActive = currentPath === itemPath;
-								return (
-									<a
-										href={item.href}
-										class="kbd-item"
-										aria-current={isActive ? "page" : undefined}
-									>
-										<span class="sel-arrow" aria-hidden="true">&gt;</span>
-										{item.label}
-									</a>
-								);
-							})}
-						</nav>
-					</header>
-					<main>
-						<slot />
-					</main>
+					<div class="site-pane">
+						<header class="site-header">
+							<a class="site-name kbd-item" href={homeHref}>
+								MERULOX
+							</a>
+							<nav class="site-nav" aria-label="Primary navigation">
+								{navItems.map((item) => {
+									const itemPath = item.href.replace(/\/$/, "");
+									const currentPath = pathname.replace(/\/$/, "");
+									const isActive = currentPath === itemPath;
+									return (
+										<a
+											href={item.href}
+											class="kbd-item"
+											aria-current={isActive ? "page" : undefined}
+										>
+											<span class="sel-arrow" aria-hidden="true">&gt;</span>
+											{item.label}
+										</a>
+									);
+								})}
+							</nav>
+						</header>
+						<main>
+							<slot />
+						</main>
+					</div>
 				</div>
 			)
 		}
@@ -134,7 +171,8 @@ const navItems = customNavItems ?? defaultNavItems;
 					return Boolean(
 						interactive &&
 							!navEls.includes(interactive) &&
-							!listEls.includes(interactive),
+							!listEls.includes(interactive) &&
+							!interactive.classList.contains("row-item"),
 					);
 				};
 
@@ -207,16 +245,21 @@ const navItems = customNavItems ?? defaultNavItems;
 					return;
 				}
 
-				// ── Single row/col cursor (music, now, writing) ──
+				// ── Single row/col cursor (music, now, writing, projects) ──
 				//   Up/Down → between rows (nav, then each .kbd-row)
 				//   Left/Right → within the current row
-				const rows: HTMLElement[][] = [
-					navEls,
-					...rowGroups.map((g) =>
-						Array.from(g.querySelectorAll<HTMLElement>(".row-item")),
-					),
-				].filter((r) => r.length);
+				//   .kbd-row groups inside a currently-hidden panel are skipped —
+				//   rebuilt on every keypress so switching panels (archive-panel-change)
+				//   reflects immediately without a stale row list.
+				const buildRows = (): HTMLElement[][] =>
+					[
+						navEls,
+						...rowGroups
+							.filter((g) => !g.closest<HTMLElement>("[hidden]"))
+							.map((g) => Array.from(g.querySelectorAll<HTMLElement>(".row-item"))),
+					].filter((row) => row.length);
 
+				let rows = buildRows();
 				let r = 0;
 				let c = navStart;
 				const paintCell = () => {
@@ -296,6 +339,18 @@ const navItems = customNavItems ?? defaultNavItems;
 				};
 				paintCell();
 
+				const refreshRows = (reset = false) => {
+					const next = buildRows();
+					if (!next.length) return;
+					rows = next;
+					r = reset ? 0 : Math.min(r, rows.length - 1);
+					c = Math.min(c, rows[r].length - 1);
+				};
+				document.addEventListener("archive-panel-change", () => {
+					refreshRows();
+					paintCell();
+				});
+
 				document.addEventListener("focusin", (e) => {
 					const t = e.target as HTMLElement;
 					for (let ri = 0; ri < rows.length; ri++) {
@@ -306,6 +361,7 @@ const navItems = customNavItems ?? defaultNavItems;
 
 				document.addEventListener("keydown", (e) => {
 					if (skipTarget(e)) return;
+					refreshRows();
 					switch (e.key) {
 						case "ArrowUp": case "k":
 							if (rows.length > 1) {
@@ -346,6 +402,134 @@ const navItems = customNavItems ?? defaultNavItems;
 						}
 					}
 				});
+			})();
+		</script>
+		<script>
+			(function () {
+				const LFM_API_KEY = "9fdb2ae95fb0b95470334c260149c3cb";
+				const LFM_USER = "merulox";
+				const EASTERN = "America/New_York";
+
+				// ── Clock ──
+				const clockEl = document.getElementById("home-clock");
+				const clockFmt = new Intl.DateTimeFormat("en-US", {
+					timeZone: EASTERN,
+					month: "short",
+					day: "2-digit",
+					hour: "2-digit",
+					minute: "2-digit",
+					hour12: false,
+				});
+				function tickClock() {
+					if (clockEl) clockEl.textContent = clockFmt.format(new Date());
+				}
+				tickClock();
+				setInterval(tickClock, 30_000);
+
+				// ── Now playing (last.fm), cached across page navigations ──
+				const nowPlayingEl = document.getElementById("now-playing");
+				const NP_CACHE_KEY = "merulox-np-cache";
+				const NP_CACHE_MS = 120_000; // 2 minutes
+
+				function applyNowPlaying(entry: { hidden: boolean; html?: string }) {
+					if (!nowPlayingEl) return;
+					if (!entry || entry.hidden) {
+						nowPlayingEl.hidden = true;
+						return;
+					}
+					nowPlayingEl.innerHTML = entry.html ?? "";
+					nowPlayingEl.hidden = false;
+				}
+				function readNpCache(): { hidden: boolean; html?: string } | null {
+					try {
+						const raw = sessionStorage.getItem(NP_CACHE_KEY);
+						if (!raw) return null;
+						const parsed = JSON.parse(raw);
+						if (Date.now() - parsed.ts > NP_CACHE_MS) return null;
+						return parsed;
+					} catch {
+						return null; // private mode / storage disabled — just skip caching
+					}
+				}
+				function writeNpCache(entry: { hidden: boolean; html?: string }) {
+					try {
+						sessionStorage.setItem(NP_CACHE_KEY, JSON.stringify({ ...entry, ts: Date.now() }));
+					} catch {
+						/* ignore */
+					}
+				}
+				async function loadNowPlaying(opts: { force?: boolean } = {}) {
+					if (!nowPlayingEl) return;
+					if (!opts.force) {
+						const cached = readNpCache();
+						if (cached) {
+							applyNowPlaying(cached);
+							return;
+						}
+					}
+					try {
+						const res = await fetch(
+							`https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${LFM_USER}&api_key=${LFM_API_KEY}&limit=1&format=json`,
+						);
+						const data = await res.json();
+						const track = data.recenttracks?.track?.[0];
+						const isNowPlaying = track?.["@attr"]?.nowplaying === "true";
+						const entry = isNowPlaying && track
+							? {
+									hidden: false,
+									html: `<span class="np-note">♪</span> ${track.artist?.["#text"] || ""} — ${track.name || ""}`,
+								}
+							: { hidden: true };
+						writeNpCache(entry);
+						applyNowPlaying(entry);
+					} catch {
+						nowPlayingEl.hidden = true;
+					}
+				}
+				loadNowPlaying();
+				setInterval(() => loadNowPlaying({ force: true }), 60_000);
+
+				// ── Visit count (public aggregate-only endpoint) ──
+				const visitsEl = document.getElementById("home-visits");
+				async function loadVisits() {
+					if (!visitsEl) return;
+					try {
+						const res = await fetch("/api/visit-count");
+						if (!res.ok) return;
+						const data = await res.json();
+						if (typeof data.views !== "number") return;
+						visitsEl.textContent = `${data.views.toLocaleString()} visits`;
+						visitsEl.hidden = false;
+					} catch {
+						/* stay hidden */
+					}
+				}
+				loadVisits();
+
+				// ── Shortcuts dialog ──
+				const dialog = document.getElementById("shortcuts-dialog");
+				const openBtn = document.getElementById("shortcuts-btn");
+				const closeBtn = document.getElementById("shortcuts-close");
+				if (dialog && "showModal" in dialog) {
+					const toggle = () => {
+						if (dialog.open) dialog.close();
+						else dialog.showModal();
+					};
+					openBtn?.addEventListener("click", toggle);
+					closeBtn?.addEventListener("click", () => dialog.close());
+					dialog.addEventListener("click", (e) => {
+						if (e.target === dialog) dialog.close();
+					});
+					document.addEventListener("keydown", (e) => {
+						if (e.ctrlKey || e.metaKey || e.altKey) return;
+						const target = e.target as HTMLElement;
+						if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
+						if (e.key === "?") {
+							e.preventDefault();
+							toggle();
+						}
+					});
+				}
 			})();
 		</script>
 	</body>

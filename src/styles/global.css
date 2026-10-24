@@ -11,14 +11,14 @@
 
 :root {
 	color-scheme: dark;
-	--bg: #0d0f13;
-	--text: #c8d0db;
-	--muted: #8896a4;
-	--faint: #2e3640;
-	--accent: #4eb8c4;
-	--line: #1c2028;
-	font-family:
-		-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+	--bg: #111016;
+	--text: #e6e3ec;
+	--muted: #b0a8bd;
+	--faint: #6e6478;
+	--accent: #b0df9b;
+	--line: #2c2735;
+	font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono",
+		monospace;
 }
 
 * {
@@ -32,6 +32,8 @@ html {
 body {
 	margin: 0;
 	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
 	background: var(--bg);
 	color: var(--text);
 	font-size: 15px;
@@ -59,9 +61,20 @@ ul {
 }
 
 .site-shell {
-	width: min(100%, 640px);
+	width: min(100%, 760px);
 	margin: 0 auto;
-	padding: 40px 24px;
+	padding: 28px 20px 64px;
+	flex: 1 1 auto;
+}
+
+.site-pane {
+	border: 1px solid var(--line);
+	background: #16131c;
+	box-shadow: 4px 4px 0 #06050a;
+}
+
+.site-pane > main {
+	padding: 36px 32px 44px;
 }
 
 .site-header {
@@ -69,13 +82,29 @@ ul {
 	align-items: baseline;
 	justify-content: space-between;
 	gap: 24px;
-	margin-bottom: 58px;
+	margin-bottom: 0;
+	padding: 14px 28px;
+	background: #272330;
+	border-bottom: 1px solid var(--line);
+	font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 .site-name {
-	color: var(--text);
+	color: #e6e3ec;
 	font-weight: 600;
 	text-decoration: none;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.site-name::before {
+	content: "[ ";
+	color: #887a99;
+}
+
+.site-name::after {
+	content: " ]";
+	color: #887a99;
 }
 
 .site-name.kbd-cursor {
@@ -96,7 +125,13 @@ ul {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: flex-end;
-	gap: 16px;
+	gap: 11px;
+}
+
+@media (min-width: 601px) {
+	.site-nav {
+		flex-wrap: nowrap;
+	}
 }
 
 .site-nav a {
@@ -935,25 +970,212 @@ h2 {
 /* ── Homepage ─────────────────────────────────────────────── */
 
 .home {
-	min-height: 100vh;
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	background: #111016;
+}
+
+.home-statusbar {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 9px 18px;
+	background: #19171f;
+	border-bottom: 1px solid #494151;
+	font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+	font-size: 12px;
+	line-height: 1;
+}
+
+.home-brand {
+	color: #e6d9f7;
+	font-weight: 600;
+}
+
+.home-host {
+	color: #b0df9b;
+}
+
+.home-tagline {
+	color: var(--faint);
+	white-space: nowrap;
+	line-height: 1;
+}
+
+.home-statusbar-spacer {
+	flex: 1 1 auto;
+}
+
+.home-now-playing {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	max-width: 260px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: #c6b1e4;
+}
+
+.home-now-playing .np-note {
+	color: var(--accent);
+}
+
+.home-clock,
+.home-visits {
+	color: var(--faint);
+	white-space: nowrap;
+}
+
+.home-shortcuts-btn {
+	background: none;
+	border: 1px solid var(--line);
+	color: var(--muted);
+	font: inherit;
+	font-size: 11px;
+	padding: 3px 9px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.home-shortcuts-btn:hover,
+.home-shortcuts-btn:focus-visible {
+	color: var(--text);
+	border-color: var(--accent);
+	outline: none;
+}
+
+.shortcuts-dialog {
+	border: 1px solid var(--line);
+	background: #16131c;
+	color: var(--text);
+	box-shadow: 4px 4px 0 #06050a;
+	padding: 0;
+	width: min(90vw, 360px);
+	font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono",
+		monospace;
+}
+
+.shortcuts-dialog::backdrop {
+	background: rgba(6, 5, 10, 0.7);
+}
+
+.shortcuts-dialog-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 16px;
+	background: #272330;
+	border-bottom: 1px solid var(--line);
+	font-size: 11px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #cbb8e1;
+}
+
+.shortcuts-dialog-head button {
+	background: none;
+	border: none;
+	color: var(--muted);
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0;
+}
+
+.shortcuts-dialog-head button:hover {
+	color: var(--text);
+}
+
+.shortcuts-list {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 10px 16px;
+	padding: 16px;
+	margin: 0;
+	font-size: 12px;
+}
+
+.shortcuts-list dt {
+	color: var(--text);
+	white-space: nowrap;
+}
+
+.shortcuts-list dd {
+	margin: 0;
+	color: var(--muted);
+}
+
+.shortcuts-list kbd {
+	border: 1px solid var(--line);
+	border-radius: 2px;
+	padding: 1px 5px;
+	font-size: 11px;
+	color: var(--text);
+}
+
+/* Monospace UI fonts frequently lack full arrow/status-glyph coverage
+   (seen with ↓ ↑ specifically even when ← → render) — force a fallback
+   font family known to carry them so the glyph never goes blank. */
+.glyph-fallback {
+	font-family: "DejaVu Sans Mono", "Noto Sans Mono", sans-serif;
+}
+
+@media (max-width: 760px) {
+	.home-tagline,
+	.home-now-playing,
+	.home-clock,
+	.home-visits {
+		display: none;
+	}
+}
+
+.home-center {
+	flex: 1 1 auto;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	padding: 28px;
+}
+
+.home-pane {
+	border: 1px solid #494151;
+	background: #16131c;
+	box-shadow: 4px 4px 0 #06050a;
+	width: min(100%, 460px);
+}
+
+.home-pane-head {
+	padding: 8px 22px;
+	background: #272330;
+	border-bottom: 1px solid #494151;
+	font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+	font-size: 11px;
+	color: #cbb8e1;
+}
+
+.home-pane-head::before {
+	content: "── ";
+	color: #887a99;
 }
 
 .home-inner {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 48px;
+	gap: 40px;
+	padding: 52px 40px;
 }
 
 .wordmark {
 	font-family: "VT323", monospace;
-	font-size: 96px;
+	font-size: 88px;
 	font-weight: 400;
 	letter-spacing: 0.08em;
-	color: var(--text);
+	color: #e6e3ec;
 	margin: 0;
 	line-height: 1;
 	text-align: center;
@@ -963,7 +1185,8 @@ h2 {
 .selector {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 2px;
+	width: 100%;
 }
 
 .sel-item {
@@ -971,19 +1194,26 @@ h2 {
 	align-items: center;
 	gap: 10px;
 	text-decoration: none;
-	color: var(--muted);
-	font-family: "SFMono-Regular", Consolas, monospace;
+	color: #b0a8bd;
+	font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 	font-size: 14px;
 	line-height: 1;
-	padding: 2px 0;
+	padding: 6px 8px;
+	border: 1px solid transparent;
 }
 
 .sel-arrow {
 	opacity: 0;
-	color: var(--accent);
+	color: #b0df9b;
 	width: 10px;
 	display: inline-block;
 	flex-shrink: 0;
+}
+
+.sel-item.active {
+	background: #1b221c;
+	border-color: #3a2f49;
+	box-shadow: 2px 2px 0 #06050a;
 }
 
 .sel-item.active .sel-arrow {
@@ -991,7 +1221,7 @@ h2 {
 }
 
 .sel-item.active .sel-label {
-	color: var(--text);
+	color: #eee6f6;
 }
 
 /* ── Page head (title + meta) ─────────────────────────────── */
@@ -1216,8 +1446,18 @@ h2 {
 }
 
 .log-entry {
-	padding: 14px 0;
 	border-top: 1px solid var(--line);
+}
+
+.log-entry-inner {
+	padding: 14px 12px;
+	margin: 0 -12px;
+	outline: none;
+}
+
+.log-entry-inner.kbd-cursor {
+	background: var(--surface, rgba(176, 223, 155, 0.06));
+	box-shadow: inset 2px 0 var(--accent);
 }
 
 .log-entry:last-child {
