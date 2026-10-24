@@ -291,6 +291,7 @@ h2 {
 
 .proj {
 	border-top: 1px solid var(--line);
+	position: relative;
 }
 
 .proj:last-child {
@@ -334,39 +335,54 @@ h2 {
 	color: var(--accent);
 }
 
-.proj-drag-handle {
-	color: var(--faint);
-	font-size: 13px;
-	cursor: grab;
-	margin-right: 2px;
-	user-select: none;
+.tier-section + .tier-section {
+	margin-top: 28px;
 }
 
-.proj.dragging {
-	opacity: 0.4;
-}
-
-.proj-tier {
+.tier-heading {
 	font-family: "SFMono-Regular", Consolas, monospace;
-	font-size: 11px;
+	font-size: 13px;
 	font-weight: 700;
-	letter-spacing: 0.05em;
+	letter-spacing: 0.08em;
 	color: var(--faint);
-	min-width: 2.2em;
-	text-align: center;
+	margin: 0 0 8px;
 }
 
-.proj[data-tier="!!!"] .proj-tier {
+.tier-section[data-tier-group="!!!"] .tier-heading {
 	color: var(--accent);
 }
 
-.proj[data-tier="!!"] .proj-tier {
+.tier-section[data-tier-group="!!"] .tier-heading {
 	color: var(--muted);
 }
 
-.proj[data-tier="!"] .proj-tier {
+.tier-section[data-tier-group="!"] .tier-heading {
 	color: var(--faint);
 }
+
+.proj-move-controls {
+	position: absolute;
+	top: 10px;
+	right: -24px;
+	display: inline-flex;
+	flex-direction: column;
+	z-index: 1;
+}
+
+.proj-move-button {
+	background: none;
+	border: none;
+	color: var(--faint);
+	font-size: 9px;
+	line-height: 1;
+	padding: 1px 4px;
+	cursor: pointer;
+}
+
+.proj-move-button:hover {
+	color: var(--accent);
+}
+
 
 .proj-name {
 	min-width: 0;

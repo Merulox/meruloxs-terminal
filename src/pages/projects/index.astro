@@ -2,12 +2,23 @@
 import Layout from "../../layouts/Layout.astro";
 import { archiveProjects, moneySchemes } from "../../data/projects";
 
+const tierOrder = ["!!!", "!!", "!"] as const;
 const tierRank: Record<string, number> = { "!!!": 0, "!!": 1, "!": 2 };
 function byTier(a: { tier: string }, b: { tier: string }): number {
 	return (tierRank[a.tier] ?? 9) - (tierRank[b.tier] ?? 9);
 }
 const sortedProjects = [...archiveProjects].sort(byTier);
 const sortedSchemes = [...moneySchemes].sort(byTier);
+const projectIndexByName = new Map(sortedProjects.map((p, i) => [p.name, i]));
+const schemeIndexByName = new Map(sortedSchemes.map((s, i) => [s.name, i]));
+const projectsByTier = tierOrder.map((tier) => ({
+	tier,
+	items: sortedProjects.filter((p) => p.tier === tier),
+}));
+const schemesByTier = tierOrder.map((tier) => ({
+	tier,
+	items: sortedSchemes.filter((s) => s.tier === tier),
+}));
 
 const archiveId = (name: string) =>
 	name
@@ -114,79 +125,99 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 			true now—not how ambitious the original idea was.
 		</p>
 
-		<div class="proj-list">
-			{
-				sortedProjects.map((project, index) => {
-					const isOpen = index === 0;
-					const bodyId = `project-body-${index}`;
-					const id = archiveId(project.name);
-					const descriptionId = `project-description-${id}`;
+		{
+			projectsByTier.map((group) => (
+				<div class="tier-section" data-tier-group={group.tier}>
+					<h3 class="tier-heading">{group.tier}</h3>
+					<div class="proj-list" data-tier-list={group.tier}>
+						{
+							group.items.map((project) => {
+								const index = projectIndexByName.get(project.name) ?? 0;
+								const isOpen = index === 0;
+								const bodyId = `project-body-${index}`;
+								const id = archiveId(project.name);
+								const descriptionId = `project-description-${id}`;
 
-					return (
-						<article
-							class={`proj kbd-row${isOpen ? " open" : ""}`}
-							data-project-id={id}
-							data-archive-kind="project"
-							data-archive-id={id}
-							data-tier={project.tier}
-							data-order={index}
-						>
-							<button
-								class="proj-head row-item"
-								aria-expanded={isOpen ? "true" : "false"}
-								aria-controls={bodyId}
-							>
-								<span class="proj-caret" aria-hidden="true">›</span>
-								<span class="proj-tier" data-archive-tier>{project.tier}</span>
-								<span class="proj-name">{project.name}</span>
-								<span class={`proj-state ${project.state}`}>{project.state}</span>
-								<span class="proj-date">{project.date}</span>
-							</button>
-							<div id={bodyId} class="proj-body" hidden={!isOpen}>
-								<p id={descriptionId} class="project-description" data-archive-description>
-									{project.archiveDescription}
-								</p>
+								return (
+									<article
+										class={`proj kbd-row${isOpen ? " open" : ""}`}
+										data-project-id={id}
+										data-archive-kind="project"
+										data-archive-id={id}
+										data-tier={project.tier}
+										data-order={index}
+									>
+										<button
+											class="proj-head row-item"
+											aria-expanded={isOpen ? "true" : "false"}
+											aria-controls={bodyId}
+										>
+											<span class="proj-caret" aria-hidden="true">›</span>
+											<span class="proj-name">{project.name}</span>
+											<span class={`proj-state ${project.state}`}>{project.state}</span>
+											<span class="proj-date">{project.date}</span>
+										</button>
+										<div id={bodyId} class="proj-body" hidden={!isOpen}>
+											<p
+												id={descriptionId}
+												class="project-description"
+												data-archive-description
+											>
+												{project.archiveDescription}
+											</p>
 
-								<div class="living-thesis">
-									<section class="thesis-block">
-										<h3>Present</h3>
-										<p>{project.present}</p>
-									</section>
-									<section class="thesis-block">
-										<h3>Vision</h3>
-										<p>{project.vision}</p>
-									</section>
-									<section class="thesis-block">
-										<h3>Frontier</h3>
-										<p>{project.frontier}</p>
-									</section>
-									<section class="thesis-block project-receipts">
-										<h3>Receipts</h3>
-										<ul class="archive-proof">
-											{
-												project.proof.map((item) => (
-													<li>
-														{item.href ? (
-															<a href={item.href} target="_blank" rel="noreferrer">
-																{item.label} ↗
-															</a>
-														) : item.label}
-													</li>
-												))
-											}
-										</ul>
-									</section>
-								</div>
+											<div class="living-thesis">
+												<section class="thesis-block">
+													<h3>Present</h3>
+													<p>{project.present}</p>
+												</section>
+												<section class="thesis-block">
+													<h3>Vision</h3>
+													<p>{project.vision}</p>
+												</section>
+												<section class="thesis-block">
+													<h3>Frontier</h3>
+													<p>{project.frontier}</p>
+												</section>
+												<section class="thesis-block project-receipts">
+													<h3>Receipts</h3>
+													<ul class="archive-proof">
+														{
+															project.proof.map((item) => (
+																<li>
+																	{item.href ? (
+																		<a
+																			href={item.href}
+																			target="_blank"
+																			rel="noreferrer"
+																		>
+																			{item.label} ↗
+																		</a>
+																	) : (
+																		item.label
+																	)}
+																</li>
+															))
+														}
+													</ul>
+												</section>
+											</div>
 
-								<ul class="tag-list archive-tags" aria-label={`${project.name} stack`}>
-									{project.tags.map((tag) => <li>{tag}</li>)}
-								</ul>
-							</div>
-						</article>
-					);
-				})
-			}
-		</div>
+											<ul
+												class="tag-list archive-tags"
+												aria-label={`${project.name} stack`}
+											>
+												{project.tags.map((tag) => <li>{tag}</li>)}
+											</ul>
+										</div>
+									</article>
+								);
+							})
+						}
+					</div>
+				</div>
+			))
+		}
 	</section>
 
 	<section
@@ -202,113 +233,135 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 			as revenue.
 		</p>
 
-		<div class="proj-list scheme-list">
-			{
-				sortedSchemes.map((scheme, index) => {
-					const bodyId = `scheme-body-${index}`;
-					const id = archiveId(scheme.name);
-					const descriptionId = `scheme-description-${id}`;
+		{
+			schemesByTier.map((group) => (
+				<div class="tier-section" data-tier-group={group.tier}>
+					<h3 class="tier-heading">{group.tier}</h3>
+					<div class="proj-list scheme-list" data-tier-list={group.tier}>
+						{
+							group.items.map((scheme) => {
+								const index = schemeIndexByName.get(scheme.name) ?? 0;
+								const bodyId = `scheme-body-${index}`;
+								const id = archiveId(scheme.name);
+								const descriptionId = `scheme-description-${id}`;
 
-					return (
-						<article
-							class="proj scheme kbd-row"
-							data-scheme-id={id}
-							data-archive-kind="scheme"
-							data-archive-id={id}
-							data-tier={scheme.tier}
-							data-order={index}
-						>
-							<button
-								class="proj-head row-item"
-								aria-expanded="false"
-								aria-controls={bodyId}
-							>
-								<span class="proj-caret" aria-hidden="true">›</span>
-								<span class="proj-tier" data-archive-tier>{scheme.tier}</span>
-								<span class="proj-name">{scheme.name}</span>
-								<span class={`proj-state ${scheme.state}`}>{scheme.state}</span>
-								<span class="proj-date">{scheme.date}</span>
-							</button>
-							<div id={bodyId} class="proj-body" hidden>
-								<dl class="archive-fields scheme-summary">
-									<div class="archive-field">
-										<dt>Model</dt>
-										<dd id={descriptionId} class="scheme-description" data-archive-description>
-											{scheme.description}
-										</dd>
-									</div>
-									<div class="archive-field">
-										<dt>Now</dt>
-										<dd>{scheme.currentState}</dd>
-									</div>
-									<div class="archive-field">
-										<dt>Decision</dt>
-										<dd>
-											<span class={`scheme-decision ${scheme.decision}`}>
-												{scheme.decision}
-											</span>
-										</dd>
-									</div>
-									<div class="archive-field">
-										<dt>Wall</dt>
-										<dd>{scheme.bottleneck}</dd>
-									</div>
-								</dl>
-
-								<ol class="scheme-history" aria-label={`${scheme.name} attempt history`}>
-									{
-										scheme.history.map((entry) => (
-											<li class="scheme-history-item">
-												<div class="scheme-history-head">
-													<time datetime={entry.date}>{entry.date}</time>
-													<span class={`proj-state ${entry.state}`}>{entry.state}</span>
+								return (
+									<article
+										class="proj scheme kbd-row"
+										data-scheme-id={id}
+										data-archive-kind="scheme"
+										data-archive-id={id}
+										data-tier={scheme.tier}
+										data-order={index}
+									>
+										<button
+											class="proj-head row-item"
+											aria-expanded="false"
+											aria-controls={bodyId}
+										>
+											<span class="proj-caret" aria-hidden="true">›</span>
+											<span class="proj-name">{scheme.name}</span>
+											<span class={`proj-state ${scheme.state}`}>{scheme.state}</span>
+											<span class="proj-date">{scheme.date}</span>
+										</button>
+										<div id={bodyId} class="proj-body" hidden>
+											<dl class="archive-fields scheme-summary">
+												<div class="archive-field">
+													<dt>Model</dt>
+													<dd
+														id={descriptionId}
+														class="scheme-description"
+														data-archive-description
+													>
+														{scheme.description}
+													</dd>
 												</div>
-												<dl class="scheme-history-fields">
-													<div class="scheme-history-field">
-														<dt>Attempt</dt>
-														<dd>{entry.attemptedModel}</dd>
-													</div>
-													<div class="scheme-history-field">
-														<dt>Did</dt>
-														<dd>{entry.work}</dd>
-													</div>
-													<div class="scheme-history-field">
-														<dt>Result</dt>
-														<dd>{entry.result}</dd>
-													</div>
-													<div class="scheme-history-field">
-														<dt>Evidence</dt>
-														<dd>
-															<ul class="archive-proof">
-																{
-																	entry.proof.map((item) => (
-																		<li>
-																			{item.href ? (
-																				<a href={item.href} target="_blank" rel="noreferrer">
-																					{item.label} ↗
-																				</a>
-																			) : item.label}
-																		</li>
-																	))
-																}
-															</ul>
-														</dd>
-													</div>
-												</dl>
-											</li>
-										))
-									}
-								</ol>
+												<div class="archive-field">
+													<dt>Now</dt>
+													<dd>{scheme.currentState}</dd>
+												</div>
+												<div class="archive-field">
+													<dt>Decision</dt>
+													<dd>
+														<span class={`scheme-decision ${scheme.decision}`}>
+															{scheme.decision}
+														</span>
+													</dd>
+												</div>
+												<div class="archive-field">
+													<dt>Wall</dt>
+													<dd>{scheme.bottleneck}</dd>
+												</div>
+											</dl>
 
-								<ul class="tag-list archive-tags" aria-label={`${scheme.name} tags`}>
-									{scheme.tags.map((tag) => <li>{tag}</li>)}
-								</ul>
-							</div>
-						</article>
-					);
-				})
-			}
-		</div>
+											<ol
+												class="scheme-history"
+												aria-label={`${scheme.name} attempt history`}
+											>
+												{
+													scheme.history.map((entry) => (
+														<li class="scheme-history-item">
+															<div class="scheme-history-head">
+																<time datetime={entry.date}>{entry.date}</time>
+																<span class={`proj-state ${entry.state}`}>
+																	{entry.state}
+																</span>
+															</div>
+															<dl class="scheme-history-fields">
+																<div class="scheme-history-field">
+																	<dt>Attempt</dt>
+																	<dd>{entry.attemptedModel}</dd>
+																</div>
+																<div class="scheme-history-field">
+																	<dt>Did</dt>
+																	<dd>{entry.work}</dd>
+																</div>
+																<div class="scheme-history-field">
+																	<dt>Result</dt>
+																	<dd>{entry.result}</dd>
+																</div>
+																<div class="scheme-history-field">
+																	<dt>Evidence</dt>
+																	<dd>
+																		<ul class="archive-proof">
+																			{
+																				entry.proof.map((item) => (
+																					<li>
+																						{item.href ? (
+																							<a
+																								href={item.href}
+																								target="_blank"
+																								rel="noreferrer"
+																							>
+																								{item.label} ↗
+																							</a>
+																						) : (
+																							item.label
+																						)}
+																					</li>
+																				))
+																			}
+																		</ul>
+																	</dd>
+																</div>
+															</dl>
+														</li>
+													))
+												}
+											</ol>
+
+											<ul class="tag-list archive-tags" aria-label={`${scheme.name} tags`}>
+												{scheme.tags.map((tag) => <li>{tag}</li>)}
+											</ul>
+										</div>
+									</article>
+								);
+							})
+						}
+					</div>
+				</div>
+			))
+		}
 	</section>
 
 	<script
@@ -579,10 +632,15 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 				`[data-archive-kind="${record.kind}"][data-archive-id="${CSS.escape(record.id)}"]`,
 			);
 			if (!article) return;
+			const section = article.closest("section.archive-section");
+			const targetList = section?.querySelector<HTMLElement>(
+				`[data-tier-list="${tier}"]`,
+			);
 			article.dataset.tier = tier;
 			if (typeof order === "number") article.dataset.order = String(order);
-			const badge = article.querySelector<HTMLElement>("[data-archive-tier]");
-			if (badge) badge.textContent = tier;
+			if (targetList && article.parentElement !== targetList) {
+				targetList.appendChild(article);
+			}
 			const list = article.parentElement;
 			if (list) sortListByTierOrder(list);
 			const key = itemKey(record.kind, record.id);
@@ -979,88 +1037,74 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 				});
 			});
 
-			document
-				.querySelectorAll<HTMLElement>(".proj-list")
-				.forEach((list) => {
-					let dragged: HTMLElement | null = null;
+			const persistListOrder = async (list: Element) => {
+				const items = Array.from(
+					list.querySelectorAll<HTMLElement>(":scope > article"),
+				);
+				const updates: Promise<unknown>[] = [];
+				items.forEach((item, index) => {
+					const tier = item.dataset.tier ?? "!!";
+					const prevOrder = item.dataset.order;
+					const changed = String(index) !== (prevOrder ?? "");
+					item.dataset.order = String(index);
+					if (!changed) return;
+					const kind = item.dataset.archiveKind as ArchiveKind | undefined;
+					const id = item.dataset.archiveId;
+					if (!kind || !id) return;
+					const key = itemKey(kind, id);
+					const description = activeDescriptions.get(key);
+					if (description === undefined) return;
+					updates.push(
+						apiRequest("PUT", {
+							kind,
+							id,
+							description,
+							tier,
+							order: index,
+						}).catch(() => {
+							// Best-effort; a failed reorder write leaves the DOM order
+							// as the source of truth until the next reload.
+						}),
+					);
+				});
+				await Promise.all(updates);
+			};
 
-					list.querySelectorAll<HTMLElement>(":scope > article").forEach((article) => {
-						const head = article.querySelector<HTMLElement>(".proj-head");
-						if (!head) return;
-						const handle = document.createElement("span");
-						handle.className = "proj-drag-handle";
-						handle.textContent = "⠿";
-						handle.title = "Drag to reorder";
-						handle.setAttribute("aria-hidden", "true");
-						head.prepend(handle);
-						article.draggable = true;
+			document.querySelectorAll<HTMLElement>(".proj-list").forEach((list) => {
+				list.querySelectorAll<HTMLElement>(":scope > article").forEach((article) => {
+					const head = article.querySelector<HTMLElement>(".proj-head");
+					if (!head) return;
+					const moveControls = document.createElement("span");
+					moveControls.className = "proj-move-controls";
+					const upButton = makeButton("▲");
+					upButton.className = "proj-move-button";
+					upButton.title = "Move up";
+					upButton.setAttribute("aria-label", "Move up");
+					const downButton = makeButton("▼");
+					downButton.className = "proj-move-button";
+					downButton.title = "Move down";
+					downButton.setAttribute("aria-label", "Move down");
+					moveControls.append(upButton, downButton);
+					article.prepend(moveControls);
 
-						article.addEventListener("dragstart", (event) => {
-							dragged = article;
-							article.classList.add("dragging");
-							event.dataTransfer?.setData("text/plain", "");
-							if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-						});
-						article.addEventListener("dragend", () => {
-							article.classList.remove("dragging");
-							dragged = null;
-						});
-						article.addEventListener("dragover", (event) => {
-							if (!dragged || dragged === article) return;
-							event.preventDefault();
-							const rect = article.getBoundingClientRect();
-							const before = event.clientY - rect.top < rect.height / 2;
-							list.insertBefore(dragged, before ? article : article.nextSibling);
-						});
-						article.addEventListener("drop", (event) => {
-							event.preventDefault();
-						});
+					const stop = (event: Event) => event.stopPropagation();
+					upButton.addEventListener("click", stop);
+					downButton.addEventListener("click", stop);
+
+					upButton.addEventListener("click", async () => {
+						const prev = article.previousElementSibling;
+						if (!prev) return;
+						list.insertBefore(article, prev);
+						await persistListOrder(list);
 					});
-
-					list.addEventListener("dragend", async () => {
-						const items = Array.from(
-							list.querySelectorAll<HTMLElement>(":scope > article"),
-						);
-						const updates: Promise<unknown>[] = [];
-						items.forEach((item, index) => {
-							const prevTier = item.dataset.tier;
-							const prevOrder = item.dataset.order;
-							let nextTier = prevTier ?? "!!";
-							const neighbor = items[index + 1] ?? items[index - 1];
-							if (neighbor && neighbor !== item && neighbor.dataset.tier) {
-								// Adopt the tier of the position dropped into so a drag across
-								// a tier boundary promotes/demotes the item.
-								nextTier = neighbor.dataset.tier;
-							}
-							const changed =
-								nextTier !== prevTier || String(index) !== (prevOrder ?? "");
-							item.dataset.tier = nextTier;
-							item.dataset.order = String(index);
-							const badge = item.querySelector<HTMLElement>("[data-archive-tier]");
-							if (badge) badge.textContent = nextTier;
-							if (!changed) return;
-							const kind = item.dataset.archiveKind as ArchiveKind | undefined;
-							const id = item.dataset.archiveId;
-							if (!kind || !id) return;
-							const key = itemKey(kind, id);
-							const description = activeDescriptions.get(key);
-							if (description === undefined) return;
-							updates.push(
-								apiRequest("PUT", {
-									kind,
-									id,
-									description,
-									tier: nextTier,
-									order: index,
-								}).catch(() => {
-									// Best-effort; a failed reorder write leaves the DOM order
-									// as the source of truth until the next reload.
-								}),
-							);
-						});
-						await Promise.all(updates);
+					downButton.addEventListener("click", async () => {
+						const next = article.nextElementSibling;
+						if (!next) return;
+						list.insertBefore(next, article);
+						await persistListOrder(list);
 					});
 				});
+			});
 		}
 
 		editors.forEach((editor) => {
