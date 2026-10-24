@@ -7,10 +7,10 @@
 # public/moodboard/ (via moodboard-build.sh, which does `rm -rf` + rebuild,
 # so removed source files disappear from the output too — not just additions)
 # when something actually changed. On a successful rebuild: commits + pushes
-# just the public/moodboard/ paths, builds the full site, and redeploys the
-# preview-moodboard Pages branch so the LIVE preview mirrors moodboard/
-# exactly (including deletions) without a human re-running anything.
-# Never touches production (merulox.com) — that stays an explicit decision.
+# just the public/moodboard/ paths, builds the full site, and redeploys both
+# the preview-moodboard and production (main/merulox.com) Pages branches so
+# new or deleted images in moodboard/ go live automatically, no human
+# re-running anything.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -57,3 +57,7 @@ npm run build >/tmp/moodboard-auto-refresh-build.log 2>&1
 echo "redeploying preview-moodboard (mirrors moodboard/ exactly, including deletions)..."
 npx --yes wrangler@4 pages deploy dist --project-name merulox --branch preview-moodboard --commit-dirty=true >/tmp/moodboard-auto-refresh-deploy.log 2>&1
 echo "redeployed: https://preview-moodboard.merulox.pages.dev/music/"
+
+echo "redeploying production (main)..."
+npx --yes wrangler@4 pages deploy dist --project-name merulox --branch main --commit-dirty=true >/tmp/moodboard-auto-refresh-deploy-main.log 2>&1
+echo "redeployed: https://merulox.com/music/"
