@@ -946,7 +946,12 @@ h2 {
 	animation: mood-scroll 70s linear infinite;
 }
 
-.mood-strip:hover .mood-track,
+@media (hover: hover) and (pointer: fine) {
+	.mood-strip:hover .mood-track {
+		animation-play-state: paused;
+	}
+}
+
 .mood-strip:focus-within .mood-track {
 	animation-play-state: paused;
 }
