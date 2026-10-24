@@ -1,7 +1,26 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-const groups = [
+type Link = {
+	label: string;
+	href: string;
+	dead?: boolean;
+	secondary?: {
+		label: string;
+		href: string;
+	};
+};
+
+type LinkGroup = {
+	label: string;
+	links: Link[];
+	addresses?: Array<{
+		label: string;
+		value: string;
+	}>;
+};
+
+const groups: LinkGroup[] = [
 	{
 		label: "dev",
 		links: [
@@ -17,6 +36,24 @@ const groups = [
 			{ label: "Substack", href: "https://substack.com/@merulox" },
 			{ label: "Guilded", href: "https://guilded.gg/u/merulox", dead: true },
 			{ label: "Pleroma", href: "https://bae.st/merulox", dead: true },
+		],
+	},
+	{
+		label: "crypto",
+		links: [
+			{
+				label: "Fomo profile",
+				href: "https://fomo.family/profile/merulox",
+				secondary: {
+					label: "Fomo referral",
+					href: "https://fomo.family/r/merulox",
+				},
+			},
+		],
+		addresses: [
+			{ label: "BTC", value: "bc1qg457y9xrhsmnyzc5k3t9m5zvgdv5phsdtca0gs" },
+			{ label: "SOL", value: "HrP6ZV3rcR8DfBHMJbuYPpeodKFUi98moV5B76hGTmFH" },
+			{ label: "ETH", value: "0xA60Bee206f958Fe7bd6bE83f2eC5161805321d87" },
 		],
 	},
 	{
@@ -110,6 +147,44 @@ const groups = [
 		font-size: 11px;
 		text-transform: lowercase;
 	}
+	.crypto-addresses {
+		margin: 14px 0 0;
+	}
+	.copy-address {
+		background: none;
+		border: 0;
+		color: inherit;
+		cursor: copy;
+		display: inline-block;
+		font: inherit;
+		max-width: 100%;
+		min-width: 0;
+		overflow-x: auto;
+		padding: 0;
+		text-align: left;
+	}
+	.copy-address:hover,
+	.copy-address:focus-visible {
+		color: var(--accent);
+		outline: none;
+		text-decoration: underline;
+		text-decoration-style: dotted;
+		text-underline-offset: 3px;
+	}
+	.address-value {
+		white-space: nowrap;
+	}
+	.copy-status {
+		border: 0;
+		clip: rect(0 0 0 0);
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		padding: 0;
+		position: absolute;
+		white-space: nowrap;
+		width: 1px;
+	}
 	.links-list {
 		border-bottom: 1px solid var(--line);
 		display: grid;
@@ -117,14 +192,28 @@ const groups = [
 	.link-group + .link-group {
 		margin-top: 34px;
 	}
+	.links-list > a,
+	.split-link {
+		border-top: 1px solid var(--line);
+	}
 	.links-list a {
 		align-items: baseline;
-		border-top: 1px solid var(--line);
 		display: grid;
 		grid-template-columns: 16px minmax(0, 1fr) auto;
 		gap: 10px;
 		padding: 12px 0;
 		text-decoration: none;
+	}
+	.split-link {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.split-link > a:first-child {
+		padding-right: 12px;
+	}
+	.split-link > a + a {
+		border-left: 1px solid var(--line);
+		padding-left: 12px;
 	}
 	.links-list a::before {
 		color: var(--accent);
@@ -166,9 +255,16 @@ const groups = [
 		.contact-label {
 			grid-column: 1 / -1;
 		}
+		.crypto-addresses .copy-address {
+			grid-column: 1 / -1;
+		}
 		.link-host {
 			grid-column: 2;
+			overflow-wrap: anywhere;
 			white-space: normal;
+		}
+		.split-link .link-host {
+			display: none;
 		}
 	}
 </style>
@@ -201,6 +297,21 @@ const groups = [
 					{group.links.length > 0 ? (
 						group.links.map((link) => {
 							const host = new URL(link.href).hostname.replace(/^www\./, "");
+							if (link.secondary) {
+								const secondaryHost = new URL(link.secondary.href).hostname.replace(/^www\./, "");
+								return (
+									<div class="split-link" role="group" aria-label="Fomo.family links">
+										<a href={link.href} target="_blank" rel="noopener">
+											<span class="link-label">{link.label}</span>
+											<span class="link-host">{host}</span>
+										</a>
+										<a href={link.secondary.href} target="_blank" rel="noopener">
+											<span class="link-label">{link.secondary.label}</span>
+											<span class="link-host">{secondaryHost}</span>
+										</a>
+									</div>
+								);
+							}
 							return (
 								<a class={link.dead ? "dead" : undefined} href={link.href} target="_blank" rel="noopener">
 									<span class="link-label">{link.label}</span>
@@ -212,12 +323,30 @@ const groups = [
 						<span class="links-empty">empty</span>
 					)}
 				</nav>
+				{group.addresses && (
+					<div class="crypto-addresses contact-block">
+						{group.addresses.map((address) => (
+							<p class="contact-line">
+								<span class="contact-label">{address.label}</span>
+								<button
+									class="copy-address"
+									type="button"
+									data-copy-address={address.value}
+									aria-label={`Copy ${address.label} address`}
+								>
+									<span class="address-value">{address.value}</span>
+									<span class="copy-status" aria-live="polite">copy</span>
+								</button>
+							</p>
+						))}
+					</div>
+				)}
 			</section>
 		))}
 	</section>
 
 	<script>
-		const linkItems = Array.from(document.querySelectorAll<HTMLElement>(".guestbook-button, .links-list a"));
+		const linkItems = Array.from(document.querySelectorAll<HTMLElement>(".guestbook-button, .links-list a, .copy-address"));
 		const headerItems = Array.from(document.querySelectorAll<HTMLElement>(".site-name, .site-nav a"));
 		const CURSOR = "kbd-cursor";
 		let activeIndex = 0;
@@ -252,6 +381,24 @@ const groups = [
 		linkItems.forEach((item, index) => {
 			item.addEventListener("mouseenter", () => paint(index));
 			item.addEventListener("focus", () => paint(index));
+		});
+
+		const copyButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".copy-address"));
+		copyButtons.forEach((button) => {
+			button.addEventListener("click", async () => {
+				const address = button.dataset.copyAddress;
+				if (!address) return;
+				const status = button.querySelector<HTMLElement>(".copy-status");
+				try {
+					await navigator.clipboard.writeText(address);
+					if (status) status.textContent = "copied";
+					window.setTimeout(() => {
+						if (status) status.textContent = "copy";
+					}, 1600);
+				} catch {
+					if (status) status.textContent = "select";
+				}
+			});
 		});
 		headerItems.forEach((item) => {
 			item.addEventListener("focus", clearLinks);
