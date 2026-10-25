@@ -1020,7 +1020,8 @@ h2 {
 
 .home-statusbar {
 	flex: 0 0 auto;
-	display: flex;
+	display: grid;
+	grid-template-columns: auto 1fr auto;
 	align-items: center;
 	gap: 10px;
 	padding: 9px 18px;
@@ -1029,6 +1030,25 @@ h2 {
 	font-family: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 	font-size: 12px;
 	line-height: 1;
+}
+
+.home-statusbar-left,
+.home-statusbar-right {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+
+.home-statusbar-right {
+	justify-content: flex-end;
+}
+
+.home-statusbar-center {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	justify-content: center;
 }
 
 .home-brand {
@@ -1046,8 +1066,43 @@ h2 {
 	line-height: 1;
 }
 
-.home-statusbar-spacer {
-	flex: 1 1 auto;
+.bgm-toggle {
+	background: none;
+	border: 1px solid var(--line);
+	color: var(--muted);
+	width: 22px;
+	height: 22px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	padding: 0;
+	flex: 0 0 auto;
+}
+
+.bgm-toggle:hover,
+.bgm-toggle:focus-visible {
+	color: var(--accent);
+	border-color: var(--accent);
+	outline: none;
+}
+
+.bgm-toggle[aria-pressed="true"] {
+	color: var(--accent);
+	border-color: var(--accent);
+}
+
+.bgm-icon {
+	font-size: 10px;
+	line-height: 1;
+}
+
+.bgm-track {
+	color: var(--faint);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 220px;
 }
 
 .home-now-playing {
@@ -1169,44 +1224,24 @@ h2 {
 	.home-shortcuts-btn {
 		display: none;
 	}
-	.home-tagline {
-		display: none;
-	}
 	.home-statusbar {
-		display: grid;
-		grid-template-columns: auto auto 1fr auto auto;
-		grid-template-areas:
-			"brand host now   now   now"
-			".     .    .     clock visits";
-		column-gap: 10px;
-		row-gap: 4px;
 		padding: 8px 12px;
-	}
-	.home-statusbar-spacer {
-		display: none;
-	}
-	.home-brand {
-		grid-area: brand;
-	}
-	.home-host {
-		grid-area: host;
+		column-gap: 8px;
 	}
 	.home-now-playing {
-		grid-area: now;
-		justify-self: end;
-		max-width: none;
+		max-width: 150px;
 	}
-	.home-clock {
-		grid-area: clock;
-	}
-	.home-visits {
-		grid-area: visits;
+	.bgm-track {
+		display: none;
 	}
 }
 
 @media (max-width: 480px) {
+	.home-tagline {
+		display: none;
+	}
 	.home-now-playing {
-		max-width: 190px;
+		max-width: 110px;
 	}
 }
 

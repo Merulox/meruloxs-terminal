@@ -63,21 +63,37 @@ const navItems = customNavItems ?? defaultNavItems;
 	</head>
 	<body>
 		<header class="home-statusbar">
-			<span class="home-brand">[navi]</span>
-			<span class="home-host">merulox</span>
-			<span class="home-tagline">cyberia's schemer boy</span>
-			<span class="home-statusbar-spacer"></span>
-			<span class="home-now-playing" id="now-playing" hidden></span>
-			<span class="home-clock" id="home-clock"></span>
-			<span class="home-visits" id="home-visits" hidden></span>
-			<button
-				class="home-shortcuts-btn"
-				id="shortcuts-btn"
-				type="button"
-				aria-haspopup="dialog"
-			>
-				? shortcuts
-			</button>
+			<div class="home-statusbar-left">
+				<span class="home-brand">[navi]</span>
+				<span class="home-host">merulox</span>
+				<span class="home-tagline">cyberia's schemer boy</span>
+			</div>
+			<div class="home-statusbar-center">
+				<button
+					class="bgm-toggle"
+					id="bgm-toggle"
+					type="button"
+					aria-label="Play background music"
+					aria-pressed="false"
+					hidden
+				>
+					<span class="bgm-icon" aria-hidden="true">▶</span>
+				</button>
+				<span class="bgm-track" id="bgm-track" hidden></span>
+			</div>
+			<div class="home-statusbar-right">
+				<span class="home-now-playing" id="now-playing" hidden></span>
+				<span class="home-clock" id="home-clock"></span>
+				<span class="home-visits" id="home-visits" hidden></span>
+				<button
+					class="home-shortcuts-btn"
+					id="shortcuts-btn"
+					type="button"
+					aria-haspopup="dialog"
+				>
+					? shortcuts
+				</button>
+			</div>
 		</header>
 		<dialog class="shortcuts-dialog" id="shortcuts-dialog">
 			<div class="shortcuts-dialog-head">
@@ -508,6 +524,162 @@ const navItems = customNavItems ?? defaultNavItems;
 					}
 				}
 				loadVisits();
+
+				// ── Background music: small curated playlist, resumes across
+				// navigation via sessionStorage, re-shuffled when a brand new
+				// session starts (no in-progress playback to resume). ──
+				const bgmToggle = document.getElementById(
+					"bgm-toggle",
+				) as HTMLButtonElement | null;
+				const bgmTrackEl = document.getElementById("bgm-track");
+				const BGM_STATE_KEY = "merulox-bgm-state";
+				type BgmTrack = { slug: string; title: string; artist: string; src: string };
+				type BgmState = {
+					order: string[];
+					index: number;
+					currentTime: number;
+					playing: boolean;
+				};
+				function shuffledSlugs(tracks: BgmTrack[]): string[] {
+					const slugs = tracks.map((t) => t.slug);
+					for (let i = slugs.length - 1; i > 0; i--) {
+						const j = Math.floor(Math.random() * (i + 1));
+						[slugs[i], slugs[j]] = [slugs[j], slugs[i]];
+					}
+					return slugs;
+				}
+				function readBgmState(validSlugs: string[]): BgmState | null {
+					try {
+						const raw = sessionStorage.getItem(BGM_STATE_KEY);
+						if (!raw) return null;
+						const parsed = JSON.parse(raw) as BgmState;
+						if (
+							!Array.isArray(parsed.order) ||
+							parsed.order.length !== validSlugs.length ||
+							!parsed.order.every((s) => validSlugs.includes(s))
+						) {
+							return null;
+						}
+						return parsed;
+					} catch {
+						return null;
+					}
+				}
+				function writeBgmState(state: BgmState) {
+					try {
+						sessionStorage.setItem(BGM_STATE_KEY, JSON.stringify(state));
+					} catch {
+						/* best effort */
+					}
+				}
+				async function initBgm() {
+					if (!bgmToggle) return;
+					let tracks: BgmTrack[] = [];
+					try {
+						const res = await fetch("/audio/manifest.json");
+						if (!res.ok) return;
+						tracks = await res.json();
+					} catch {
+						return;
+					}
+					if (!tracks.length) return;
+
+					const bySlug = new Map(tracks.map((t) => [t.slug, t]));
+					const slugs = tracks.map((t) => t.slug);
+					let state = readBgmState(slugs);
+					if (!state) {
+						state = {
+							order: shuffledSlugs(tracks),
+							index: 0,
+							currentTime: 0,
+							playing: false,
+						};
+						writeBgmState(state);
+					}
+
+					const audio = new Audio();
+					audio.preload = "auto";
+
+					const currentTrack = () => bySlug.get(state!.order[state!.index]);
+
+					function renderTrack() {
+						const track = currentTrack();
+						if (!track || !bgmTrackEl) return;
+						bgmTrackEl.textContent = track.artist
+							? `${track.title} — ${track.artist}`
+							: track.title;
+						bgmTrackEl.hidden = false;
+					}
+
+					function syncToggleUi() {
+						if (!bgmToggle) return;
+						const playing = !audio.paused;
+						bgmToggle.setAttribute("aria-pressed", playing ? "true" : "false");
+						bgmToggle.setAttribute(
+							"aria-label",
+							playing ? "Pause background music" : "Play background music",
+						);
+						const icon = bgmToggle.querySelector(".bgm-icon");
+						if (icon) icon.textContent = playing ? "❚❚" : "▶";
+					}
+
+					function loadTrack(resumeTime: number) {
+						const track = currentTrack();
+						if (!track) return;
+						audio.src = track.src;
+						const seek = () => {
+							if (resumeTime > 0 && resumeTime < (audio.duration || Infinity)) {
+								audio.currentTime = resumeTime;
+							}
+							audio.removeEventListener("loadedmetadata", seek);
+						};
+						audio.addEventListener("loadedmetadata", seek);
+						renderTrack();
+					}
+
+					loadTrack(state.currentTime);
+					bgmToggle.hidden = false;
+
+					if (state.playing) {
+						audio.play().catch(() => {
+							// Autoplay blocked without a prior gesture on this domain —
+							// stay paused; the toggle button still works normally.
+						});
+					}
+					syncToggleUi();
+
+					bgmToggle.addEventListener("click", () => {
+						if (audio.paused) {
+							audio.play().catch(() => {});
+						} else {
+							audio.pause();
+						}
+					});
+					audio.addEventListener("play", () => {
+						state!.playing = true;
+						writeBgmState(state!);
+						syncToggleUi();
+					});
+					audio.addEventListener("pause", () => {
+						state!.playing = false;
+						writeBgmState(state!);
+						syncToggleUi();
+					});
+					audio.addEventListener("ended", () => {
+						state!.index = (state!.index + 1) % state!.order.length;
+						state!.currentTime = 0;
+						writeBgmState(state!);
+						loadTrack(0);
+						audio.play().catch(() => {});
+					});
+					setInterval(() => {
+						if (!audio.paused) {
+							state!.currentTime = audio.currentTime;
+							writeBgmState(state!);
+						}
+					}, 3_000);
+				}
+				initBgm();
 
 				// ── Shortcuts dialog ──
 				const dialog = document.getElementById("shortcuts-dialog");

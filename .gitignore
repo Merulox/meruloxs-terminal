@@ -36,3 +36,6 @@ extension/config.local.js
 # moodboard raw source images (large, personal, curated locally — not served directly)
 /moodboard/
 
+# background-music raw source tracks (large, personal, curated locally — not served directly)
+/audio/
+
