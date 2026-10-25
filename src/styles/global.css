@@ -67,6 +67,10 @@ ul {
 	flex: 1 1 auto;
 }
 
+.site-shell--wide {
+	width: min(100%, 1320px);
+}
+
 .site-pane {
 	border: 1px solid var(--line);
 	background: #16131c;
@@ -1199,9 +1203,6 @@ h2 {
 }
 
 @media (max-width: 480px) {
-	.home-tagline {
-		display: none;
-	}
 	.home-now-playing {
 		max-width: 110px;
 	}

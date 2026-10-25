@@ -8,6 +8,7 @@ interface Props {
 	navItems?: { href: string; label: string }[];
 	homeHref?: string;
 	noindex?: boolean;
+	wide?: boolean;
 }
 
 const {
@@ -17,6 +18,7 @@ const {
 	navItems: customNavItems,
 	homeHref = "/",
 	noindex = false,
+	wide = false,
 } = Astro.props;
 
 const pathname = Astro.url.pathname;
@@ -99,7 +101,7 @@ const navItems = customNavItems ?? defaultNavItems;
 			homepage ? (
 				<slot />
 			) : (
-				<div class="site-shell">
+				<div class:list={["site-shell", { "site-shell--wide": wide }]}>
 					<div class="site-pane">
 						<header class="site-header">
 							<a class="site-name kbd-item" href={homeHref}>

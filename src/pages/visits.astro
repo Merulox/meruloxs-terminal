@@ -13,7 +13,7 @@ const ranges = [
 ];
 ---
 
-<Layout title="visits | MERULOX" description="merulox.com visits by location." noindex={true}>
+<Layout title="visits | MERULOX" description="merulox.com visits by location." noindex={true} wide={true}>
 	<h1>Visits</h1>
 
 	<div class="period-bar kbd-row" role="group" aria-label="Visit time range">
@@ -780,10 +780,7 @@ const ranges = [
 	}
 
 	.vis-overview {
-		position: relative;
-		left: 50%;
-		width: min(1240px, calc(100vw - 48px));
-		transform: translateX(-50%);
+		width: 100%;
 	}
 
 	.vis-map {
@@ -897,12 +894,8 @@ const ranges = [
 		color: var(--muted);
 	}
 
-	/* Break out of the 640px column so the table fits without horizontal scroll. */
 	.vis-recent {
-		position: relative;
-		left: 50%;
-		width: min(1240px, calc(100vw - 48px));
-		transform: translateX(-50%);
+		width: 100%;
 		margin-top: 34px;
 	}
 
