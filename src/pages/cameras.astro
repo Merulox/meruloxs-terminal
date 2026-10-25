@@ -530,13 +530,10 @@ const serializedData = JSON.stringify(cameraData).replaceAll("<", "\\u003c");
 				applyStateFromUrl(false);
 			}
 
-			// This page is a standalone document (no <ClientRouter />) and is
-			// always reached via a full hard navigation, so astro:page-load
-			// never fires here — call directly. The listener below is kept
-			// defensively in case this page is ever folded into the shared
-			// Layout/ClientRouter later.
+			// This page is a standalone document (no <ClientRouter />, no
+			// shared Layout) and is always reached via a full hard
+			// navigation — call directly, once, on load.
 			initCamerasPage();
-			document.addEventListener("astro:page-load", initCamerasPage);
 		</script>
 	</body>
 </html>
