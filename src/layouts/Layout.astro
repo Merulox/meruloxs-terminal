@@ -420,13 +420,14 @@ const navItems = customNavItems ?? defaultNavItems;
 					day: "2-digit",
 					hour: "2-digit",
 					minute: "2-digit",
+					second: "2-digit",
 					hour12: false,
 				});
 				function tickClock() {
 					if (clockEl) clockEl.textContent = clockFmt.format(new Date());
 				}
 				tickClock();
-				setInterval(tickClock, 30_000);
+				setInterval(tickClock, 1_000);
 
 				// ── Now playing (last.fm), cached across page navigations ──
 				const nowPlayingEl = document.getElementById("now-playing");
