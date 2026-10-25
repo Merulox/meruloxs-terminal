@@ -51,7 +51,7 @@ while IFS= read -r -d '' f; do
 	esac
 
 	out="$OUT_DIR/$slug.mp3"
-	if ! ffmpeg -y -loglevel error -i "$f" -vn -b:a "$BITRATE" -ar 44100 "$out"; then
+	if ! ffmpeg -y -nostdin -loglevel error -i "$f" -vn -b:a "$BITRATE" -ar 44100 "$out"; then
 		echo "failed to convert: $f" >&2
 		continue
 	fi

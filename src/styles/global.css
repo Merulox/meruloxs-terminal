@@ -1102,7 +1102,31 @@ h2 {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	max-width: 0;
+	opacity: 0;
+	transition: max-width 160ms ease, opacity 160ms ease;
+}
+
+.home-statusbar-center:hover .bgm-track,
+.home-statusbar-center:focus-within .bgm-track {
 	max-width: 220px;
+	opacity: 1;
+}
+
+.bgm-volume {
+	width: 0;
+	opacity: 0;
+	overflow: hidden;
+	accent-color: var(--accent);
+	cursor: pointer;
+	vertical-align: middle;
+	transition: width 160ms ease, opacity 160ms ease;
+}
+
+.home-statusbar-center:hover .bgm-volume,
+.home-statusbar-center:focus-within .bgm-volume {
+	width: 56px;
+	opacity: 1;
 }
 
 .home-now-playing {
@@ -1232,6 +1256,9 @@ h2 {
 		max-width: 150px;
 	}
 	.bgm-track {
+		display: none;
+	}
+	.bgm-volume {
 		display: none;
 	}
 }

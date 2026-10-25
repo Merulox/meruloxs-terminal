@@ -62,6 +62,7 @@ const navItems = customNavItems ?? defaultNavItems;
 		/>
 	</head>
 	<body>
+		<audio id="bgm-audio" preload="auto" autoplay muted></audio>
 		<header class="home-statusbar">
 			<div class="home-statusbar-left">
 				<span class="home-brand">[navi]</span>
@@ -79,6 +80,16 @@ const navItems = customNavItems ?? defaultNavItems;
 				>
 					<span class="bgm-icon" aria-hidden="true">▶</span>
 				</button>
+				<input
+					class="bgm-volume"
+					id="bgm-volume"
+					type="range"
+					min="0"
+					max="1"
+					step="0.01"
+					aria-label="Background music volume"
+					hidden
+				/>
 				<span class="bgm-track" id="bgm-track" hidden></span>
 			</div>
 			<div class="home-statusbar-right">
@@ -532,6 +543,9 @@ const navItems = customNavItems ?? defaultNavItems;
 					"bgm-toggle",
 				) as HTMLButtonElement | null;
 				const bgmTrackEl = document.getElementById("bgm-track");
+				const bgmVolumeEl = document.getElementById(
+					"bgm-volume",
+				) as HTMLInputElement | null;
 				const BGM_STATE_KEY = "merulox-bgm-state";
 				type BgmTrack = { slug: string; title: string; artist: string; src: string };
 				type BgmState = {
@@ -592,13 +606,23 @@ const navItems = customNavItems ?? defaultNavItems;
 							order: shuffledSlugs(tracks),
 							index: 0,
 							currentTime: 0,
-							playing: false,
+							playing: true,
 						};
 						writeBgmState(state);
 					}
 
-					const audio = new Audio();
-					audio.preload = "auto";
+					const audio = document.getElementById(
+						"bgm-audio",
+					) as HTMLAudioElement | null;
+					if (!audio) return;
+					const BGM_VOLUME_KEY = "merulox-bgm-volume";
+					const storedVolume = localStorage.getItem(BGM_VOLUME_KEY);
+					const savedVolume = storedVolume === null ? NaN : Number(storedVolume);
+					audio.volume =
+						Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1
+							? savedVolume
+							: 0.15;
+					if (bgmVolumeEl) bgmVolumeEl.value = String(audio.volume);
 
 					const currentTrack = () => bySlug.get(state!.order[state!.index]);
 
@@ -639,16 +663,47 @@ const navItems = customNavItems ?? defaultNavItems;
 
 					loadTrack(state.currentTime);
 					bgmToggle.hidden = false;
-
-					if (state.playing) {
-						audio.play().catch(() => {
-							// Autoplay blocked without a prior gesture on this domain —
-							// stay paused; the toggle button still works normally.
+					if (bgmVolumeEl) {
+						bgmVolumeEl.hidden = false;
+						bgmVolumeEl.addEventListener("input", () => {
+							audio.volume = Number(bgmVolumeEl.value);
+							try {
+								localStorage.setItem(BGM_VOLUME_KEY, String(audio.volume));
+							} catch {
+								/* best effort */
+							}
 						});
+					}
+
+					// The <audio autoplay muted> element (declarative, in the HTML)
+					// gets the lenient "muted autoplay is always allowed" policy
+					// that a plain `new Audio(); audio.play()` call does not reliably
+					// get in every browser. If the session wants playback, let the
+					// browser's native autoplay take it from here; if not (user had
+					// explicitly paused before leaving), cancel it immediately so
+					// the autoplay attribute doesn't override that choice.
+					audio.muted = true;
+					if (!state.playing) {
+						audio.pause();
 					}
 					syncToggleUi();
 
+					const unmuteEvents = ["pointerdown", "keydown", "touchstart", "wheel"];
+					function unmuteOnFirstInteraction() {
+						if (audio.muted) audio.muted = false;
+						if (audio.paused && state!.playing) audio.play().catch(() => {});
+						unmuteEvents.forEach((ev) =>
+							document.removeEventListener(ev, unmuteOnFirstInteraction),
+						);
+					}
+					unmuteEvents.forEach((ev) =>
+						document.addEventListener(ev, unmuteOnFirstInteraction, {
+							passive: true,
+						}),
+					);
+
 					bgmToggle.addEventListener("click", () => {
+						audio.muted = false;
 						if (audio.paused) {
 							audio.play().catch(() => {});
 						} else {
