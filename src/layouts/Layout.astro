@@ -453,7 +453,10 @@ const navItems = customNavItems ?? defaultNavItems;
 			document.addEventListener("astro:page-load", initKeyboardNav);
 		</script>
 		<script>
-			const BGM_STATE_KEY = "merulox-bgm-state";
+			// Bumped (v2) because gym-class.mp3's timeline shifted 15s when its
+			// source got a start offset — any saved currentTime from before
+			// that change would point at the wrong moment in the new file.
+			const BGM_STATE_KEY = "merulox-bgm-state-v2";
 			const BGM_VOLUME_KEY = "merulox-bgm-volume";
 			const BGM_VOLUME_SCALE = 0.5;
 			type BgmTrack = { slug: string; title: string; artist: string; src: string };

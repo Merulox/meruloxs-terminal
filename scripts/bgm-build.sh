@@ -23,12 +23,24 @@ OUT_DIR="public/audio"
 BITRATE="160k"
 
 declare -A TITLES=(
-	[gym-class]="Gym Class"
+	[gym-class-v2]="Gym Class"
 	[ether]="Éther tune"
 )
 declare -A ARTISTS=(
-	[gym-class]="Lil Peep"
+	[gym-class-v2]="Lil Peep"
 	[ether]="Takeshi Kobayashi & Yui Makino"
+)
+# Seconds to skip from the start of a source file's slow/quiet intro when
+# building public/audio/<slug>.mp3. The source file in audio/ is left
+# untouched — this is applied only during the ffmpeg conversion below, so
+# it's reproducible from a clean checkout and the source never needs to be
+# re-sourced if the offset changes.
+#
+# gym-class-v2: renamed from plain gym-class (new slug, new output URL)
+# specifically so the 15s-trimmed build can't collide with any CDN/browser
+# cache still holding the untrimmed /audio/gym-class.mp3 from before.
+declare -A START_OFFSET=(
+	[gym-class-v2]="15"
 )
 
 if [[ ! -d "$SRC_DIR" ]]; then
@@ -51,7 +63,8 @@ while IFS= read -r -d '' f; do
 	esac
 
 	out="$OUT_DIR/$slug.mp3"
-	if ! ffmpeg -y -nostdin -loglevel error -i "$f" -vn -b:a "$BITRATE" -ar 44100 "$out"; then
+	offset="${START_OFFSET[$slug]:-0}"
+	if ! ffmpeg -y -nostdin -loglevel error -ss "$offset" -i "$f" -vn -b:a "$BITRATE" -ar 44100 "$out"; then
 		echo "failed to convert: $f" >&2
 		continue
 	fi
