@@ -1193,38 +1193,15 @@ h2 {
 		display: none;
 	}
 	.home-statusbar {
-		display: grid;
-		grid-template-columns: auto 1fr auto auto;
-		grid-template-areas:
-			"brand host now   now"
-			"tag   tag  clock visits";
-		column-gap: 10px;
+		flex-wrap: wrap;
 		row-gap: 4px;
 		padding: 8px 12px;
 	}
-	.home-statusbar-spacer {
+	.home-tagline {
 		display: none;
 	}
-	.home-brand {
-		grid-area: brand;
-	}
-	.home-host {
-		grid-area: host;
-	}
-	.home-tagline {
-		grid-area: tag;
-	}
 	.home-now-playing {
-		grid-area: now;
-		justify-self: end;
 		max-width: 150px;
-	}
-	.home-clock {
-		grid-area: clock;
-	}
-	.home-visits {
-		grid-area: visits;
-		justify-self: end;
 	}
 }
 
