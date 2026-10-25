@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
 
 interface Props {
 	title: string;
@@ -60,9 +61,10 @@ const navItems = customNavItems ?? defaultNavItems;
 			type="font/woff2"
 			crossorigin
 		/>
+		<ClientRouter />
 	</head>
 	<body>
-		<audio id="bgm-audio" preload="auto" autoplay muted></audio>
+		<audio id="bgm-audio" preload="auto" autoplay muted transition:persist></audio>
 		<header class="home-statusbar">
 			<div class="home-statusbar-left">
 				<span class="home-brand">[navi]</span>
@@ -160,7 +162,11 @@ const navItems = customNavItems ?? defaultNavItems;
 			)
 		}
 		<script>
-			(function () {
+			let navAbort: AbortController | null = null;
+			function initKeyboardNav() {
+				navAbort?.abort();
+				navAbort = new AbortController();
+				const { signal } = navAbort;
 				const navEls = Array.from(
 					document.querySelectorAll<HTMLElement>(".site-name, .site-nav a"),
 				);
@@ -222,17 +228,25 @@ const navItems = customNavItems ?? defaultNavItems;
 					paint(navEls, navIdx);
 					paint(listEls, listIdx);
 
-					document.addEventListener("focusin", (e) => {
-						const t = e.target as HTMLElement;
-						const n = navEls.indexOf(t);
-						if (n !== -1) { navIdx = n; paint(navEls, n); last = "nav"; return; }
-						const l = listEls.indexOf(t);
-						if (l !== -1) { listIdx = l; paint(listEls, l); last = "list"; }
-					});
+					document.addEventListener(
+						"focusin",
+						(e) => {
+							const t = e.target as HTMLElement;
+							const n = navEls.indexOf(t);
+							if (n !== -1) { navIdx = n; paint(navEls, n); last = "nav"; return; }
+							const l = listEls.indexOf(t);
+							if (l !== -1) { listIdx = l; paint(listEls, l); last = "list"; }
+						},
+						{ signal },
+					);
 
-					document.addEventListener("archive-panel-change", () => {
-						refreshListEls(true);
-					});
+					document.addEventListener(
+						"archive-panel-change",
+						() => {
+							refreshListEls(true);
+						},
+						{ signal },
+					);
 
 					document.addEventListener("keydown", (e) => {
 						if (skipTarget(e)) return;
@@ -270,7 +284,7 @@ const navItems = customNavItems ?? defaultNavItems;
 								break;
 							}
 						}
-					});
+					}, { signal });
 					return;
 				}
 
@@ -378,7 +392,7 @@ const navItems = customNavItems ?? defaultNavItems;
 				document.addEventListener("archive-panel-change", () => {
 					refreshRows();
 					paintCell();
-				});
+				}, { signal });
 
 				document.addEventListener("focusin", (e) => {
 					const t = e.target as HTMLElement;
@@ -386,7 +400,7 @@ const navItems = customNavItems ?? defaultNavItems;
 						const ci = rows[ri].indexOf(t);
 						if (ci !== -1) { r = ri; c = ci; paintCell(); return; }
 					}
-				});
+				}, { signal });
 
 				document.addEventListener("keydown", (e) => {
 					if (skipTarget(e)) return;
@@ -429,12 +443,284 @@ const navItems = customNavItems ?? defaultNavItems;
 							rows[r][c].click();
 							break;
 						}
-					}
-				});
-			})();
+				}
+				}, { signal });
+			}
+			// astro:page-load fires on the initial hard load as well as every
+			// subsequent client-side transition, so a single listener covers
+			// both — calling initKeyboardNav() directly here too would race
+			// it on first load.
+			document.addEventListener("astro:page-load", initKeyboardNav);
 		</script>
 		<script>
-			(function () {
+			const BGM_STATE_KEY = "merulox-bgm-state";
+			const BGM_VOLUME_KEY = "merulox-bgm-volume";
+			const BGM_VOLUME_SCALE = 0.5;
+			type BgmTrack = { slug: string; title: string; artist: string; src: string };
+			type BgmState = {
+				order: string[];
+				index: number;
+				currentTime: number;
+				playing: boolean;
+			};
+			type BgmHandle = {
+				state: BgmState;
+				bySlug: Map<string, BgmTrack>;
+				rawVolume: number;
+				renderTrack: () => void;
+				syncToggleUi: () => void;
+				els: {
+					toggle: HTMLButtonElement;
+					track: HTMLElement | null;
+					volume: HTMLInputElement | null;
+				};
+			};
+			function shuffledSlugs(tracks: BgmTrack[]): string[] {
+				const slugs = tracks.map((t) => t.slug);
+				for (let i = slugs.length - 1; i > 0; i--) {
+					const j = Math.floor(Math.random() * (i + 1));
+					[slugs[i], slugs[j]] = [slugs[j], slugs[i]];
+				}
+				return slugs;
+			}
+			function readBgmState(validSlugs: string[]): BgmState | null {
+				try {
+					const raw = sessionStorage.getItem(BGM_STATE_KEY);
+					if (!raw) return null;
+					const parsed = JSON.parse(raw) as BgmState;
+					if (
+						!Array.isArray(parsed.order) ||
+						parsed.order.length !== validSlugs.length ||
+						!parsed.order.every((s) => validSlugs.includes(s))
+					) {
+						return null;
+					}
+					return parsed;
+				} catch {
+					return null;
+				}
+			}
+			function writeBgmState(state: BgmState) {
+				try {
+					sessionStorage.setItem(BGM_STATE_KEY, JSON.stringify(state));
+				} catch {
+					/* best effort */
+				}
+			}
+
+			// Background music: small curated playlist. The <audio> element is
+			// marked transition:persist, so it survives client-side navigation
+			// untouched — this function detects that case (a handle already
+			// stashed on the element) and only rebinds this page's fresh
+			// toggle/volume/track controls to the still-playing element,
+			// instead of re-picking a track or touching playback.
+			async function initBgm(signal: AbortSignal) {
+				const bgmToggle = document.getElementById(
+					"bgm-toggle",
+				) as HTMLButtonElement | null;
+				const bgmTrackEl = document.getElementById("bgm-track");
+				const bgmVolumeEl = document.getElementById(
+					"bgm-volume",
+				) as HTMLInputElement | null;
+				if (!bgmToggle) return;
+
+				const audio = document.getElementById(
+					"bgm-audio",
+				) as HTMLAudioElement | null;
+				if (!audio) return;
+
+				const host = audio as unknown as { _bgm?: BgmHandle };
+				const existing = host._bgm;
+
+				if (existing) {
+					existing.els = { toggle: bgmToggle, track: bgmTrackEl, volume: bgmVolumeEl };
+					existing.renderTrack();
+					existing.syncToggleUi();
+					bgmToggle.hidden = false;
+					if (bgmVolumeEl) {
+						bgmVolumeEl.hidden = false;
+						bgmVolumeEl.value = String(existing.rawVolume);
+						bgmVolumeEl.addEventListener(
+							"input",
+							() => {
+								const raw = Number(bgmVolumeEl.value);
+								existing.rawVolume = raw;
+								audio.volume = raw * BGM_VOLUME_SCALE;
+								try {
+									localStorage.setItem(BGM_VOLUME_KEY, String(raw));
+								} catch {
+									/* best effort */
+								}
+							},
+							{ signal },
+						);
+					}
+					bgmToggle.addEventListener(
+						"click",
+						() => {
+							audio.muted = false;
+							if (audio.paused) audio.play().catch(() => {});
+							else audio.pause();
+						},
+						{ signal },
+					);
+					return;
+				}
+
+				let tracks: BgmTrack[] = [];
+				try {
+					const res = await fetch("/audio/manifest.json");
+					if (!res.ok) return;
+					tracks = await res.json();
+				} catch {
+					return;
+				}
+				if (!tracks.length) return;
+
+				const bySlug = new Map(tracks.map((t) => [t.slug, t]));
+				const slugs = tracks.map((t) => t.slug);
+				const state: BgmState = readBgmState(slugs) ?? {
+					order: shuffledSlugs(tracks),
+					index: 0,
+					currentTime: 0,
+					playing: true,
+				};
+				writeBgmState(state);
+
+				const storedVolume = localStorage.getItem(BGM_VOLUME_KEY);
+				const savedVolume = storedVolume === null ? NaN : Number(storedVolume);
+				const rawVolume =
+					Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1
+						? savedVolume
+						: 0.15;
+				audio.volume = rawVolume * BGM_VOLUME_SCALE;
+
+				const handle: BgmHandle = {
+					state,
+					bySlug,
+					rawVolume,
+					renderTrack: () => {
+						const track = handle.bySlug.get(handle.state.order[handle.state.index]);
+						const el = handle.els.track;
+						if (!track || !el) return;
+						el.textContent = track.artist
+							? `${track.title} — ${track.artist}`
+							: track.title;
+						el.hidden = false;
+					},
+					syncToggleUi: () => {
+						const btn = handle.els.toggle;
+						if (!btn) return;
+						const playing = !audio.paused;
+						btn.setAttribute("aria-pressed", playing ? "true" : "false");
+						btn.setAttribute(
+							"aria-label",
+							playing ? "Pause background music" : "Play background music",
+						);
+						const icon = btn.querySelector(".bgm-icon");
+						if (icon) icon.textContent = playing ? "❚❚" : "▶";
+					},
+					els: { toggle: bgmToggle, track: bgmTrackEl, volume: bgmVolumeEl },
+				};
+				host._bgm = handle;
+
+				function loadTrack(resumeTime: number) {
+					const track = handle.bySlug.get(handle.state.order[handle.state.index]);
+					if (!track) return;
+					audio!.src = track.src;
+					const seek = () => {
+						if (resumeTime > 0 && resumeTime < (audio!.duration || Infinity)) {
+							audio!.currentTime = resumeTime;
+						}
+						audio!.removeEventListener("loadedmetadata", seek);
+					};
+					audio!.addEventListener("loadedmetadata", seek);
+					handle.renderTrack();
+				}
+
+				loadTrack(state.currentTime);
+				bgmToggle.hidden = false;
+				if (bgmVolumeEl) {
+					bgmVolumeEl.hidden = false;
+					bgmVolumeEl.value = String(rawVolume);
+				}
+
+				// The <audio autoplay muted> element (declarative, in the HTML)
+				// gets the lenient "muted autoplay is always allowed" policy
+				// that a plain `new Audio(); audio.play()` call does not reliably
+				// get in every browser. If the session wants playback, let the
+				// browser's native autoplay take it from here; if not (user had
+				// explicitly paused before leaving), cancel it immediately so
+				// the autoplay attribute doesn't override that choice.
+				audio.muted = true;
+				if (!state.playing) audio.pause();
+				handle.syncToggleUi();
+
+				const unmuteEvents = ["pointerdown", "keydown", "touchstart", "wheel"];
+				function unmuteOnFirstInteraction() {
+					if (audio!.muted) audio!.muted = false;
+					if (audio!.paused && state.playing) audio!.play().catch(() => {});
+					unmuteEvents.forEach((ev) =>
+						document.removeEventListener(ev, unmuteOnFirstInteraction),
+					);
+				}
+				unmuteEvents.forEach((ev) =>
+					document.addEventListener(ev, unmuteOnFirstInteraction, {
+						passive: true,
+					}),
+				);
+
+				bgmToggle.addEventListener("click", () => {
+					audio!.muted = false;
+					if (audio!.paused) audio!.play().catch(() => {});
+					else audio!.pause();
+				});
+				if (bgmVolumeEl) {
+					bgmVolumeEl.addEventListener("input", () => {
+						const raw = Number(handle.els.volume?.value ?? "0");
+						handle.rawVolume = raw;
+						audio!.volume = raw * BGM_VOLUME_SCALE;
+						try {
+							localStorage.setItem(BGM_VOLUME_KEY, String(raw));
+						} catch {
+							/* best effort */
+						}
+					});
+				}
+				audio.addEventListener("play", () => {
+					handle.state.playing = true;
+					writeBgmState(handle.state);
+					handle.syncToggleUi();
+				});
+				audio.addEventListener("pause", () => {
+					handle.state.playing = false;
+					writeBgmState(handle.state);
+					handle.syncToggleUi();
+				});
+				audio.addEventListener("ended", () => {
+					handle.state.index = (handle.state.index + 1) % handle.state.order.length;
+					handle.state.currentTime = 0;
+					writeBgmState(handle.state);
+					loadTrack(0);
+					audio!.play().catch(() => {});
+				});
+				setInterval(() => {
+					if (!audio!.paused) {
+						handle.state.currentTime = audio!.currentTime;
+						writeBgmState(handle.state);
+					}
+				}, 3_000);
+			}
+
+			let headerAbort: AbortController | null = null;
+			let clockInterval: ReturnType<typeof setInterval> | undefined;
+			let npInterval: ReturnType<typeof setInterval> | undefined;
+
+			function initHeaderWidgets() {
+				headerAbort?.abort();
+				headerAbort = new AbortController();
+				const { signal } = headerAbort;
+
 				const LFM_API_KEY = "9fdb2ae95fb0b95470334c260149c3cb";
 				const LFM_USER = "merulox";
 				const EASTERN = "America/New_York";
@@ -454,7 +740,8 @@ const navItems = customNavItems ?? defaultNavItems;
 					if (clockEl) clockEl.textContent = clockFmt.format(new Date());
 				}
 				tickClock();
-				setInterval(tickClock, 1_000);
+				clearInterval(clockInterval);
+				clockInterval = setInterval(tickClock, 1_000);
 
 				// ── Now playing (last.fm), cached across page navigations ──
 				const nowPlayingEl = document.getElementById("now-playing");
@@ -517,7 +804,8 @@ const navItems = customNavItems ?? defaultNavItems;
 					}
 				}
 				loadNowPlaying();
-				setInterval(() => loadNowPlaying({ force: true }), 60_000);
+				clearInterval(npInterval);
+				npInterval = setInterval(() => loadNowPlaying({ force: true }), 60_000);
 
 				// ── Visit count (public aggregate-only endpoint) ──
 				const visitsEl = document.getElementById("home-visits");
@@ -536,231 +824,48 @@ const navItems = customNavItems ?? defaultNavItems;
 				}
 				loadVisits();
 
-				// ── Background music: small curated playlist, resumes across
-				// navigation via sessionStorage, re-shuffled when a brand new
-				// session starts (no in-progress playback to resume). ──
-				const bgmToggle = document.getElementById(
-					"bgm-toggle",
-				) as HTMLButtonElement | null;
-				const bgmTrackEl = document.getElementById("bgm-track");
-				const bgmVolumeEl = document.getElementById(
-					"bgm-volume",
-				) as HTMLInputElement | null;
-				const BGM_STATE_KEY = "merulox-bgm-state";
-				type BgmTrack = { slug: string; title: string; artist: string; src: string };
-				type BgmState = {
-					order: string[];
-					index: number;
-					currentTime: number;
-					playing: boolean;
-				};
-				function shuffledSlugs(tracks: BgmTrack[]): string[] {
-					const slugs = tracks.map((t) => t.slug);
-					for (let i = slugs.length - 1; i > 0; i--) {
-						const j = Math.floor(Math.random() * (i + 1));
-						[slugs[i], slugs[j]] = [slugs[j], slugs[i]];
-					}
-					return slugs;
-				}
-				function readBgmState(validSlugs: string[]): BgmState | null {
-					try {
-						const raw = sessionStorage.getItem(BGM_STATE_KEY);
-						if (!raw) return null;
-						const parsed = JSON.parse(raw) as BgmState;
-						if (
-							!Array.isArray(parsed.order) ||
-							parsed.order.length !== validSlugs.length ||
-							!parsed.order.every((s) => validSlugs.includes(s))
-						) {
-							return null;
-						}
-						return parsed;
-					} catch {
-						return null;
-					}
-				}
-				function writeBgmState(state: BgmState) {
-					try {
-						sessionStorage.setItem(BGM_STATE_KEY, JSON.stringify(state));
-					} catch {
-						/* best effort */
-					}
-				}
-				async function initBgm() {
-					if (!bgmToggle) return;
-					let tracks: BgmTrack[] = [];
-					try {
-						const res = await fetch("/audio/manifest.json");
-						if (!res.ok) return;
-						tracks = await res.json();
-					} catch {
-						return;
-					}
-					if (!tracks.length) return;
-
-					const bySlug = new Map(tracks.map((t) => [t.slug, t]));
-					const slugs = tracks.map((t) => t.slug);
-					let state = readBgmState(slugs);
-					if (!state) {
-						state = {
-							order: shuffledSlugs(tracks),
-							index: 0,
-							currentTime: 0,
-							playing: true,
-						};
-						writeBgmState(state);
-					}
-
-					const audio = document.getElementById(
-						"bgm-audio",
-					) as HTMLAudioElement | null;
-					if (!audio) return;
-					const BGM_VOLUME_KEY = "merulox-bgm-volume";
-					const storedVolume = localStorage.getItem(BGM_VOLUME_KEY);
-					const savedVolume = storedVolume === null ? NaN : Number(storedVolume);
-					audio.volume =
-						Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1
-							? savedVolume
-							: 0.15;
-					if (bgmVolumeEl) bgmVolumeEl.value = String(audio.volume);
-
-					const currentTrack = () => bySlug.get(state!.order[state!.index]);
-
-					function renderTrack() {
-						const track = currentTrack();
-						if (!track || !bgmTrackEl) return;
-						bgmTrackEl.textContent = track.artist
-							? `${track.title} — ${track.artist}`
-							: track.title;
-						bgmTrackEl.hidden = false;
-					}
-
-					function syncToggleUi() {
-						if (!bgmToggle) return;
-						const playing = !audio.paused;
-						bgmToggle.setAttribute("aria-pressed", playing ? "true" : "false");
-						bgmToggle.setAttribute(
-							"aria-label",
-							playing ? "Pause background music" : "Play background music",
-						);
-						const icon = bgmToggle.querySelector(".bgm-icon");
-						if (icon) icon.textContent = playing ? "❚❚" : "▶";
-					}
-
-					function loadTrack(resumeTime: number) {
-						const track = currentTrack();
-						if (!track) return;
-						audio.src = track.src;
-						const seek = () => {
-							if (resumeTime > 0 && resumeTime < (audio.duration || Infinity)) {
-								audio.currentTime = resumeTime;
-							}
-							audio.removeEventListener("loadedmetadata", seek);
-						};
-						audio.addEventListener("loadedmetadata", seek);
-						renderTrack();
-					}
-
-					loadTrack(state.currentTime);
-					bgmToggle.hidden = false;
-					if (bgmVolumeEl) {
-						bgmVolumeEl.hidden = false;
-						bgmVolumeEl.addEventListener("input", () => {
-							audio.volume = Number(bgmVolumeEl.value);
-							try {
-								localStorage.setItem(BGM_VOLUME_KEY, String(audio.volume));
-							} catch {
-								/* best effort */
-							}
-						});
-					}
-
-					// The <audio autoplay muted> element (declarative, in the HTML)
-					// gets the lenient "muted autoplay is always allowed" policy
-					// that a plain `new Audio(); audio.play()` call does not reliably
-					// get in every browser. If the session wants playback, let the
-					// browser's native autoplay take it from here; if not (user had
-					// explicitly paused before leaving), cancel it immediately so
-					// the autoplay attribute doesn't override that choice.
-					audio.muted = true;
-					if (!state.playing) {
-						audio.pause();
-					}
-					syncToggleUi();
-
-					const unmuteEvents = ["pointerdown", "keydown", "touchstart", "wheel"];
-					function unmuteOnFirstInteraction() {
-						if (audio.muted) audio.muted = false;
-						if (audio.paused && state!.playing) audio.play().catch(() => {});
-						unmuteEvents.forEach((ev) =>
-							document.removeEventListener(ev, unmuteOnFirstInteraction),
-						);
-					}
-					unmuteEvents.forEach((ev) =>
-						document.addEventListener(ev, unmuteOnFirstInteraction, {
-							passive: true,
-						}),
-					);
-
-					bgmToggle.addEventListener("click", () => {
-						audio.muted = false;
-						if (audio.paused) {
-							audio.play().catch(() => {});
-						} else {
-							audio.pause();
-						}
-					});
-					audio.addEventListener("play", () => {
-						state!.playing = true;
-						writeBgmState(state!);
-						syncToggleUi();
-					});
-					audio.addEventListener("pause", () => {
-						state!.playing = false;
-						writeBgmState(state!);
-						syncToggleUi();
-					});
-					audio.addEventListener("ended", () => {
-						state!.index = (state!.index + 1) % state!.order.length;
-						state!.currentTime = 0;
-						writeBgmState(state!);
-						loadTrack(0);
-						audio.play().catch(() => {});
-					});
-					setInterval(() => {
-						if (!audio.paused) {
-							state!.currentTime = audio.currentTime;
-							writeBgmState(state!);
-						}
-					}, 3_000);
-				}
-				initBgm();
+				initBgm(signal);
 
 				// ── Shortcuts dialog ──
-				const dialog = document.getElementById("shortcuts-dialog");
+				const dialog = document.getElementById("shortcuts-dialog") as
+					| (HTMLElement & { open: boolean; showModal?: () => void; close?: () => void })
+					| null;
 				const openBtn = document.getElementById("shortcuts-btn");
 				const closeBtn = document.getElementById("shortcuts-close");
 				if (dialog && "showModal" in dialog) {
 					const toggle = () => {
-						if (dialog.open) dialog.close();
-						else dialog.showModal();
+						if (dialog.open) dialog.close?.();
+						else dialog.showModal?.();
 					};
-					openBtn?.addEventListener("click", toggle);
-					closeBtn?.addEventListener("click", () => dialog.close());
-					dialog.addEventListener("click", (e) => {
-						if (e.target === dialog) dialog.close();
-					});
-					document.addEventListener("keydown", (e) => {
-						if (e.ctrlKey || e.metaKey || e.altKey) return;
-						const target = e.target as HTMLElement;
-						if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
-						if (e.key === "?") {
-							e.preventDefault();
-							toggle();
-						}
-					});
+					openBtn?.addEventListener("click", toggle, { signal });
+					closeBtn?.addEventListener("click", () => dialog.close?.(), { signal });
+					dialog.addEventListener(
+						"click",
+						(e) => {
+							if (e.target === dialog) dialog.close?.();
+						},
+						{ signal },
+					);
+					document.addEventListener(
+						"keydown",
+						(e) => {
+							if (e.ctrlKey || e.metaKey || e.altKey) return;
+							const target = e.target as HTMLElement;
+							if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
+							if (e.key === "?") {
+								e.preventDefault();
+								toggle();
+							}
+						},
+						{ signal },
+					);
 				}
-			})();
+			}
+
+			// Same reasoning as initKeyboardNav: astro:page-load alone covers
+			// both the first load and every transition. A redundant direct
+			// call here raced initBgm()'s manifest fetch against itself.
+			document.addEventListener("astro:page-load", initHeaderWidgets);
 		</script>
 	</body>
 </html>
