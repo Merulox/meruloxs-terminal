@@ -805,13 +805,13 @@ const ranges = [
 	}
 
 	.vis-point {
-		fill: rgba(78, 184, 196, 0.35);
+		fill: rgba(176, 223, 155, 0.35);
 		stroke: var(--accent);
 		stroke-width: 0.35;
 	}
 
 	.vis-point:hover {
-		fill: rgba(78, 184, 196, 0.75);
+		fill: rgba(176, 223, 155, 0.75);
 	}
 
 	.vis-daily {
@@ -824,7 +824,7 @@ const ranges = [
 
 	.vis-daily span {
 		flex: 1;
-		background: rgba(78, 184, 196, 0.45);
+		background: rgba(176, 223, 155, 0.45);
 	}
 
 	.vis-grid {
@@ -834,9 +834,12 @@ const ranges = [
 	}
 
 	.vis-grid h2 {
-		font-size: 14px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.1em;
 		margin-bottom: 10px;
-		color: var(--muted);
+		color: var(--accent);
+		text-transform: uppercase;
 	}
 
 	.vis-grid > section {
@@ -866,8 +869,9 @@ const ranges = [
 		display: flex;
 		justify-content: space-between;
 		gap: 12px;
-		padding: 3px 6px;
-		background: linear-gradient(90deg, rgba(78, 184, 196, 0.1) var(--share, 0%), transparent var(--share, 0%));
+		padding: 4px 6px;
+		border-bottom: 1px solid var(--line);
+		background: linear-gradient(90deg, rgba(176, 223, 155, 0.1) var(--share, 0%), transparent var(--share, 0%));
 	}
 
 	.vis-list li + li {
@@ -904,9 +908,12 @@ const ranges = [
 
 	.vis-recent h2,
 	.ip-section h3 {
-		font-size: 14px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.1em;
 		margin-bottom: 10px;
-		color: var(--muted);
+		color: var(--accent);
+		text-transform: uppercase;
 	}
 
 	.vis-table-wrap {

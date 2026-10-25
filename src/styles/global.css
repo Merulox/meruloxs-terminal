@@ -120,7 +120,7 @@ ul {
 }
 
 .list-item:focus-visible {
-	box-shadow: inset 0 0 0 1px rgba(78, 184, 196, 0.55);
+	box-shadow: inset 0 0 0 1px rgba(176, 223, 155, 0.55);
 }
 
 .site-nav {
@@ -499,19 +499,19 @@ h2 {
 }
 
 .archive-switch:hover {
-	background: rgba(78, 184, 196, 0.07);
+	background: rgba(176, 223, 155, 0.07);
 	color: var(--text);
 }
 
 .archive-switch:focus-visible {
-	background: rgba(78, 184, 196, 0.07);
+	background: rgba(176, 223, 155, 0.07);
 	color: var(--text);
 	outline: none;
 	box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .archive-switch[aria-pressed="true"] {
-	background: rgba(78, 184, 196, 0.12);
+	background: rgba(176, 223, 155, 0.12);
 	color: var(--text);
 }
 
@@ -740,12 +740,12 @@ h2 {
 
 .period-btn.active {
 	color: var(--accent);
-	background: rgba(78, 184, 196, 0.08);
+	background: rgba(176, 223, 155, 0.08);
 }
 
 .period-btn.kbd-cursor {
 	color: var(--text);
-	box-shadow: inset 0 0 0 1px rgba(78, 184, 196, 0.55);
+	box-shadow: inset 0 0 0 1px rgba(176, 223, 155, 0.55);
 }
 
 .music-grid {
