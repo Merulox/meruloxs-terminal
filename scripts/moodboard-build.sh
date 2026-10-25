@@ -27,6 +27,10 @@ SRC_DIR="moodboard"
 OUT_DIR="public/moodboard"
 MAX_DIM="640x640"
 QUALITY="78"
+MAX_BYTES=300000
+FALLBACK_DIM="480x480"
+FALLBACK_QUALITY="65"
+TARGET_FRAMES=24
 
 if [[ ! -d "$SRC_DIR" ]]; then
 	echo "no $SRC_DIR/ directory found" >&2
@@ -56,12 +60,37 @@ process_file() {
 		echo "exists (same content elsewhere): $out"
 		return
 	fi
-	if magick "$filepath" -auto-orient -resize "${MAX_DIM}>" -strip -quality "$QUALITY" "$out" 2>/dev/null; then
-		manifest_entries+=("{\"src\":\"/moodboard/$category/$hash.webp\",\"category\":\"$category\"}")
-		echo "built: $out"
-	else
+	if ! magick "$filepath" -auto-orient -resize "${MAX_DIM}>" -strip -quality "$QUALITY" "$out" 2>/dev/null; then
 		echo "failed to convert: $filepath" >&2
+		return
 	fi
+	local size
+	size=$(stat -c%s "$out" 2>/dev/null || echo 0)
+	if [[ "$size" -gt "$MAX_BYTES" ]]; then
+		# Outlier (commonly: a multi-frame animated GIF, where every frame is
+		# full-resolution real content, not just a big photo). Re-encode at a
+		# smaller size and, if animated, drop to ~TARGET_FRAMES frames with
+		# proportionally longer per-frame delay so real-time pacing is kept.
+		local nframes
+		nframes=$(magick identify "$filepath" 2>/dev/null | wc -l)
+		if [[ "$nframes" -gt "$TARGET_FRAMES" ]]; then
+			local stride=$(( (nframes + TARGET_FRAMES - 1) / TARGET_FRAMES ))
+			local delay
+			delay=$(magick identify -format "%T" "${filepath}[0]" 2>/dev/null || echo 10)
+			local idx
+			idx=$(seq 0 "$stride" $((nframes - 1)) | paste -sd, -)
+			magick "${filepath}[${idx}]" -auto-orient -resize "${FALLBACK_DIM}>" -strip \
+				-quality "$FALLBACK_QUALITY" -delay $((delay * stride)) -loop 0 "$out" 2>/dev/null \
+				|| echo "fallback re-encode failed, keeping oversized output: $filepath" >&2
+		else
+			magick "$filepath" -auto-orient -resize "${FALLBACK_DIM}>" -strip \
+				-quality "$FALLBACK_QUALITY" "$out" 2>/dev/null \
+				|| echo "fallback re-encode failed, keeping oversized output: $filepath" >&2
+		fi
+		echo "shrunk outlier ($size -> $(stat -c%s "$out" 2>/dev/null || echo "?") bytes): $out"
+	fi
+	manifest_entries+=("{\"src\":\"/moodboard/$category/$hash.webp\",\"category\":\"$category\"}")
+	echo "built: $out"
 }
 
 # Top-level loose files -> "general" category

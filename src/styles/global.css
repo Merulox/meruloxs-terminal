@@ -936,6 +936,11 @@ h2 {
 	overflow: hidden;
 	-webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
 	mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+	/* iOS WebKit has known bugs compositing a CSS mask over a transform-
+	   animated child with many image layers (can render blank or drop
+	   frames). Forcing the strip onto its own GPU layer avoids the bug. */
+	-webkit-transform: translateZ(0);
+	transform: translateZ(0);
 }
 
 .mood-track {
@@ -944,6 +949,7 @@ h2 {
 	width: max-content;
 	padding: 2px 0;
 	animation: mood-scroll 70s linear infinite;
+	will-change: transform;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1006,6 +1012,7 @@ h2 {
 	}
 	.mood-strip {
 		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
@@ -1178,11 +1185,25 @@ h2 {
 }
 
 @media (max-width: 760px) {
-	.home-tagline,
-	.home-now-playing,
-	.home-clock,
-	.home-visits {
+	.home-shortcuts-btn {
 		display: none;
+	}
+	.home-statusbar {
+		flex-wrap: wrap;
+		row-gap: 4px;
+		padding: 8px 12px;
+	}
+	.home-now-playing {
+		max-width: 150px;
+	}
+}
+
+@media (max-width: 480px) {
+	.home-tagline {
+		display: none;
+	}
+	.home-now-playing {
+		max-width: 110px;
 	}
 }
 
