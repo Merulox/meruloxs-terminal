@@ -87,7 +87,7 @@ import { projects } from "../../data/projects";
 		explicit.
 	</p>
 
-	<div class="proj-list">
+	<div class="proj-list" id="employer-projects-list">
 		{
 			projects.map((p, i) => (
 				<article class={`proj${i === 0 ? " open" : ""}`}>
@@ -142,12 +142,24 @@ import { projects } from "../../data/projects";
 	</div>
 
 	<script>
-		document.querySelectorAll<HTMLButtonElement>(".proj-head").forEach((head) => {
-			head.addEventListener("click", () => {
-				const proj = head.closest(".proj")!;
-				const open = proj.classList.toggle("open");
-				head.setAttribute("aria-expanded", open ? "true" : "false");
+		let projHeadAbort: AbortController | null = null;
+		function initProjHead() {
+			projHeadAbort?.abort();
+			projHeadAbort = new AbortController();
+			const { signal } = projHeadAbort;
+
+		const root = document.getElementById("employer-projects-list");
+		if (!root) return;
+		const heads = root.querySelectorAll<HTMLButtonElement>(".proj-head");
+
+			heads.forEach((head) => {
+				head.addEventListener("click", () => {
+					const proj = head.closest(".proj")!;
+					const open = proj.classList.toggle("open");
+					head.setAttribute("aria-expanded", open ? "true" : "false");
+				});
 			});
-		});
+		}
+		document.addEventListener("astro:page-load", initProjHead);
 	</script>
 </Layout>

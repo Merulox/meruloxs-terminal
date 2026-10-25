@@ -144,376 +144,399 @@ const serializedData = JSON.stringify(cameraData).replaceAll("<", "\\u003c");
 			};
 			type Catalog = { cameras: Camera[] };
 
-			const catalogElement = document.querySelector<HTMLScriptElement>("#camera-catalog");
-			const catalog = JSON.parse(catalogElement?.textContent ?? '{"cameras":[]}') as Catalog;
-			const cameras = catalog.cameras;
-			const cameraById = new Map(cameras.map((camera) => [camera.id, camera]));
-			const defaultView = { center: [-71.8, 46.8] as [number, number], zoom: 5.2 };
-			const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-			const animation = reducedMotion ? { duration: 0 } : { duration: 850 };
-			let filtered = [...cameras];
-			let selected: Camera | null = null;
-			let mapReady = false;
-			let restoringState = false;
+			let camerasPageAbort: AbortController | null = null;
+			let existingMap: maplibregl.Map | null = null;
 
-			const searchForm = document.querySelector<HTMLFormElement>("#search-form")!;
-			const searchInput = document.querySelector<HTMLInputElement>("#camera-search")!;
-			const coordinateHint = document.querySelector<HTMLElement>("#coordinate-hint")!;
-			const regionFilter = document.querySelector<HTMLSelectElement>("#region-filter")!;
-			const statusFilter = document.querySelector<HTMLSelectElement>("#status-filter")!;
-			const feedFilter = document.querySelector<HTMLSelectElement>("#feed-filter")!;
-			const resultCount = document.querySelector<HTMLElement>("#result-count")!;
-			const results = document.querySelector<HTMLOListElement>("#camera-results")!;
-			const listNote = document.querySelector<HTMLElement>("#list-note")!;
-			const emptyState = document.querySelector<HTMLElement>("#empty-state")!;
-			const details = document.querySelector<HTMLElement>("#camera-details")!;
-			const mapState = document.querySelector<HTMLElement>("#map-state")!;
+			function initCamerasPage() {
+				camerasPageAbort?.abort();
+				camerasPageAbort = new AbortController();
+				const { signal } = camerasPageAbort;
 
-			for (const region of [...new Set(cameras.map((camera) => camera.region))].sort((a, b) => a.localeCompare(b, "en"))) {
-				regionFilter.add(new Option(region, region));
-			}
+				existingMap?.remove();
+				existingMap = null;
 
-			const initialParams = new URLSearchParams(location.search);
-			const initialLat = numberParam(initialParams.get("lat"), defaultView.center[1], -90, 90);
-			const initialLon = numberParam(initialParams.get("lon"), defaultView.center[0], -180, 180);
-			const initialZoom = numberParam(initialParams.get("z"), defaultView.zoom, 2, 18);
+				if (!document.getElementById("map")) return;
 
-			const map = new maplibregl.Map({
-				container: "map",
-				style: "https://tiles.openfreemap.org/styles/liberty",
-				center: [initialLon, initialLat],
-				zoom: initialZoom,
-				minZoom: 3,
-				maxZoom: 18,
-				attributionControl: true,
-				cooperativeGestures: false,
-			});
-			map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
-			map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+				const catalogElement = document.querySelector<HTMLScriptElement>("#camera-catalog");
+				const catalog = JSON.parse(catalogElement?.textContent ?? '{"cameras":[]}') as Catalog;
+				const cameras = catalog.cameras;
+				const cameraById = new Map(cameras.map((camera) => [camera.id, camera]));
+				const defaultView = { center: [-71.8, 46.8] as [number, number], zoom: 5.2 };
+				const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+				const animation = reducedMotion ? { duration: 0 } : { duration: 850 };
+				let filtered = [...cameras];
+				let selected: Camera | null = null;
+				let mapReady = false;
+				let restoringState = false;
 
-			map.once("load", () => {
-				map.addSource("cameras", {
-					type: "geojson",
-					data: featureCollection(filtered),
-					cluster: true,
-					clusterMaxZoom: 11,
-					clusterRadius: 48,
-					attribution: '<a href="https://open.canada.ca/data/dataset/d2f1dce5-35c5-4bb5-a54c-3b8ec9ac9de9" target="_blank">Québec MTMD camera locations</a> · <a href="https://www.donneesquebec.ca/licence/#cc-by" target="_blank">CC BY 4.0 Québec</a>',
-				});
-				map.addLayer({
-					id: "clusters",
-					type: "circle",
-					source: "cameras",
-					filter: ["has", "point_count"],
-					paint: {
-						"circle-color": ["step", ["get", "point_count"], "#8bd5ca", 20, "#6bbfb7", 75, "#4e9f99"],
-						"circle-radius": ["step", ["get", "point_count"], 17, 20, 22, 75, 29],
-						"circle-stroke-color": "#071010",
-						"circle-stroke-width": 2,
-					},
-				});
-				map.addLayer({
-					id: "cluster-count",
-					type: "symbol",
-					source: "cameras",
-					filter: ["has", "point_count"],
-					layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 13 },
-					paint: { "text-color": "#071010" },
-				});
-				map.addLayer({
-					id: "camera-points",
-					type: "circle",
-					source: "cameras",
-					filter: ["!", ["has", "point_count"]],
-					paint: {
-						"circle-color": "#f2c879",
-						"circle-radius": 6,
-						"circle-stroke-color": "#101317",
-						"circle-stroke-width": 2,
-					},
-				});
-				map.addLayer({
-					id: "selected-camera",
-					type: "circle",
-					source: "cameras",
-					filter: ["==", ["get", "id"], ""],
-					paint: {
-						"circle-color": "#f2c879",
-						"circle-radius": 11,
-						"circle-stroke-color": "#ffffff",
-						"circle-stroke-width": 3,
-					},
-				});
-				mapReady = true;
-				mapState.hidden = true;
-				applyStateFromUrl(false);
-			});
+				const searchForm = document.querySelector<HTMLFormElement>("#search-form")!;
+				const searchInput = document.querySelector<HTMLInputElement>("#camera-search")!;
+				const coordinateHint = document.querySelector<HTMLElement>("#coordinate-hint")!;
+				const regionFilter = document.querySelector<HTMLSelectElement>("#region-filter")!;
+				const statusFilter = document.querySelector<HTMLSelectElement>("#status-filter")!;
+				const feedFilter = document.querySelector<HTMLSelectElement>("#feed-filter")!;
+				const resultCount = document.querySelector<HTMLElement>("#result-count")!;
+				const results = document.querySelector<HTMLOListElement>("#camera-results")!;
+				const listNote = document.querySelector<HTMLElement>("#list-note")!;
+				const emptyState = document.querySelector<HTMLElement>("#empty-state")!;
+				const details = document.querySelector<HTMLElement>("#camera-details")!;
+				const mapState = document.querySelector<HTMLElement>("#map-state")!;
 
-			map.once("error", () => {
-				if (mapReady) return;
-				mapState.textContent = "The map style could not load. The accessible camera list is still available.";
-				mapState.classList.add("is-error");
-			});
-
-			map.on("click", "clusters", async (event) => {
-				const feature = map.queryRenderedFeatures(event.point, { layers: ["clusters"] })[0];
-				const clusterId = Number(feature?.properties?.cluster_id);
-				if (!feature?.geometry || feature.geometry.type !== "Point" || !Number.isFinite(clusterId)) return;
-				const zoom = await (map.getSource("cameras") as GeoJSONSource).getClusterExpansionZoom(clusterId);
-				map.easeTo({ center: feature.geometry.coordinates as [number, number], zoom, ...animation });
-			});
-			map.on("click", "camera-points", (event) => selectFeature(event.features?.[0]));
-			map.on("click", "selected-camera", (event) => selectFeature(event.features?.[0]));
-			for (const layer of ["clusters", "camera-points", "selected-camera"]) {
-				map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
-				map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
-			}
-			map.on("moveend", () => {
-				if (!restoringState) updateUrl("replace");
-			});
-
-			function featureCollection(items: Camera[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
-				return {
-					type: "FeatureCollection",
-					features: items.map((camera) => ({
-						type: "Feature",
-						id: camera.id,
-						geometry: { type: "Point", coordinates: camera.coordinates },
-						properties: { id: camera.id, name: camera.name, region: camera.region, route: camera.route },
-					})),
-				};
-			}
-
-			function selectFeature(feature?: MapGeoJSONFeature) {
-				const id = feature?.properties?.id;
-				if (typeof id === "string") selectCamera(cameraById.get(id), true);
-			}
-
-			function selectCamera(camera: Camera | undefined, pushHistory: boolean, moveMap = true) {
-				if (!camera) return;
-				const panelAlreadyOpen = selected !== null;
-				selected = camera;
-				details.setAttribute("aria-hidden", "false");
-				details.inert = false;
-				details.classList.add("is-open");
-				document.querySelector<HTMLElement>("#detail-title")!.textContent = camera.name;
-				document.querySelector<HTMLElement>("#detail-region")!.textContent = camera.region;
-				document.querySelector<HTMLElement>("#detail-route")!.textContent = `Route ${camera.route}`;
-				document.querySelector<HTMLElement>("#detail-coordinates")!.textContent = `${camera.coordinates[1].toFixed(5)}, ${camera.coordinates[0].toFixed(5)}`;
-				document.querySelector<HTMLElement>("#detail-id")!.textContent = camera.sourceCameraId;
-				document.querySelector<HTMLAnchorElement>("#source-link")!.href = camera.sourcePageUrl;
-				renderNearby(camera);
-				if (mapReady) map.setFilter("selected-camera", ["==", ["get", "id"], camera.id]);
-				if (moveMap && mapReady) map.easeTo({ center: camera.coordinates, zoom: Math.max(map.getZoom(), 12), padding: detailPadding(), ...animation });
-				const openHistoryEntry = pushHistory && !panelAlreadyOpen;
-				updateUrl(openHistoryEntry ? "push" : "replace", openHistoryEntry ? { cameraPanel: true } : undefined);
-			}
-
-			function clearSelection(updateHistory = true) {
-				selected = null;
-				details.classList.remove("is-open");
-				details.setAttribute("aria-hidden", "true");
-				details.inert = true;
-				if (mapReady) {
-					map.setFilter("selected-camera", ["==", ["get", "id"], ""]);
-					map.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
+				for (const region of [...new Set(cameras.map((camera) => camera.region))].sort((a, b) => a.localeCompare(b, "en"))) {
+					regionFilter.add(new Option(region, region));
 				}
-				if (updateHistory) updateUrl("replace");
-			}
 
-			function closeDetails() {
-				if (history.state?.cameraPanel) history.back();
-				else clearSelection(true);
-			}
+				const initialParams = new URLSearchParams(location.search);
+				const initialLat = numberParam(initialParams.get("lat"), defaultView.center[1], -90, 90);
+				const initialLon = numberParam(initialParams.get("lon"), defaultView.center[0], -180, 180);
+				const initialZoom = numberParam(initialParams.get("z"), defaultView.zoom, 2, 18);
 
-			function renderNearby(camera: Camera) {
-				const list = document.querySelector<HTMLUListElement>("#nearby-list")!;
-				list.replaceChildren();
-				const nearby = cameras
-					.filter((candidate) => candidate.id !== camera.id)
-					.map((candidate) => ({ camera: candidate, distance: distanceKm(camera.coordinates, candidate.coordinates) }))
-					.sort((a, b) => a.distance - b.distance)
-					.slice(0, 4);
-				for (const item of nearby) {
-					const li = document.createElement("li");
-					const button = document.createElement("button");
-					button.type = "button";
-					button.textContent = `${item.camera.name} · ${item.distance.toFixed(1)} km`;
-					button.addEventListener("click", () => selectCamera(item.camera, true));
-					li.append(button);
-					list.append(li);
-				}
-			}
-
-			function applyFilters(syncUrl = true) {
-				const query = normalize(searchInput.value.trim());
-				const coordinateQuery = parseCoordinates(searchInput.value);
-				coordinateHint.hidden = !coordinateQuery;
-				filtered = cameras.filter((camera) => {
-					if (regionFilter.value && camera.region !== regionFilter.value) return false;
-					if (statusFilter.value && camera.status !== statusFilter.value) return false;
-					if (feedFilter.value && camera.feedType !== feedFilter.value) return false;
-					if (!query || coordinateQuery) return true;
-					const haystack = normalize(`${camera.name} ${camera.region} route ${camera.route} ${camera.route}`);
-					return haystack.includes(query);
+				const map = new maplibregl.Map({
+					container: "map",
+					style: "https://tiles.openfreemap.org/styles/liberty",
+					center: [initialLon, initialLat],
+					zoom: initialZoom,
+					minZoom: 3,
+					maxZoom: 18,
+					attributionControl: true,
+					cooperativeGestures: false,
 				});
-				resultCount.textContent = `${filtered.length.toLocaleString("en-CA")} of ${cameras.length.toLocaleString("en-CA")} public listings`;
-				emptyState.hidden = filtered.length !== 0;
-				results.hidden = filtered.length === 0;
-				renderResults();
-				if (mapReady) (map.getSource("cameras") as GeoJSONSource).setData(featureCollection(filtered));
-				if (selected && !filtered.some((camera) => camera.id === selected?.id)) clearSelection(false);
-				if (syncUrl) updateUrl("replace");
-			}
+				existingMap = map;
+				map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+				map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
 
-			function renderResults() {
-				results.replaceChildren();
-				const visible = filtered.slice(0, 100);
-				for (const camera of visible) {
-					const item = document.createElement("li");
-					const button = document.createElement("button");
-					button.type = "button";
-					button.dataset.cameraId = camera.id;
-					button.setAttribute("aria-label", `${camera.name}, ${camera.region}, route ${camera.route}`);
-					const title = document.createElement("span");
-					title.className = "result-title";
-					title.textContent = camera.name;
-					const meta = document.createElement("span");
-					meta.className = "result-meta";
-					meta.textContent = `${camera.region} · route ${camera.route} · source page`;
-					button.append(title, meta);
-					button.addEventListener("click", () => selectCamera(camera, true));
-					item.append(button);
-					results.append(item);
+				map.once("load", () => {
+					map.addSource("cameras", {
+						type: "geojson",
+						data: featureCollection(filtered),
+						cluster: true,
+						clusterMaxZoom: 11,
+						clusterRadius: 48,
+						attribution: '<a href="https://open.canada.ca/data/dataset/d2f1dce5-35c5-4bb5-a54c-3b8ec9ac9de9" target="_blank">Québec MTMD camera locations</a> · <a href="https://www.donneesquebec.ca/licence/#cc-by" target="_blank">CC BY 4.0 Québec</a>',
+					});
+					map.addLayer({
+						id: "clusters",
+						type: "circle",
+						source: "cameras",
+						filter: ["has", "point_count"],
+						paint: {
+							"circle-color": ["step", ["get", "point_count"], "#8bd5ca", 20, "#6bbfb7", 75, "#4e9f99"],
+							"circle-radius": ["step", ["get", "point_count"], 17, 20, 22, 75, 29],
+							"circle-stroke-color": "#071010",
+							"circle-stroke-width": 2,
+						},
+					});
+					map.addLayer({
+						id: "cluster-count",
+						type: "symbol",
+						source: "cameras",
+						filter: ["has", "point_count"],
+						layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 13 },
+						paint: { "text-color": "#071010" },
+					});
+					map.addLayer({
+						id: "camera-points",
+						type: "circle",
+						source: "cameras",
+						filter: ["!", ["has", "point_count"]],
+						paint: {
+							"circle-color": "#f2c879",
+							"circle-radius": 6,
+							"circle-stroke-color": "#101317",
+							"circle-stroke-width": 2,
+						},
+					});
+					map.addLayer({
+						id: "selected-camera",
+						type: "circle",
+						source: "cameras",
+						filter: ["==", ["get", "id"], ""],
+						paint: {
+							"circle-color": "#f2c879",
+							"circle-radius": 11,
+							"circle-stroke-color": "#ffffff",
+							"circle-stroke-width": 3,
+						},
+					});
+					mapReady = true;
+					mapState.hidden = true;
+					applyStateFromUrl(false);
+				});
+
+				map.once("error", () => {
+					if (mapReady) return;
+					mapState.textContent = "The map style could not load. The accessible camera list is still available.";
+					mapState.classList.add("is-error");
+				});
+
+				map.on("click", "clusters", async (event) => {
+					const feature = map.queryRenderedFeatures(event.point, { layers: ["clusters"] })[0];
+					const clusterId = Number(feature?.properties?.cluster_id);
+					if (!feature?.geometry || feature.geometry.type !== "Point" || !Number.isFinite(clusterId)) return;
+					const zoom = await (map.getSource("cameras") as GeoJSONSource).getClusterExpansionZoom(clusterId);
+					map.easeTo({ center: feature.geometry.coordinates as [number, number], zoom, ...animation });
+				});
+				map.on("click", "camera-points", (event) => selectFeature(event.features?.[0]));
+				map.on("click", "selected-camera", (event) => selectFeature(event.features?.[0]));
+				for (const layer of ["clusters", "camera-points", "selected-camera"]) {
+					map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
+					map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
 				}
-				listNote.textContent = filtered.length > visible.length ? `Showing the first ${visible.length} results. Refine your search to narrow the list; all ${filtered.length} remain on the map.` : "";
-			}
+				map.on("moveend", () => {
+					if (!restoringState) updateUrl("replace");
+				});
 
-			function fitResults() {
-				if (!mapReady || filtered.length === 0) return;
-				if (filtered.length === 1) {
-					map.easeTo({ center: filtered[0].coordinates, zoom: 13, ...animation });
-					return;
+				function featureCollection(items: Camera[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
+					return {
+						type: "FeatureCollection",
+						features: items.map((camera) => ({
+							type: "Feature",
+							id: camera.id,
+							geometry: { type: "Point", coordinates: camera.coordinates },
+							properties: { id: camera.id, name: camera.name, region: camera.region, route: camera.route },
+						})),
+					};
 				}
-				const bounds = new maplibregl.LngLatBounds();
-				for (const camera of filtered) bounds.extend(camera.coordinates);
-				map.fitBounds(bounds as LngLatBoundsLike, { padding: mapPadding(), maxZoom: 12, ...animation });
-			}
 
-			function reset() {
-				searchInput.value = "";
-				regionFilter.value = "";
-				statusFilter.value = "";
-				feedFilter.value = "";
-				clearSelection(false);
-				applyFilters(false);
-				if (mapReady) map.easeTo({ center: defaultView.center, zoom: defaultView.zoom, padding: 0, ...animation });
-				updateUrl("replace");
-			}
-
-			function updateUrl(mode: "push" | "replace", state?: Record<string, unknown>) {
-				if (restoringState) return;
-				const params = new URLSearchParams();
-				if (mapReady) {
-					const center = map.getCenter();
-					params.set("lat", center.lat.toFixed(5));
-					params.set("lon", center.lng.toFixed(5));
-					params.set("z", map.getZoom().toFixed(2));
+				function selectFeature(feature?: MapGeoJSONFeature) {
+					const id = feature?.properties?.id;
+					if (typeof id === "string") selectCamera(cameraById.get(id), true);
 				}
-				if (selected) params.set("camera", selected.id);
-				if (searchInput.value.trim()) params.set("q", searchInput.value.trim());
-				if (regionFilter.value) params.set("region", regionFilter.value);
-				if (statusFilter.value) params.set("status", statusFilter.value);
-				if (feedFilter.value) params.set("feed", feedFilter.value);
-				const url = `${location.pathname}${params.size ? `?${params}` : ""}`;
-				const mergedState = { ...(history.state ?? {}), ...(state ?? {}) };
-				history[mode === "push" ? "pushState" : "replaceState"](mergedState, "", url);
-			}
 
-			function applyStateFromUrl(moveMap = true) {
-				restoringState = true;
-				const params = new URLSearchParams(location.search);
-				searchInput.value = params.get("q") ?? "";
-				regionFilter.value = optionValue(regionFilter, params.get("region"));
-				statusFilter.value = optionValue(statusFilter, params.get("status"));
-				feedFilter.value = optionValue(feedFilter, params.get("feed"));
-				applyFilters(false);
-				const camera = cameraById.get(params.get("camera") ?? "");
-				if (camera) selectCamera(camera, false, false);
-				else clearSelection(false);
-				if (moveMap && mapReady) {
-					const lat = numberParam(params.get("lat"), map.getCenter().lat, -90, 90);
-					const lon = numberParam(params.get("lon"), map.getCenter().lng, -180, 180);
-					const zoom = numberParam(params.get("z"), map.getZoom(), 2, 18);
-					map.jumpTo({ center: [lon, lat], zoom });
+				function selectCamera(camera: Camera | undefined, pushHistory: boolean, moveMap = true) {
+					if (!camera) return;
+					const panelAlreadyOpen = selected !== null;
+					selected = camera;
+					details.setAttribute("aria-hidden", "false");
+					details.inert = false;
+					details.classList.add("is-open");
+					document.querySelector<HTMLElement>("#detail-title")!.textContent = camera.name;
+					document.querySelector<HTMLElement>("#detail-region")!.textContent = camera.region;
+					document.querySelector<HTMLElement>("#detail-route")!.textContent = `Route ${camera.route}`;
+					document.querySelector<HTMLElement>("#detail-coordinates")!.textContent = `${camera.coordinates[1].toFixed(5)}, ${camera.coordinates[0].toFixed(5)}`;
+					document.querySelector<HTMLElement>("#detail-id")!.textContent = camera.sourceCameraId;
+					document.querySelector<HTMLAnchorElement>("#source-link")!.href = camera.sourcePageUrl;
+					renderNearby(camera);
+					if (mapReady) map.setFilter("selected-camera", ["==", ["get", "id"], camera.id]);
+					if (moveMap && mapReady) map.easeTo({ center: camera.coordinates, zoom: Math.max(map.getZoom(), 12), padding: detailPadding(), ...animation });
+					const openHistoryEntry = pushHistory && !panelAlreadyOpen;
+					updateUrl(openHistoryEntry ? "push" : "replace", openHistoryEntry ? { cameraPanel: true } : undefined);
 				}
-				restoringState = false;
-			}
 
-			function optionValue(select: HTMLSelectElement, candidate: string | null) {
-				return candidate && [...select.options].some((option) => option.value === candidate) ? candidate : "";
-			}
+				function clearSelection(updateHistory = true) {
+					selected = null;
+					details.classList.remove("is-open");
+					details.setAttribute("aria-hidden", "true");
+					details.inert = true;
+					if (mapReady) {
+						map.setFilter("selected-camera", ["==", ["get", "id"], ""]);
+						map.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
+					}
+					if (updateHistory) updateUrl("replace");
+				}
 
-			function parseCoordinates(value: string): [number, number] | null {
-				const match = value.trim().match(/^(-?\d{1,2}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)$/);
-				if (!match) return null;
-				const lat = Number(match[1]);
-				const lon = Number(match[2]);
-				return Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? [lon, lat] : null;
-			}
+				function closeDetails() {
+					if (history.state?.cameraPanel) history.back();
+					else clearSelection(true);
+				}
 
-			function numberParam(value: string | null, fallback: number, min: number, max: number) {
-				if (value === null || value.trim() === "") return fallback;
-				const number = Number(value);
-				return Number.isFinite(number) && number >= min && number <= max ? number : fallback;
-			}
+				function renderNearby(camera: Camera) {
+					const list = document.querySelector<HTMLUListElement>("#nearby-list")!;
+					list.replaceChildren();
+					const nearby = cameras
+						.filter((candidate) => candidate.id !== camera.id)
+						.map((candidate) => ({ camera: candidate, distance: distanceKm(camera.coordinates, candidate.coordinates) }))
+						.sort((a, b) => a.distance - b.distance)
+						.slice(0, 4);
+					for (const item of nearby) {
+						const li = document.createElement("li");
+						const button = document.createElement("button");
+						button.type = "button";
+						button.textContent = `${item.camera.name} · ${item.distance.toFixed(1)} km`;
+						button.addEventListener("click", () => selectCamera(item.camera, true));
+						li.append(button);
+						list.append(li);
+					}
+				}
 
-			function normalize(value: string) {
-				return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("en-CA");
-			}
+				function applyFilters(syncUrl = true) {
+					const query = normalize(searchInput.value.trim());
+					const coordinateQuery = parseCoordinates(searchInput.value);
+					coordinateHint.hidden = !coordinateQuery;
+					filtered = cameras.filter((camera) => {
+						if (regionFilter.value && camera.region !== regionFilter.value) return false;
+						if (statusFilter.value && camera.status !== statusFilter.value) return false;
+						if (feedFilter.value && camera.feedType !== feedFilter.value) return false;
+						if (!query || coordinateQuery) return true;
+						const haystack = normalize(`${camera.name} ${camera.region} route ${camera.route} ${camera.route}`);
+						return haystack.includes(query);
+					});
+					resultCount.textContent = `${filtered.length.toLocaleString("en-CA")} of ${cameras.length.toLocaleString("en-CA")} public listings`;
+					emptyState.hidden = filtered.length !== 0;
+					results.hidden = filtered.length === 0;
+					renderResults();
+					if (mapReady) (map.getSource("cameras") as GeoJSONSource).setData(featureCollection(filtered));
+					if (selected && !filtered.some((camera) => camera.id === selected?.id)) clearSelection(false);
+					if (syncUrl) updateUrl("replace");
+				}
 
-			function distanceKm(a: [number, number], b: [number, number]) {
-				const radians = (degrees: number) => (degrees * Math.PI) / 180;
-				const dLat = radians(b[1] - a[1]);
-				const dLon = radians(b[0] - a[0]);
-				const h = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a[1])) * Math.cos(radians(b[1])) * Math.sin(dLon / 2) ** 2;
-				return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-			}
+				function renderResults() {
+					results.replaceChildren();
+					const visible = filtered.slice(0, 100);
+					for (const camera of visible) {
+						const item = document.createElement("li");
+						const button = document.createElement("button");
+						button.type = "button";
+						button.dataset.cameraId = camera.id;
+						button.setAttribute("aria-label", `${camera.name}, ${camera.region}, route ${camera.route}`);
+						const title = document.createElement("span");
+						title.className = "result-title";
+						title.textContent = camera.name;
+						const meta = document.createElement("span");
+						meta.className = "result-meta";
+						meta.textContent = `${camera.region} · route ${camera.route} · source page`;
+						button.append(title, meta);
+						button.addEventListener("click", () => selectCamera(camera, true));
+						item.append(button);
+						results.append(item);
+					}
+					listNote.textContent = filtered.length > visible.length ? `Showing the first ${visible.length} results. Refine your search to narrow the list; all ${filtered.length} remain on the map.` : "";
+				}
 
-			function mapPadding() {
-				return window.innerWidth <= 760 ? { top: 250, bottom: 90, left: 35, right: 35 } : { top: 55, bottom: 55, left: 55, right: details.classList.contains("is-open") ? 430 : 55 };
-			}
+				function fitResults() {
+					if (!mapReady || filtered.length === 0) return;
+					if (filtered.length === 1) {
+						map.easeTo({ center: filtered[0].coordinates, zoom: 13, ...animation });
+						return;
+					}
+					const bounds = new maplibregl.LngLatBounds();
+					for (const camera of filtered) bounds.extend(camera.coordinates);
+					map.fitBounds(bounds as LngLatBoundsLike, { padding: mapPadding(), maxZoom: 12, ...animation });
+				}
 
-			function detailPadding() {
-				return window.innerWidth <= 760 ? { top: 100, bottom: 310, left: 40, right: 40 } : { top: 40, bottom: 40, left: 40, right: 420 };
-			}
-
-			searchInput.addEventListener("input", () => applyFilters());
-			for (const select of [regionFilter, statusFilter, feedFilter]) select.addEventListener("change", () => applyFilters());
-			searchForm.addEventListener("submit", (event) => {
-				event.preventDefault();
-				const coordinates = parseCoordinates(searchInput.value);
-				if (coordinates && mapReady) {
+				function reset() {
+					searchInput.value = "";
+					regionFilter.value = "";
+					statusFilter.value = "";
+					feedFilter.value = "";
 					clearSelection(false);
-					map.easeTo({ center: coordinates, zoom: 12, ...animation });
-				} else if (filtered[0]) selectCamera(filtered[0], true);
-			});
-			document.querySelector("#fit-button")!.addEventListener("click", fitResults);
-			document.querySelector("#reset-button")!.addEventListener("click", reset);
-			document.querySelector("#empty-reset")!.addEventListener("click", reset);
-			document.querySelector("#detail-close")!.addEventListener("click", closeDetails);
-			document.querySelector("#explore-button")!.addEventListener("click", () => {
-				if (filtered.length) selectCamera(filtered[Math.floor(Math.random() * filtered.length)], true);
-			});
-			window.addEventListener("popstate", () => applyStateFromUrl(true));
-			window.addEventListener("keydown", (event) => {
-				if (event.key !== "Escape") return;
-				if (selected) closeDetails();
-				else if (searchInput.value || regionFilter.value || statusFilter.value || feedFilter.value) reset();
-			});
-			window.addEventListener("resize", () => map.resize());
+					applyFilters(false);
+					if (mapReady) map.easeTo({ center: defaultView.center, zoom: defaultView.zoom, padding: 0, ...animation });
+					updateUrl("replace");
+				}
 
-			applyStateFromUrl(false);
+				function updateUrl(mode: "push" | "replace", state?: Record<string, unknown>) {
+					if (restoringState) return;
+					const params = new URLSearchParams();
+					if (mapReady) {
+						const center = map.getCenter();
+						params.set("lat", center.lat.toFixed(5));
+						params.set("lon", center.lng.toFixed(5));
+						params.set("z", map.getZoom().toFixed(2));
+					}
+					if (selected) params.set("camera", selected.id);
+					if (searchInput.value.trim()) params.set("q", searchInput.value.trim());
+					if (regionFilter.value) params.set("region", regionFilter.value);
+					if (statusFilter.value) params.set("status", statusFilter.value);
+					if (feedFilter.value) params.set("feed", feedFilter.value);
+					const url = `${location.pathname}${params.size ? `?${params}` : ""}`;
+					const mergedState = { ...(history.state ?? {}), ...(state ?? {}) };
+					history[mode === "push" ? "pushState" : "replaceState"](mergedState, "", url);
+				}
+
+				function applyStateFromUrl(moveMap = true) {
+					restoringState = true;
+					const params = new URLSearchParams(location.search);
+					searchInput.value = params.get("q") ?? "";
+					regionFilter.value = optionValue(regionFilter, params.get("region"));
+					statusFilter.value = optionValue(statusFilter, params.get("status"));
+					feedFilter.value = optionValue(feedFilter, params.get("feed"));
+					applyFilters(false);
+					const camera = cameraById.get(params.get("camera") ?? "");
+					if (camera) selectCamera(camera, false, false);
+					else clearSelection(false);
+					if (moveMap && mapReady) {
+						const lat = numberParam(params.get("lat"), map.getCenter().lat, -90, 90);
+						const lon = numberParam(params.get("lon"), map.getCenter().lng, -180, 180);
+						const zoom = numberParam(params.get("z"), map.getZoom(), 2, 18);
+						map.jumpTo({ center: [lon, lat], zoom });
+					}
+					restoringState = false;
+				}
+
+				function optionValue(select: HTMLSelectElement, candidate: string | null) {
+					return candidate && [...select.options].some((option) => option.value === candidate) ? candidate : "";
+				}
+
+				function parseCoordinates(value: string): [number, number] | null {
+					const match = value.trim().match(/^(-?\d{1,2}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)$/);
+					if (!match) return null;
+					const lat = Number(match[1]);
+					const lon = Number(match[2]);
+					return Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? [lon, lat] : null;
+				}
+
+				function numberParam(value: string | null, fallback: number, min: number, max: number) {
+					if (value === null || value.trim() === "") return fallback;
+					const number = Number(value);
+					return Number.isFinite(number) && number >= min && number <= max ? number : fallback;
+				}
+
+				function normalize(value: string) {
+					return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("en-CA");
+				}
+
+				function distanceKm(a: [number, number], b: [number, number]) {
+					const radians = (degrees: number) => (degrees * Math.PI) / 180;
+					const dLat = radians(b[1] - a[1]);
+					const dLon = radians(b[0] - a[0]);
+					const h = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a[1])) * Math.cos(radians(b[1])) * Math.sin(dLon / 2) ** 2;
+					return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+				}
+
+				function mapPadding() {
+					return window.innerWidth <= 760 ? { top: 250, bottom: 90, left: 35, right: 35 } : { top: 55, bottom: 55, left: 55, right: details.classList.contains("is-open") ? 430 : 55 };
+				}
+
+				function detailPadding() {
+					return window.innerWidth <= 760 ? { top: 100, bottom: 310, left: 40, right: 40 } : { top: 40, bottom: 40, left: 40, right: 420 };
+				}
+
+				searchInput.addEventListener("input", () => applyFilters());
+				for (const select of [regionFilter, statusFilter, feedFilter]) select.addEventListener("change", () => applyFilters());
+				searchForm.addEventListener("submit", (event) => {
+					event.preventDefault();
+					const coordinates = parseCoordinates(searchInput.value);
+					if (coordinates && mapReady) {
+						clearSelection(false);
+						map.easeTo({ center: coordinates, zoom: 12, ...animation });
+					} else if (filtered[0]) selectCamera(filtered[0], true);
+				});
+				document.querySelector("#fit-button")!.addEventListener("click", fitResults);
+				document.querySelector("#reset-button")!.addEventListener("click", reset);
+				document.querySelector("#empty-reset")!.addEventListener("click", reset);
+				document.querySelector("#detail-close")!.addEventListener("click", closeDetails);
+				document.querySelector("#explore-button")!.addEventListener("click", () => {
+					if (filtered.length) selectCamera(filtered[Math.floor(Math.random() * filtered.length)], true);
+				});
+				window.addEventListener("popstate", () => applyStateFromUrl(true), { signal });
+				window.addEventListener("keydown", (event) => {
+					if (event.key !== "Escape") return;
+					if (selected) closeDetails();
+					else if (searchInput.value || regionFilter.value || statusFilter.value || feedFilter.value) reset();
+				}, { signal });
+				window.addEventListener("resize", () => map.resize(), { signal });
+
+				applyStateFromUrl(false);
+			}
+
+			// This page is a standalone document (no <ClientRouter />) and is
+			// always reached via a full hard navigation, so astro:page-load
+			// never fires here — call directly. The listener below is kept
+			// defensively in case this page is ever folded into the shared
+			// Layout/ClientRouter later.
+			initCamerasPage();
+			document.addEventListener("astro:page-load", initCamerasPage);
 		</script>
 	</body>
 </html>

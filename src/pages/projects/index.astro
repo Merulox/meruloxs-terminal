@@ -505,700 +505,714 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 	</style>
 
 	<script>
-		type ArchiveKind = "project" | "scheme";
-		type ArchiveDescriptionRecord = {
-			kind: ArchiveKind;
-			id: string;
-			name: string;
-			sourceDescription: string;
-			tier?: string;
-			order?: number;
-			description?: string;
-			role?: string;
-			impact?: string;
-			present?: string;
-			vision?: string;
-			frontier?: string;
-			currentState?: string;
-			decision?: string;
-			bottleneck?: string;
-			history?: string;
-		};
-		type Candidate = {
-			description: string;
-			version?: string | null;
-			evidence?: string;
-			updatedAt?: string | null;
-		};
-		type EditorElements = {
-			editButton: HTMLButtonElement;
-			panel: HTMLElement;
-			textarea: HTMLTextAreaElement;
-			tierSelect: HTMLSelectElement;
-			instruction: HTMLInputElement;
-			preview: HTMLElement;
-			status: HTMLElement;
-			candidate: HTMLElement;
-			evidence: HTMLElement;
-			acknowledgment: HTMLInputElement;
-			saveButton: HTMLButtonElement;
-			busy: boolean;
-			actionButtons: HTMLButtonElement[];
-		};
+		let projectsAbort: AbortController | null = null;
+		function initProjects() {
+			projectsAbort?.abort();
+			projectsAbort = new AbortController();
+			const { signal } = projectsAbort;
 
-		const itemKey = (kind: ArchiveKind, id: string) => `${kind}:${id}`;
-		const contextElement = document.getElementById("archive-description-context");
-		let archiveRecords: ArchiveDescriptionRecord[] = [];
-		try {
-			const parsed = JSON.parse(contextElement?.textContent ?? "[]");
-			if (Array.isArray(parsed)) archiveRecords = parsed;
-		} catch {
-			archiveRecords = [];
-		}
+			if (!document.getElementById("archive-description-context")) return;
 
-		const activeDescriptions = new Map(
-			archiveRecords.map((record) => [
-				itemKey(record.kind, record.id),
-				record.sourceDescription,
-			]),
-		);
-		const editors = new Map<string, EditorElements>();
+			type ArchiveKind = "project" | "scheme";
+			type ArchiveDescriptionRecord = {
+				kind: ArchiveKind;
+				id: string;
+				name: string;
+				sourceDescription: string;
+				tier?: string;
+				order?: number;
+				description?: string;
+				role?: string;
+				impact?: string;
+				present?: string;
+				vision?: string;
+				frontier?: string;
+				currentState?: string;
+				decision?: string;
+				bottleneck?: string;
+				history?: string;
+			};
+			type Candidate = {
+				description: string;
+				version?: string | null;
+				evidence?: string;
+				updatedAt?: string | null;
+			};
+			type EditorElements = {
+				editButton: HTMLButtonElement;
+				panel: HTMLElement;
+				textarea: HTMLTextAreaElement;
+				tierSelect: HTMLSelectElement;
+				instruction: HTMLInputElement;
+				preview: HTMLElement;
+				status: HTMLElement;
+				candidate: HTMLElement;
+				evidence: HTMLElement;
+				acknowledgment: HTMLInputElement;
+				saveButton: HTMLButtonElement;
+				busy: boolean;
+				actionButtons: HTMLButtonElement[];
+			};
 
-		const apiRequest = async (
-			method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
-			body?: Record<string, unknown>,
-		) => {
-			const response = await fetch("/api/project-descriptions", {
-				method,
-				cache: "no-store",
-				credentials: "same-origin",
-				headers: body ? { "Content-Type": "application/json" } : undefined,
-				body: body ? JSON.stringify(body) : undefined,
-			});
-			let payload: Record<string, any> = {};
+			const itemKey = (kind: ArchiveKind, id: string) => `${kind}:${id}`;
+			const contextElement = document.getElementById("archive-description-context");
+			let archiveRecords: ArchiveDescriptionRecord[] = [];
 			try {
-				payload = await response.json();
+				const parsed = JSON.parse(contextElement?.textContent ?? "[]");
+				if (Array.isArray(parsed)) archiveRecords = parsed;
 			} catch {
-				// The status below remains useful when an intermediary returns non-JSON.
+				archiveRecords = [];
 			}
-			if (!response.ok) {
-				throw new Error(
-					typeof payload.error === "string"
-						? payload.error
-						: `Request failed (${response.status})`,
-				);
-			}
-			return payload;
-		};
 
-		const descriptionElement = (record: ArchiveDescriptionRecord) =>
-			document.querySelector<HTMLElement>(
-				`[data-archive-kind="${record.kind}"][data-archive-id="${CSS.escape(record.id)}"] [data-archive-description]`,
+			const activeDescriptions = new Map(
+				archiveRecords.map((record) => [
+					itemKey(record.kind, record.id),
+					record.sourceDescription,
+				]),
 			);
+			const editors = new Map<string, EditorElements>();
 
-		const applyDescription = (
-			record: ArchiveDescriptionRecord,
-			description: string,
-		) => {
-			const output = descriptionElement(record);
-			if (output) output.textContent = description;
-			const key = itemKey(record.kind, record.id);
-			activeDescriptions.set(key, description);
-			const editor = editors.get(key);
-			if (editor?.panel.hidden) {
-				editor.textarea.value = description;
-				editor.preview.textContent = description;
-			}
-		};
-
-		const tierRankClient: Record<string, number> = { "!!!": 0, "!!": 1, "!": 2 };
-		const sortListByTierOrder = (list: Element) => {
-			const items = Array.from(list.children) as HTMLElement[];
-			items.sort((a, b) => {
-				const tierDiff =
-					(tierRankClient[a.dataset.tier ?? "!!"] ?? 9) -
-					(tierRankClient[b.dataset.tier ?? "!!"] ?? 9);
-				if (tierDiff !== 0) return tierDiff;
-				return Number(a.dataset.order ?? 0) - Number(b.dataset.order ?? 0);
-			});
-			items.forEach((item) => list.append(item));
-		};
-		const applyTier = (
-			record: ArchiveDescriptionRecord,
-			tier: string,
-			order?: number,
-		) => {
-			const article = document.querySelector<HTMLElement>(
-				`[data-archive-kind="${record.kind}"][data-archive-id="${CSS.escape(record.id)}"]`,
-			);
-			if (!article) return;
-			const section = article.closest("section.archive-section");
-			const targetList = section?.querySelector<HTMLElement>(
-				`[data-tier-list="${tier}"]`,
-			);
-			article.dataset.tier = tier;
-			if (typeof order === "number") article.dataset.order = String(order);
-			if (targetList && article.parentElement !== targetList) {
-				targetList.appendChild(article);
-			}
-			const list = article.parentElement;
-			if (list) sortListByTierOrder(list);
-			const key = itemKey(record.kind, record.id);
-			const editor = editors.get(key);
-			if (editor) editor.tierSelect.value = tier;
-		};
-
-		const makeButton = (label: string) => {
-			const button = document.createElement("button");
-			button.type = "button";
-			button.textContent = label;
-			return button;
-		};
-
-		const syncSaveGate = (editor: EditorElements) => {
-			const candidatePending = !editor.candidate.hidden;
-			editor.saveButton.disabled =
-				editor.busy || (candidatePending && !editor.acknowledgment.checked);
-		};
-
-		const setEditorBusy = (
-			editor: EditorElements,
-			busy: boolean,
-			message = "",
-		) => {
-			editor.busy = busy;
-			editor.textarea.disabled = busy;
-			editor.instruction.disabled = busy;
-			editor.acknowledgment.disabled = busy;
-			editor.editButton.disabled = busy;
-			editor.actionButtons.forEach((button) => {
-				button.disabled = busy;
-			});
-			syncSaveGate(editor);
-			editor.status.dataset.error = "false";
-			editor.status.textContent = message;
-		};
-
-		const reportEditorError = (editor: EditorElements, caught: unknown) => {
-			setEditorBusy(editor, false);
-			editor.status.dataset.error = "true";
-			editor.status.textContent =
-				caught instanceof Error ? caught.message : "The request failed.";
-		};
-
-		const candidateFor = (
-			payload: Record<string, any>,
-			record: ArchiveDescriptionRecord,
-		): Candidate | undefined => payload.candidates?.[record.kind]?.[record.id];
-
-		const syncCandidate = (
-			payload: Record<string, any>,
-			record: ArchiveDescriptionRecord,
-			editor: EditorElements,
-			useButton: HTMLButtonElement,
-		) => {
-			const scheduled = candidateFor(payload, record);
-			if (
-				scheduled &&
-				typeof scheduled.description === "string" &&
-				scheduled.description.trim() &&
-				typeof scheduled.version === "string"
-			) {
-				useButton.dataset.description = scheduled.description;
-				useButton.dataset.version = scheduled.version;
-				editor.evidence.textContent =
-					typeof scheduled.evidence === "string"
-						? scheduled.evidence
-						: "No repository evidence supplied.";
-				editor.acknowledgment.checked = false;
-				editor.candidate.hidden = false;
-				syncSaveGate(editor);
-				return true;
-			}
-			delete useButton.dataset.description;
-			delete useButton.dataset.version;
-			editor.evidence.textContent = "";
-			editor.acknowledgment.checked = false;
-			editor.candidate.hidden = true;
-			syncSaveGate(editor);
-			return false;
-		};
-
-		if (window.location.hostname === "dev.merulox.com") {
-			archiveRecords.forEach((record) => {
-				const output = descriptionElement(record);
-				if (!output) return;
-				const key = itemKey(record.kind, record.id);
-
-				const editContainer = document.createElement("div");
-				editContainer.className = "project-description-edit";
-				const editButton = makeButton("edit description");
-				const panelId = `archive-description-editor-${record.kind}-${record.id}`;
-				editButton.setAttribute("aria-controls", panelId);
-				editButton.setAttribute("aria-expanded", "false");
-				editContainer.append(editButton);
-
-				const candidate = document.createElement("div");
-				candidate.className = "archive-candidate";
-				candidate.hidden = true;
-				const candidateMessage = document.createElement("span");
-				candidateMessage.textContent = "Scheduled review draft is ready.";
-				const evidenceDetails = document.createElement("details");
-				const evidenceSummary = document.createElement("summary");
-				evidenceSummary.textContent = "Repository evidence (unverified)";
-				const candidateEvidence = document.createElement("pre");
-				candidateEvidence.textContent = "";
-				evidenceDetails.append(evidenceSummary, candidateEvidence);
-				const acknowledgmentLabel = document.createElement("label");
-				const acknowledgment = document.createElement("input");
-				acknowledgment.type = "checkbox";
-				acknowledgmentLabel.append(
-					acknowledgment,
-					" I acknowledge that the repository evidence is unverified.",
-				);
-				const useCandidateButton = makeButton("Use scheduled draft");
-				const dismissCandidateButton = makeButton("Dismiss draft");
-				candidate.append(
-					candidateMessage,
-					evidenceDetails,
-					acknowledgmentLabel,
-					useCandidateButton,
-					dismissCandidateButton,
-				);
-
-				const panel = document.createElement("section");
-				panel.className = "project-description-editor";
-				panel.id = panelId;
-				panel.hidden = true;
-				panel.setAttribute("aria-label", `Edit ${record.name} description`);
-
-				const descriptionLabel = document.createElement("label");
-				descriptionLabel.textContent = "Description";
-				const textarea = document.createElement("textarea");
-				textarea.rows = 6;
-				textarea.maxLength = 2000;
-				textarea.value = record.sourceDescription;
-				textarea.setAttribute("aria-label", `${record.name} description`);
-				descriptionLabel.append(textarea);
-
-				const tierLabel = document.createElement("label");
-				tierLabel.textContent = "Importance tier";
-				const tierSelect = document.createElement("select");
-				for (const value of ["!!!", "!!", "!"]) {
-					const option = document.createElement("option");
-					option.value = value;
-					option.textContent = value;
-					tierSelect.append(option);
+			const apiRequest = async (
+				method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
+				body?: Record<string, unknown>,
+			) => {
+				const response = await fetch("/api/project-descriptions", {
+					method,
+					cache: "no-store",
+					credentials: "same-origin",
+					headers: body ? { "Content-Type": "application/json" } : undefined,
+					body: body ? JSON.stringify(body) : undefined,
+				});
+				let payload: Record<string, any> = {};
+				try {
+					payload = await response.json();
+				} catch {
+					// The status below remains useful when an intermediary returns non-JSON.
 				}
-				tierSelect.value =
-					typeof record.tier === "string" ? record.tier : "!!";
-				tierSelect.setAttribute("aria-label", `${record.name} importance tier`);
-				tierLabel.append(tierSelect);
+				if (!response.ok) {
+					throw new Error(
+						typeof payload.error === "string"
+							? payload.error
+							: `Request failed (${response.status})`,
+					);
+				}
+				return payload;
+			};
 
-				const instructionLabel = document.createElement("label");
-				instructionLabel.textContent = "AI instruction (optional)";
-				const instruction = document.createElement("input");
-				instruction.type = "text";
-				instruction.maxLength = 1000;
-				instruction.placeholder = "e.g. make it clearer and more concise";
-				instruction.setAttribute("aria-label", `${record.name} AI instruction`);
-				instructionLabel.append(instruction);
-
-				const previewLabel = document.createElement("span");
-				previewLabel.textContent = "Preview (not saved)";
-				const preview = document.createElement("p");
-				preview.className = "project-description-preview";
-				preview.textContent = record.sourceDescription;
-				preview.setAttribute("aria-label", `${record.name} unsaved preview`);
-
-				const actions = document.createElement("div");
-				actions.className = "project-description-actions";
-				const generateButton = makeButton("Generate Preview");
-				const saveButton = makeButton("Save");
-				const resetButton = makeButton("Reset to source");
-				const cancelButton = makeButton("Cancel");
-				actions.append(generateButton, saveButton, resetButton, cancelButton);
-
-				const status = document.createElement("p");
-				status.className = "project-description-status";
-				status.setAttribute("role", "status");
-				status.setAttribute("aria-live", "polite");
-
-				panel.append(
-					descriptionLabel,
-					tierLabel,
-					instructionLabel,
-					previewLabel,
-					preview,
-					actions,
-					status,
+			const descriptionElement = (record: ArchiveDescriptionRecord) =>
+				document.querySelector<HTMLElement>(
+					`[data-archive-kind="${record.kind}"][data-archive-id="${CSS.escape(record.id)}"] [data-archive-description]`,
 				);
-				output.insertAdjacentElement("afterend", editContainer);
-				editContainer.insertAdjacentElement("afterend", candidate);
-				candidate.insertAdjacentElement("afterend", panel);
 
-				const editor: EditorElements = {
-					editButton,
-					panel,
-					textarea,
-					tierSelect,
-					instruction,
-					preview,
-					status,
-					candidate,
-					evidence: candidateEvidence,
-					acknowledgment,
-					saveButton,
-					busy: false,
-					actionButtons: [
-						generateButton,
-						saveButton,
-						resetButton,
-						cancelButton,
+			const applyDescription = (
+				record: ArchiveDescriptionRecord,
+				description: string,
+			) => {
+				const output = descriptionElement(record);
+				if (output) output.textContent = description;
+				const key = itemKey(record.kind, record.id);
+				activeDescriptions.set(key, description);
+				const editor = editors.get(key);
+				if (editor?.panel.hidden) {
+					editor.textarea.value = description;
+					editor.preview.textContent = description;
+				}
+			};
+
+			const tierRankClient: Record<string, number> = { "!!!": 0, "!!": 1, "!": 2 };
+			const sortListByTierOrder = (list: Element) => {
+				const items = Array.from(list.children) as HTMLElement[];
+				items.sort((a, b) => {
+					const tierDiff =
+						(tierRankClient[a.dataset.tier ?? "!!"] ?? 9) -
+						(tierRankClient[b.dataset.tier ?? "!!"] ?? 9);
+					if (tierDiff !== 0) return tierDiff;
+					return Number(a.dataset.order ?? 0) - Number(b.dataset.order ?? 0);
+				});
+				items.forEach((item) => list.append(item));
+			};
+			const applyTier = (
+				record: ArchiveDescriptionRecord,
+				tier: string,
+				order?: number,
+			) => {
+				const article = document.querySelector<HTMLElement>(
+					`[data-archive-kind="${record.kind}"][data-archive-id="${CSS.escape(record.id)}"]`,
+				);
+				if (!article) return;
+				const section = article.closest("section.archive-section");
+				const targetList = section?.querySelector<HTMLElement>(
+					`[data-tier-list="${tier}"]`,
+				);
+				article.dataset.tier = tier;
+				if (typeof order === "number") article.dataset.order = String(order);
+				if (targetList && article.parentElement !== targetList) {
+					targetList.appendChild(article);
+				}
+				const list = article.parentElement;
+				if (list) sortListByTierOrder(list);
+				const key = itemKey(record.kind, record.id);
+				const editor = editors.get(key);
+				if (editor) editor.tierSelect.value = tier;
+			};
+
+			const makeButton = (label: string) => {
+				const button = document.createElement("button");
+				button.type = "button";
+				button.textContent = label;
+				return button;
+			};
+
+			const syncSaveGate = (editor: EditorElements) => {
+				const candidatePending = !editor.candidate.hidden;
+				editor.saveButton.disabled =
+					editor.busy || (candidatePending && !editor.acknowledgment.checked);
+			};
+
+			const setEditorBusy = (
+				editor: EditorElements,
+				busy: boolean,
+				message = "",
+			) => {
+				editor.busy = busy;
+				editor.textarea.disabled = busy;
+				editor.instruction.disabled = busy;
+				editor.acknowledgment.disabled = busy;
+				editor.editButton.disabled = busy;
+				editor.actionButtons.forEach((button) => {
+					button.disabled = busy;
+				});
+				syncSaveGate(editor);
+				editor.status.dataset.error = "false";
+				editor.status.textContent = message;
+			};
+
+			const reportEditorError = (editor: EditorElements, caught: unknown) => {
+				setEditorBusy(editor, false);
+				editor.status.dataset.error = "true";
+				editor.status.textContent =
+					caught instanceof Error ? caught.message : "The request failed.";
+			};
+
+			const candidateFor = (
+				payload: Record<string, any>,
+				record: ArchiveDescriptionRecord,
+			): Candidate | undefined => payload.candidates?.[record.kind]?.[record.id];
+
+			const syncCandidate = (
+				payload: Record<string, any>,
+				record: ArchiveDescriptionRecord,
+				editor: EditorElements,
+				useButton: HTMLButtonElement,
+			) => {
+				const scheduled = candidateFor(payload, record);
+				if (
+					scheduled &&
+					typeof scheduled.description === "string" &&
+					scheduled.description.trim() &&
+					typeof scheduled.version === "string"
+				) {
+					useButton.dataset.description = scheduled.description;
+					useButton.dataset.version = scheduled.version;
+					editor.evidence.textContent =
+						typeof scheduled.evidence === "string"
+							? scheduled.evidence
+							: "No repository evidence supplied.";
+					editor.acknowledgment.checked = false;
+					editor.candidate.hidden = false;
+					syncSaveGate(editor);
+					return true;
+				}
+				delete useButton.dataset.description;
+				delete useButton.dataset.version;
+				editor.evidence.textContent = "";
+				editor.acknowledgment.checked = false;
+				editor.candidate.hidden = true;
+				syncSaveGate(editor);
+				return false;
+			};
+
+			if (window.location.hostname === "dev.merulox.com") {
+				archiveRecords.forEach((record) => {
+					const output = descriptionElement(record);
+					if (!output) return;
+					const key = itemKey(record.kind, record.id);
+
+					const editContainer = document.createElement("div");
+					editContainer.className = "project-description-edit";
+					const editButton = makeButton("edit description");
+					const panelId = `archive-description-editor-${record.kind}-${record.id}`;
+					editButton.setAttribute("aria-controls", panelId);
+					editButton.setAttribute("aria-expanded", "false");
+					editContainer.append(editButton);
+
+					const candidate = document.createElement("div");
+					candidate.className = "archive-candidate";
+					candidate.hidden = true;
+					const candidateMessage = document.createElement("span");
+					candidateMessage.textContent = "Scheduled review draft is ready.";
+					const evidenceDetails = document.createElement("details");
+					const evidenceSummary = document.createElement("summary");
+					evidenceSummary.textContent = "Repository evidence (unverified)";
+					const candidateEvidence = document.createElement("pre");
+					candidateEvidence.textContent = "";
+					evidenceDetails.append(evidenceSummary, candidateEvidence);
+					const acknowledgmentLabel = document.createElement("label");
+					const acknowledgment = document.createElement("input");
+					acknowledgment.type = "checkbox";
+					acknowledgmentLabel.append(
+						acknowledgment,
+						" I acknowledge that the repository evidence is unverified.",
+					);
+					const useCandidateButton = makeButton("Use scheduled draft");
+					const dismissCandidateButton = makeButton("Dismiss draft");
+					candidate.append(
+						candidateMessage,
+						evidenceDetails,
+						acknowledgmentLabel,
 						useCandidateButton,
 						dismissCandidateButton,
-					],
-				};
-				editors.set(key, editor);
+					);
 
-				acknowledgment.addEventListener("change", () => {
-					syncSaveGate(editor);
-				});
+					const panel = document.createElement("section");
+					panel.className = "project-description-editor";
+					panel.id = panelId;
+					panel.hidden = true;
+					panel.setAttribute("aria-label", `Edit ${record.name} description`);
 
-				editButton.addEventListener("click", () => {
-					const opening = panel.hidden;
-					panel.hidden = !opening;
-					editButton.setAttribute("aria-expanded", opening ? "true" : "false");
-					const current = activeDescriptions.get(key) ?? record.sourceDescription;
-					if (opening) {
-						textarea.value = current;
-						preview.textContent = current;
-						status.textContent = "";
+					const descriptionLabel = document.createElement("label");
+					descriptionLabel.textContent = "Description";
+					const textarea = document.createElement("textarea");
+					textarea.rows = 6;
+					textarea.maxLength = 2000;
+					textarea.value = record.sourceDescription;
+					textarea.setAttribute("aria-label", `${record.name} description`);
+					descriptionLabel.append(textarea);
+
+					const tierLabel = document.createElement("label");
+					tierLabel.textContent = "Importance tier";
+					const tierSelect = document.createElement("select");
+					for (const value of ["!!!", "!!", "!"]) {
+						const option = document.createElement("option");
+						option.value = value;
+						option.textContent = value;
+						tierSelect.append(option);
+					}
+					tierSelect.value =
+						typeof record.tier === "string" ? record.tier : "!!";
+					tierSelect.setAttribute("aria-label", `${record.name} importance tier`);
+					tierLabel.append(tierSelect);
+
+					const instructionLabel = document.createElement("label");
+					instructionLabel.textContent = "AI instruction (optional)";
+					const instruction = document.createElement("input");
+					instruction.type = "text";
+					instruction.maxLength = 1000;
+					instruction.placeholder = "e.g. make it clearer and more concise";
+					instruction.setAttribute("aria-label", `${record.name} AI instruction`);
+					instructionLabel.append(instruction);
+
+					const previewLabel = document.createElement("span");
+					previewLabel.textContent = "Preview (not saved)";
+					const preview = document.createElement("p");
+					preview.className = "project-description-preview";
+					preview.textContent = record.sourceDescription;
+					preview.setAttribute("aria-label", `${record.name} unsaved preview`);
+
+					const actions = document.createElement("div");
+					actions.className = "project-description-actions";
+					const generateButton = makeButton("Generate Preview");
+					const saveButton = makeButton("Save");
+					const resetButton = makeButton("Reset to source");
+					const cancelButton = makeButton("Cancel");
+					actions.append(generateButton, saveButton, resetButton, cancelButton);
+
+					const status = document.createElement("p");
+					status.className = "project-description-status";
+					status.setAttribute("role", "status");
+					status.setAttribute("aria-live", "polite");
+
+					panel.append(
+						descriptionLabel,
+						tierLabel,
+						instructionLabel,
+						previewLabel,
+						preview,
+						actions,
+						status,
+					);
+					output.insertAdjacentElement("afterend", editContainer);
+					editContainer.insertAdjacentElement("afterend", candidate);
+					candidate.insertAdjacentElement("afterend", panel);
+
+					const editor: EditorElements = {
+						editButton,
+						panel,
+						textarea,
+						tierSelect,
+						instruction,
+						preview,
+						status,
+						candidate,
+						evidence: candidateEvidence,
+						acknowledgment,
+						saveButton,
+						busy: false,
+						actionButtons: [
+							generateButton,
+							saveButton,
+							resetButton,
+							cancelButton,
+							useCandidateButton,
+							dismissCandidateButton,
+						],
+					};
+					editors.set(key, editor);
+
+					acknowledgment.addEventListener("change", () => {
+						syncSaveGate(editor);
+					});
+
+					editButton.addEventListener("click", () => {
+						const opening = panel.hidden;
+						panel.hidden = !opening;
+						editButton.setAttribute("aria-expanded", opening ? "true" : "false");
+						const current = activeDescriptions.get(key) ?? record.sourceDescription;
+						if (opening) {
+							textarea.value = current;
+							preview.textContent = current;
+							status.textContent = "";
+							status.dataset.error = "false";
+							textarea.focus();
+						} else {
+							output.textContent = current;
+							textarea.value = current;
+							preview.textContent = current;
+							instruction.value = "";
+							status.textContent = "";
+						}
+					});
+
+					textarea.addEventListener("input", () => {
+						preview.textContent = textarea.value;
+						output.textContent = textarea.value;
 						status.dataset.error = "false";
-						textarea.focus();
-					} else {
+						status.textContent = "Local preview only — not saved.";
+					});
+
+					generateButton.addEventListener("click", async () => {
+						setEditorBusy(editor, true, "Generating preview…");
+						try {
+							const payload = await apiRequest("POST", {
+								...record,
+								draft: textarea.value,
+								instruction: instruction.value,
+							});
+							if (typeof payload.preview !== "string" || !payload.preview.trim()) {
+								throw new Error("AI returned an invalid preview.");
+							}
+							textarea.value = payload.preview;
+							preview.textContent = payload.preview;
+							output.textContent = payload.preview;
+							setEditorBusy(editor, false, "AI preview ready — not saved.");
+						} catch (caught) {
+							reportEditorError(editor, caught);
+						}
+					});
+
+					saveButton.addEventListener("click", async () => {
+						if (!candidate.hidden && !acknowledgment.checked) return;
+						setEditorBusy(editor, true, "Saving…");
+						try {
+							const candidateVersion = useCandidateButton.dataset.version;
+							const payload = await apiRequest("PUT", {
+								kind: record.kind,
+								id: record.id,
+								description: textarea.value,
+								tier: tierSelect.value,
+								clearCandidate: Boolean(candidateVersion),
+								candidateVersion,
+							});
+							if (typeof payload.description !== "string") {
+								throw new Error("Save returned an invalid description.");
+							}
+							applyDescription(record, payload.description);
+							if (typeof payload.tier === "string") {
+								applyTier(
+									record,
+									payload.tier,
+									typeof payload.order === "number" ? payload.order : undefined,
+								);
+							}
+							textarea.value = payload.description;
+							preview.textContent = payload.description;
+							let saveMessage = "Saved. Public and dev pages now use this override.";
+							try {
+								const latest = await apiRequest("GET");
+								if (syncCandidate(latest, record, editor, useCandidateButton)) {
+									saveMessage =
+										"Saved. A newer or uncleared scheduled draft is ready for review.";
+								}
+							} catch {
+								if (candidateVersion) {
+									acknowledgment.checked = false;
+									candidate.hidden = false;
+									syncSaveGate(editor);
+								}
+								saveMessage =
+									"Saved. Refresh the page to confirm scheduled-draft status.";
+							}
+							setEditorBusy(editor, false, saveMessage);
+						} catch (caught) {
+							reportEditorError(editor, caught);
+						}
+					});
+
+					resetButton.addEventListener("click", async () => {
+						setEditorBusy(editor, true, "Resetting…");
+						try {
+							await apiRequest("DELETE", { kind: record.kind, id: record.id });
+							applyDescription(record, record.sourceDescription);
+							textarea.value = record.sourceDescription;
+							preview.textContent = record.sourceDescription;
+							setEditorBusy(editor, false, "Override removed; source description restored.");
+						} catch (caught) {
+							reportEditorError(editor, caught);
+						}
+					});
+
+					cancelButton.addEventListener("click", () => {
+						const current = activeDescriptions.get(key) ?? record.sourceDescription;
 						output.textContent = current;
 						textarea.value = current;
 						preview.textContent = current;
 						instruction.value = "";
 						status.textContent = "";
-					}
-				});
+						panel.hidden = true;
+						editButton.setAttribute("aria-expanded", "false");
+						editButton.focus();
+					});
 
-				textarea.addEventListener("input", () => {
-					preview.textContent = textarea.value;
-					output.textContent = textarea.value;
-					status.dataset.error = "false";
-					status.textContent = "Local preview only — not saved.";
-				});
+					useCandidateButton.addEventListener("click", () => {
+						const scheduled = useCandidateButton.dataset.description;
+						if (!scheduled) return;
+						panel.hidden = false;
+						editButton.setAttribute("aria-expanded", "true");
+						textarea.value = scheduled;
+						preview.textContent = scheduled;
+						status.dataset.error = "false";
+						status.textContent = "Scheduled draft loaded — review and Save to publish.";
+						textarea.focus();
+					});
 
-				generateButton.addEventListener("click", async () => {
-					setEditorBusy(editor, true, "Generating preview…");
-					try {
-						const payload = await apiRequest("POST", {
-							...record,
-							draft: textarea.value,
-							instruction: instruction.value,
-						});
-						if (typeof payload.preview !== "string" || !payload.preview.trim()) {
-							throw new Error("AI returned an invalid preview.");
+					dismissCandidateButton.addEventListener("click", async () => {
+						setEditorBusy(editor, true, "Dismissing scheduled draft…");
+						try {
+							const version = useCandidateButton.dataset.version;
+							if (!version) throw new Error("Scheduled draft version is unavailable.");
+							await apiRequest("PATCH", {
+								kind: record.kind,
+								id: record.id,
+								action: "dismiss",
+								version,
+							});
+							try {
+								const latest = await apiRequest("GET");
+								const hasCandidate = syncCandidate(
+									latest,
+									record,
+									editor,
+									useCandidateButton,
+								);
+								setEditorBusy(
+									editor,
+									false,
+									hasCandidate
+										? "Draft dismissed; a newer scheduled draft is ready."
+										: "Scheduled draft dismissed.",
+								);
+							} catch {
+								candidate.hidden = false;
+								setEditorBusy(
+									editor,
+									false,
+									"Draft dismissed. Refresh the page to confirm scheduled-draft status.",
+								);
+							}
+						} catch (caught) {
+							reportEditorError(editor, caught);
 						}
-						textarea.value = payload.preview;
-						preview.textContent = payload.preview;
-						output.textContent = payload.preview;
-						setEditorBusy(editor, false, "AI preview ready — not saved.");
-					} catch (caught) {
-						reportEditorError(editor, caught);
-					}
+					});
 				});
 
-				saveButton.addEventListener("click", async () => {
-					if (!candidate.hidden && !acknowledgment.checked) return;
-					setEditorBusy(editor, true, "Saving…");
-					try {
-						const candidateVersion = useCandidateButton.dataset.version;
-						const payload = await apiRequest("PUT", {
-							kind: record.kind,
-							id: record.id,
-							description: textarea.value,
-							tier: tierSelect.value,
-							clearCandidate: Boolean(candidateVersion),
-							candidateVersion,
+				const persistListOrder = async (list: Element) => {
+					const items = Array.from(
+						list.querySelectorAll<HTMLElement>(":scope > article"),
+					);
+					const updates: Promise<unknown>[] = [];
+					items.forEach((item, index) => {
+						const tier = item.dataset.tier ?? "!!";
+						const prevOrder = item.dataset.order;
+						const changed = String(index) !== (prevOrder ?? "");
+						item.dataset.order = String(index);
+						if (!changed) return;
+						const kind = item.dataset.archiveKind as ArchiveKind | undefined;
+						const id = item.dataset.archiveId;
+						if (!kind || !id) return;
+						const key = itemKey(kind, id);
+						const description = activeDescriptions.get(key);
+						if (description === undefined) return;
+						updates.push(
+							apiRequest("PUT", {
+								kind,
+								id,
+								description,
+								tier,
+								order: index,
+							}).catch(() => {
+								// Best-effort; a failed reorder write leaves the DOM order
+								// as the source of truth until the next reload.
+							}),
+						);
+					});
+					await Promise.all(updates);
+				};
+
+				document.querySelectorAll<HTMLElement>(".proj-list").forEach((list) => {
+					list.querySelectorAll<HTMLElement>(":scope > article").forEach((article) => {
+						const head = article.querySelector<HTMLElement>(".proj-head");
+						if (!head) return;
+						const moveControls = document.createElement("span");
+						moveControls.className = "proj-move-controls";
+						const upButton = makeButton("▲");
+						upButton.className = "proj-move-button";
+						upButton.title = "Move up";
+						upButton.setAttribute("aria-label", "Move up");
+						const downButton = makeButton("▼");
+						downButton.className = "proj-move-button";
+						downButton.title = "Move down";
+						downButton.setAttribute("aria-label", "Move down");
+						moveControls.append(upButton, downButton);
+						article.prepend(moveControls);
+
+						const stop = (event: Event) => event.stopPropagation();
+						upButton.addEventListener("click", stop);
+						downButton.addEventListener("click", stop);
+
+						upButton.addEventListener("click", async () => {
+							const prev = article.previousElementSibling;
+							if (!prev) return;
+							list.insertBefore(article, prev);
+							await persistListOrder(list);
 						});
-						if (typeof payload.description !== "string") {
-							throw new Error("Save returned an invalid description.");
+						downButton.addEventListener("click", async () => {
+							const next = article.nextElementSibling;
+							if (!next) return;
+							list.insertBefore(next, article);
+							await persistListOrder(list);
+						});
+					});
+				});
+			}
+
+			editors.forEach((editor) => {
+				setEditorBusy(editor, true, "Loading saved description…");
+			});
+
+			void apiRequest("GET")
+				.then((payload) => {
+					archiveRecords.forEach((record) => {
+						const overrides =
+							record.kind === "project" ? payload.overrides : payload.schemeOverrides;
+						const override = overrides?.[record.id];
+						if (
+							override &&
+							typeof override.description === "string" &&
+							override.description.trim()
+						) {
+							applyDescription(record, override.description);
 						}
-						applyDescription(record, payload.description);
-						if (typeof payload.tier === "string") {
+						if (override && typeof override.tier === "string") {
 							applyTier(
 								record,
-								payload.tier,
-								typeof payload.order === "number" ? payload.order : undefined,
+								override.tier,
+								typeof override.order === "number" ? override.order : undefined,
 							);
 						}
-						textarea.value = payload.description;
-						preview.textContent = payload.description;
-						let saveMessage = "Saved. Public and dev pages now use this override.";
-						try {
-							const latest = await apiRequest("GET");
-							if (syncCandidate(latest, record, editor, useCandidateButton)) {
-								saveMessage =
-									"Saved. A newer or uncleared scheduled draft is ready for review.";
-							}
-						} catch {
-							if (candidateVersion) {
-								acknowledgment.checked = false;
-								candidate.hidden = false;
-								syncSaveGate(editor);
-							}
-							saveMessage =
-								"Saved. Refresh the page to confirm scheduled-draft status.";
+						const editor = editors.get(itemKey(record.kind, record.id));
+						if (editor) {
+							const useButton = editor.candidate.querySelector<HTMLButtonElement>(
+								"button:first-of-type",
+							);
+							if (useButton) syncCandidate(payload, record, editor, useButton);
 						}
-						setEditorBusy(editor, false, saveMessage);
-					} catch (caught) {
-						reportEditorError(editor, caught);
-					}
+					});
+				})
+				.catch(() => {
+					// Static source descriptions remain usable when overrides are unavailable.
+				})
+				.finally(() => {
+					editors.forEach((editor) => {
+						setEditorBusy(editor, false);
+					});
 				});
 
-				resetButton.addEventListener("click", async () => {
-					setEditorBusy(editor, true, "Resetting…");
-					try {
-						await apiRequest("DELETE", { kind: record.kind, id: record.id });
-						applyDescription(record, record.sourceDescription);
-						textarea.value = record.sourceDescription;
-						preview.textContent = record.sourceDescription;
-						setEditorBusy(editor, false, "Override removed; source description restored.");
-					} catch (caught) {
-						reportEditorError(editor, caught);
-					}
-				});
+			const archiveSwitches = Array.from(
+				document.querySelectorAll<HTMLButtonElement>("[data-archive-target]"),
+			);
+			const archivePanels = Array.from(
+				document.querySelectorAll<HTMLElement>("[data-archive-panel]"),
+			);
 
-				cancelButton.addEventListener("click", () => {
-					const current = activeDescriptions.get(key) ?? record.sourceDescription;
-					output.textContent = current;
-					textarea.value = current;
-					preview.textContent = current;
-					instruction.value = "";
-					status.textContent = "";
-					panel.hidden = true;
-					editButton.setAttribute("aria-expanded", "false");
-					editButton.focus();
+			const activateArchivePanel = (panelId: string, updateUrl = true) => {
+				archiveSwitches.forEach((control) => {
+					control.setAttribute(
+						"aria-pressed",
+						control.dataset.archiveTarget === panelId ? "true" : "false",
+					);
 				});
-
-				useCandidateButton.addEventListener("click", () => {
-					const scheduled = useCandidateButton.dataset.description;
-					if (!scheduled) return;
-					panel.hidden = false;
-					editButton.setAttribute("aria-expanded", "true");
-					textarea.value = scheduled;
-					preview.textContent = scheduled;
-					status.dataset.error = "false";
-					status.textContent = "Scheduled draft loaded — review and Save to publish.";
-					textarea.focus();
+				archivePanels.forEach((panel) => {
+					panel.hidden = panel.id !== panelId;
 				});
+				if (updateUrl) history.replaceState(null, "", `#${panelId}`);
+				document.dispatchEvent(
+					new CustomEvent("archive-panel-change", { detail: { panelId } }),
+				);
+			};
 
-				dismissCandidateButton.addEventListener("click", async () => {
-					setEditorBusy(editor, true, "Dismissing scheduled draft…");
-					try {
-						const version = useCandidateButton.dataset.version;
-						if (!version) throw new Error("Scheduled draft version is unavailable.");
-						await apiRequest("PATCH", {
-							kind: record.kind,
-							id: record.id,
-							action: "dismiss",
-							version,
-						});
-						try {
-							const latest = await apiRequest("GET");
-							const hasCandidate = syncCandidate(
-								latest,
-								record,
-								editor,
-								useCandidateButton,
-							);
-							setEditorBusy(
-								editor,
-								false,
-								hasCandidate
-									? "Draft dismissed; a newer scheduled draft is ready."
-									: "Scheduled draft dismissed.",
-							);
-						} catch {
-							candidate.hidden = false;
-							setEditorBusy(
-								editor,
-								false,
-								"Draft dismissed. Refresh the page to confirm scheduled-draft status.",
-							);
-						}
-					} catch (caught) {
-						reportEditorError(editor, caught);
-					}
+			archiveSwitches.forEach((control) => {
+				control.addEventListener("click", () => {
+					activateArchivePanel(control.dataset.archiveTarget ?? "projects");
 				});
 			});
 
-			const persistListOrder = async (list: Element) => {
-				const items = Array.from(
-					list.querySelectorAll<HTMLElement>(":scope > article"),
-				);
-				const updates: Promise<unknown>[] = [];
-				items.forEach((item, index) => {
-					const tier = item.dataset.tier ?? "!!";
-					const prevOrder = item.dataset.order;
-					const changed = String(index) !== (prevOrder ?? "");
-					item.dataset.order = String(index);
-					if (!changed) return;
-					const kind = item.dataset.archiveKind as ArchiveKind | undefined;
-					const id = item.dataset.archiveId;
-					if (!kind || !id) return;
-					const key = itemKey(kind, id);
-					const description = activeDescriptions.get(key);
-					if (description === undefined) return;
-					updates.push(
-						apiRequest("PUT", {
-							kind,
-							id,
-							description,
-							tier,
-							order: index,
-						}).catch(() => {
-							// Best-effort; a failed reorder write leaves the DOM order
-							// as the source of truth until the next reload.
-						}),
-					);
-				});
-				await Promise.all(updates);
-			};
+			const initialPanel =
+				window.location.hash === "#money-schemes" ? "money-schemes" : "projects";
+			activateArchivePanel(initialPanel, false);
 
-			document.querySelectorAll<HTMLElement>(".proj-list").forEach((list) => {
-				list.querySelectorAll<HTMLElement>(":scope > article").forEach((article) => {
-					const head = article.querySelector<HTMLElement>(".proj-head");
-					if (!head) return;
-					const moveControls = document.createElement("span");
-					moveControls.className = "proj-move-controls";
-					const upButton = makeButton("▲");
-					upButton.className = "proj-move-button";
-					upButton.title = "Move up";
-					upButton.setAttribute("aria-label", "Move up");
-					const downButton = makeButton("▼");
-					downButton.className = "proj-move-button";
-					downButton.title = "Move down";
-					downButton.setAttribute("aria-label", "Move down");
-					moveControls.append(upButton, downButton);
-					article.prepend(moveControls);
+			window.addEventListener(
+				"hashchange",
+				() => {
+					const panel =
+						window.location.hash === "#money-schemes" ? "money-schemes" : "projects";
+					activateArchivePanel(panel, false);
+				},
+				{ signal },
+			);
 
-					const stop = (event: Event) => event.stopPropagation();
-					upButton.addEventListener("click", stop);
-					downButton.addEventListener("click", stop);
+			document.querySelectorAll<HTMLButtonElement>(".proj-head").forEach((head) => {
+				const bodyId = head.getAttribute("aria-controls");
+				const body = bodyId ? document.getElementById(bodyId) : null;
+				if (!body) return;
 
-					upButton.addEventListener("click", async () => {
-						const prev = article.previousElementSibling;
-						if (!prev) return;
-						list.insertBefore(article, prev);
-						await persistListOrder(list);
-					});
-					downButton.addEventListener("click", async () => {
-						const next = article.nextElementSibling;
-						if (!next) return;
-						list.insertBefore(next, article);
-						await persistListOrder(list);
-					});
+				head.addEventListener("click", () => {
+					const project = head.closest(".proj")!;
+					const open = project.classList.toggle("open");
+					head.setAttribute("aria-expanded", open ? "true" : "false");
+					body.hidden = !open;
 				});
 			});
 		}
-
-		editors.forEach((editor) => {
-			setEditorBusy(editor, true, "Loading saved description…");
-		});
-
-		void apiRequest("GET")
-			.then((payload) => {
-				archiveRecords.forEach((record) => {
-					const overrides =
-						record.kind === "project" ? payload.overrides : payload.schemeOverrides;
-					const override = overrides?.[record.id];
-					if (
-						override &&
-						typeof override.description === "string" &&
-						override.description.trim()
-					) {
-						applyDescription(record, override.description);
-					}
-					if (override && typeof override.tier === "string") {
-						applyTier(
-							record,
-							override.tier,
-							typeof override.order === "number" ? override.order : undefined,
-						);
-					}
-					const editor = editors.get(itemKey(record.kind, record.id));
-					if (editor) {
-						const useButton = editor.candidate.querySelector<HTMLButtonElement>(
-							"button:first-of-type",
-						);
-						if (useButton) syncCandidate(payload, record, editor, useButton);
-					}
-				});
-			})
-			.catch(() => {
-				// Static source descriptions remain usable when overrides are unavailable.
-			})
-			.finally(() => {
-				editors.forEach((editor) => {
-					setEditorBusy(editor, false);
-				});
-			});
-
-		const archiveSwitches = Array.from(
-			document.querySelectorAll<HTMLButtonElement>("[data-archive-target]"),
-		);
-		const archivePanels = Array.from(
-			document.querySelectorAll<HTMLElement>("[data-archive-panel]"),
-		);
-
-		const activateArchivePanel = (panelId: string, updateUrl = true) => {
-			archiveSwitches.forEach((control) => {
-				control.setAttribute(
-					"aria-pressed",
-					control.dataset.archiveTarget === panelId ? "true" : "false",
-				);
-			});
-			archivePanels.forEach((panel) => {
-				panel.hidden = panel.id !== panelId;
-			});
-			if (updateUrl) history.replaceState(null, "", `#${panelId}`);
-			document.dispatchEvent(
-				new CustomEvent("archive-panel-change", { detail: { panelId } }),
-			);
-		};
-
-		archiveSwitches.forEach((control) => {
-			control.addEventListener("click", () => {
-				activateArchivePanel(control.dataset.archiveTarget ?? "projects");
-			});
-		});
-
-		const initialPanel =
-			window.location.hash === "#money-schemes" ? "money-schemes" : "projects";
-		activateArchivePanel(initialPanel, false);
-
-		window.addEventListener("hashchange", () => {
-			const panel =
-				window.location.hash === "#money-schemes" ? "money-schemes" : "projects";
-			activateArchivePanel(panel, false);
-		});
-
-		document.querySelectorAll<HTMLButtonElement>(".proj-head").forEach((head) => {
-			const bodyId = head.getAttribute("aria-controls");
-			const body = bodyId ? document.getElementById(bodyId) : null;
-			if (!body) return;
-
-			head.addEventListener("click", () => {
-				const project = head.closest(".proj")!;
-				const open = project.classList.toggle("open");
-				head.setAttribute("aria-expanded", open ? "true" : "false");
-				body.hidden = !open;
-			});
-		});
+		document.addEventListener("astro:page-load", initProjects);
 	</script>
 </Layout>

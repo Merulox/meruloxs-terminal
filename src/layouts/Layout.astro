@@ -529,10 +529,12 @@ const navItems = customNavItems ?? defaultNavItems;
 				) as HTMLAudioElement | null;
 				if (!audio) return;
 
-				const host = audio as unknown as { _bgm?: BgmHandle };
-				const existing = host._bgm;
+				const host = audio as unknown as {
+					_bgm?: BgmHandle;
+					_bgmInit?: Promise<void>;
+				};
 
-				if (existing) {
+				const bindResumeUi = (existing: BgmHandle) => {
 					existing.els = { toggle: bgmToggle, track: bgmTrackEl, volume: bgmVolumeEl };
 					existing.renderTrack();
 					existing.syncToggleUi();
@@ -564,152 +566,180 @@ const navItems = customNavItems ?? defaultNavItems;
 						},
 						{ signal },
 					);
+				};
+
+				if (host._bgm) {
+					bindResumeUi(host._bgm);
 					return;
 				}
 
-				let tracks: BgmTrack[] = [];
+				if (host._bgmInit) {
+					// A cold start from an overlapping navigation is already in
+					// flight (this page loaded while the manifest fetch kicked
+					// off by a previous page's initBgm() was still pending) —
+					// wait for it instead of starting a second, redundant cold
+					// start, which would double-attach the play/pause/ended
+					// listeners and the position-save interval on the same
+					// persisted <audio> element.
+					await host._bgmInit;
+					if (host._bgm) bindResumeUi(host._bgm);
+					return;
+				}
+
+				// Stash the in-flight promise synchronously, before any await,
+				// so any initBgm() call that arrives while the manifest fetch
+				// below is still pending takes the branch above instead of
+				// racing this one.
+				host._bgmInit = (async () => {
 				try {
-					const res = await fetch("/audio/manifest.json");
-					if (!res.ok) return;
-					tracks = await res.json();
-				} catch {
-					return;
-				}
-				if (!tracks.length) return;
-
-				const bySlug = new Map(tracks.map((t) => [t.slug, t]));
-				const slugs = tracks.map((t) => t.slug);
-				const state: BgmState = readBgmState(slugs) ?? {
-					order: shuffledSlugs(tracks),
-					index: 0,
-					currentTime: 0,
-					playing: true,
-				};
-				writeBgmState(state);
-
-				const storedVolume = localStorage.getItem(BGM_VOLUME_KEY);
-				const savedVolume = storedVolume === null ? NaN : Number(storedVolume);
-				const rawVolume =
-					Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1
-						? savedVolume
-						: 0.15;
-				audio.volume = rawVolume * BGM_VOLUME_SCALE;
-
-				const handle: BgmHandle = {
-					state,
-					bySlug,
-					rawVolume,
-					renderTrack: () => {
-						const track = handle.bySlug.get(handle.state.order[handle.state.index]);
-						const el = handle.els.track;
-						if (!track || !el) return;
-						el.textContent = track.artist
-							? `${track.title} — ${track.artist}`
-							: track.title;
-						el.hidden = false;
-					},
-					syncToggleUi: () => {
-						const btn = handle.els.toggle;
-						if (!btn) return;
-						const playing = !audio.paused;
-						btn.setAttribute("aria-pressed", playing ? "true" : "false");
-						btn.setAttribute(
-							"aria-label",
-							playing ? "Pause background music" : "Play background music",
-						);
-						const icon = btn.querySelector(".bgm-icon");
-						if (icon) icon.textContent = playing ? "❚❚" : "▶";
-					},
-					els: { toggle: bgmToggle, track: bgmTrackEl, volume: bgmVolumeEl },
-				};
-				host._bgm = handle;
-
-				function loadTrack(resumeTime: number) {
-					const track = handle.bySlug.get(handle.state.order[handle.state.index]);
-					if (!track) return;
-					audio!.src = track.src;
-					const seek = () => {
-						if (resumeTime > 0 && resumeTime < (audio!.duration || Infinity)) {
-							audio!.currentTime = resumeTime;
-						}
-						audio!.removeEventListener("loadedmetadata", seek);
-					};
-					audio!.addEventListener("loadedmetadata", seek);
-					handle.renderTrack();
-				}
-
-				loadTrack(state.currentTime);
-				bgmToggle.hidden = false;
-				if (bgmVolumeEl) {
-					bgmVolumeEl.hidden = false;
-					bgmVolumeEl.value = String(rawVolume);
-				}
-
-				// The <audio autoplay muted> element (declarative, in the HTML)
-				// gets the lenient "muted autoplay is always allowed" policy
-				// that a plain `new Audio(); audio.play()` call does not reliably
-				// get in every browser. If the session wants playback, let the
-				// browser's native autoplay take it from here; if not (user had
-				// explicitly paused before leaving), cancel it immediately so
-				// the autoplay attribute doesn't override that choice.
-				audio.muted = true;
-				if (!state.playing) audio.pause();
-				handle.syncToggleUi();
-
-				const unmuteEvents = ["pointerdown", "keydown", "touchstart", "wheel"];
-				function unmuteOnFirstInteraction() {
-					if (audio!.muted) audio!.muted = false;
-					if (audio!.paused && state.playing) audio!.play().catch(() => {});
-					unmuteEvents.forEach((ev) =>
-						document.removeEventListener(ev, unmuteOnFirstInteraction),
-					);
-				}
-				unmuteEvents.forEach((ev) =>
-					document.addEventListener(ev, unmuteOnFirstInteraction, {
-						passive: true,
-					}),
-				);
-
-				bgmToggle.addEventListener("click", () => {
-					audio!.muted = false;
-					if (audio!.paused) audio!.play().catch(() => {});
-					else audio!.pause();
-				});
-				if (bgmVolumeEl) {
-					bgmVolumeEl.addEventListener("input", () => {
-						const raw = Number(handle.els.volume?.value ?? "0");
-						handle.rawVolume = raw;
-						audio!.volume = raw * BGM_VOLUME_SCALE;
-						try {
-							localStorage.setItem(BGM_VOLUME_KEY, String(raw));
-						} catch {
-							/* best effort */
-						}
-					});
-				}
-				audio.addEventListener("play", () => {
-					handle.state.playing = true;
-					writeBgmState(handle.state);
-					handle.syncToggleUi();
-				});
-				audio.addEventListener("pause", () => {
-					handle.state.playing = false;
-					writeBgmState(handle.state);
-					handle.syncToggleUi();
-				});
-				audio.addEventListener("ended", () => {
-					handle.state.index = (handle.state.index + 1) % handle.state.order.length;
-					handle.state.currentTime = 0;
-					writeBgmState(handle.state);
-					loadTrack(0);
-					audio!.play().catch(() => {});
-				});
-				setInterval(() => {
-					if (!audio!.paused) {
-						handle.state.currentTime = audio!.currentTime;
-						writeBgmState(handle.state);
+					let tracks: BgmTrack[] = [];
+					try {
+						const res = await fetch("/audio/manifest.json");
+						if (!res.ok) return;
+						tracks = await res.json();
+					} catch {
+						return;
 					}
-				}, 3_000);
+					if (!tracks.length) return;
+
+					const bySlug = new Map(tracks.map((t) => [t.slug, t]));
+					const slugs = tracks.map((t) => t.slug);
+					const state: BgmState = readBgmState(slugs) ?? {
+						order: shuffledSlugs(tracks),
+						index: 0,
+						currentTime: 0,
+						playing: true,
+					};
+					writeBgmState(state);
+
+					const storedVolume = localStorage.getItem(BGM_VOLUME_KEY);
+					const savedVolume = storedVolume === null ? NaN : Number(storedVolume);
+					const rawVolume =
+						Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1
+							? savedVolume
+							: 0.15;
+					audio.volume = rawVolume * BGM_VOLUME_SCALE;
+
+					const handle: BgmHandle = {
+						state,
+						bySlug,
+						rawVolume,
+						renderTrack: () => {
+							const track = handle.bySlug.get(handle.state.order[handle.state.index]);
+							const el = handle.els.track;
+							if (!track || !el) return;
+							el.textContent = track.artist
+								? `${track.title} — ${track.artist}`
+								: track.title;
+							el.hidden = false;
+						},
+						syncToggleUi: () => {
+							const btn = handle.els.toggle;
+							if (!btn) return;
+							const playing = !audio.paused;
+							btn.setAttribute("aria-pressed", playing ? "true" : "false");
+							btn.setAttribute(
+								"aria-label",
+								playing ? "Pause background music" : "Play background music",
+							);
+							const icon = btn.querySelector(".bgm-icon");
+							if (icon) icon.textContent = playing ? "❚❚" : "▶";
+						},
+						els: { toggle: bgmToggle, track: bgmTrackEl, volume: bgmVolumeEl },
+					};
+					host._bgm = handle;
+
+					function loadTrack(resumeTime: number) {
+						const track = handle.bySlug.get(handle.state.order[handle.state.index]);
+						if (!track) return;
+						audio!.src = track.src;
+						const seek = () => {
+							if (resumeTime > 0 && resumeTime < (audio!.duration || Infinity)) {
+								audio!.currentTime = resumeTime;
+							}
+							audio!.removeEventListener("loadedmetadata", seek);
+						};
+						audio!.addEventListener("loadedmetadata", seek);
+						handle.renderTrack();
+					}
+
+					loadTrack(state.currentTime);
+					bgmToggle.hidden = false;
+					if (bgmVolumeEl) {
+						bgmVolumeEl.hidden = false;
+						bgmVolumeEl.value = String(rawVolume);
+					}
+
+					// The <audio autoplay muted> element (declarative, in the HTML)
+					// gets the lenient "muted autoplay is always allowed" policy
+					// that a plain `new Audio(); audio.play()` call does not reliably
+					// get in every browser. If the session wants playback, let the
+					// browser's native autoplay take it from here; if not (user had
+					// explicitly paused before leaving), cancel it immediately so
+					// the autoplay attribute doesn't override that choice.
+					audio!.muted = true;
+					if (!state.playing) audio!.pause();
+					handle.syncToggleUi();
+
+					const unmuteEvents = ["pointerdown", "keydown", "touchstart", "wheel"];
+					function unmuteOnFirstInteraction() {
+						if (audio!.muted) audio!.muted = false;
+						if (audio!.paused && state.playing) audio!.play().catch(() => {});
+						unmuteEvents.forEach((ev) =>
+							document.removeEventListener(ev, unmuteOnFirstInteraction),
+						);
+					}
+					unmuteEvents.forEach((ev) =>
+						document.addEventListener(ev, unmuteOnFirstInteraction, {
+							passive: true,
+						}),
+					);
+
+					bgmToggle.addEventListener("click", () => {
+						audio!.muted = false;
+						if (audio!.paused) audio!.play().catch(() => {});
+						else audio!.pause();
+					});
+					if (bgmVolumeEl) {
+						bgmVolumeEl.addEventListener("input", () => {
+							const raw = Number(handle.els.volume?.value ?? "0");
+							handle.rawVolume = raw;
+							audio!.volume = raw * BGM_VOLUME_SCALE;
+							try {
+								localStorage.setItem(BGM_VOLUME_KEY, String(raw));
+							} catch {
+								/* best effort */
+							}
+						});
+					}
+					audio!.addEventListener("play", () => {
+						handle.state.playing = true;
+						writeBgmState(handle.state);
+						handle.syncToggleUi();
+					});
+					audio!.addEventListener("pause", () => {
+						handle.state.playing = false;
+						writeBgmState(handle.state);
+						handle.syncToggleUi();
+					});
+					audio!.addEventListener("ended", () => {
+						handle.state.index = (handle.state.index + 1) % handle.state.order.length;
+						handle.state.currentTime = 0;
+						writeBgmState(handle.state);
+						loadTrack(0);
+						audio!.play().catch(() => {});
+					});
+					setInterval(() => {
+						if (!audio!.paused) {
+							handle.state.currentTime = audio!.currentTime;
+							writeBgmState(handle.state);
+						}
+					}, 3_000);
+				} finally {
+					delete host._bgmInit;
+				}
+				})();
+				await host._bgmInit;
 			}
 
 			let headerAbort: AbortController | null = null;

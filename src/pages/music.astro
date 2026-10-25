@@ -87,6 +87,18 @@ const periodButtons = `
 	</section>
 
 	<script>
+		let musicAbort: AbortController | null = null;
+		function initMusic() {
+			musicAbort?.abort(); // cancel the previous run's rAF loop + listeners
+			musicAbort = new AbortController();
+			const { signal } = musicAbort;
+
+			// Guard: bail out (after the abort() cleanup above) if we've
+			// navigated to a different page whose DOM doesn't have this
+			// page's elements — otherwise the unconditional `!`-asserted
+			// getElementById calls below would throw on every other route.
+			if (!document.getElementById("top-artists")) return;
+
 		const API_KEY = "9fdb2ae95fb0b95470334c260149c3cb";
 		const USER = "merulox";
 		const LFM = "https://ws.audioscrobbler.com/2.0/";
@@ -188,7 +200,7 @@ const periodButtons = `
 			const figs = shuffled.map(figHtml).join("");
 			// duplicate once for a seamless looping marquee (skip when autoscroll is disabled)
 			track.innerHTML = reduceMotion ? figs : figs + figs;
-			if (!reduceMotion) startMoodAutoscroll(track);
+			if (!reduceMotion) startMoodAutoscroll(track, signal);
 		}
 
 		// JS-driven (not CSS @keyframes) so it can't fall victim to WebKit's
@@ -196,7 +208,7 @@ const periodButtons = `
 		// never depends on :hover (which sticks forever on touch — the
 		// classic reason a "pause on hover" marquee looks frozen on mobile).
 		// Mirrors the old 70s-per-loop CSS animation's speed/behavior exactly.
-		function startMoodAutoscroll(track: HTMLElement) {
+		function startMoodAutoscroll(track: HTMLElement, signal: AbortSignal) {
 			const CYCLE_MS = 70_000;
 			const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 			let paused = false;
@@ -205,6 +217,11 @@ const periodButtons = `
 
 			if (canHover) {
 				const strip = track.closest(".mood-strip");
+				// `strip` is a fresh element queried from `track`, which itself
+				// comes from a fresh getElementById this run — no { signal }
+				// needed since it's destroyed with the old DOM subtree. The
+				// rAF loop below is the real leak risk (it recurses forever),
+				// so it checks `signal.aborted` instead.
 				strip?.addEventListener("mouseenter", () => {
 					paused = true;
 				});
@@ -215,6 +232,7 @@ const periodButtons = `
 			}
 
 			function frame(ts: number) {
+				if (signal.aborted) return; // stop this loop once a new init supersedes it
 				const half = track.scrollWidth / 2;
 				if (half > 0 && !paused) {
 					if (start === null) start = ts - (pauseStartX / half) * CYCLE_MS;
@@ -373,5 +391,7 @@ const periodButtons = `
 		loadTracks("7day");
 		loadArtists("7day");
 		loadAlbums("7day");
+		}
+		document.addEventListener("astro:page-load", initMusic);
 	</script>
 </Layout>

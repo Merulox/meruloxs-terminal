@@ -45,31 +45,40 @@ import Layout from "../layouts/Layout.astro";
 	</div>
 
 	<script>
-		const items = Array.from(document.querySelectorAll(".sel-item"));
-		let active = 0;
+		let selCursorAbort: AbortController | null = null;
+		function initSelCursor() {
+			selCursorAbort?.abort();
+			selCursorAbort = new AbortController();
+			const { signal } = selCursorAbort;
 
-		function setActive(i) {
-			items.forEach((el, idx) => el.classList.toggle("active", idx === i));
-			active = i;
-		}
+			const items = Array.from(document.querySelectorAll<HTMLElement>(".sel-item"));
+			if (!items.length) return;
+			let active = 0;
 
-		setActive(0);
-
-		items.forEach((item, idx) => {
-			item.addEventListener("mouseenter", () => setActive(idx));
-		});
-
-		document.addEventListener("keydown", (e) => {
-			if (e.ctrlKey || e.metaKey || e.altKey) return; // let browser shortcuts through
-			if (e.key === "ArrowDown" || e.key === "j") {
-				e.preventDefault();
-				setActive((active + 1) % items.length);
-			} else if (e.key === "ArrowUp" || e.key === "k") {
-				e.preventDefault();
-				setActive((active - 1 + items.length) % items.length);
-			} else if (e.key === "Enter") {
-				items[active].click();
+			function setActive(i: number) {
+				items.forEach((el, idx) => el.classList.toggle("active", idx === i));
+				active = i;
 			}
-		});
+
+			setActive(0);
+
+			items.forEach((item, idx) => {
+				item.addEventListener("mouseenter", () => setActive(idx));
+			});
+
+			document.addEventListener("keydown", (e) => {
+				if (e.ctrlKey || e.metaKey || e.altKey) return; // let browser shortcuts through
+				if (e.key === "ArrowDown" || e.key === "j") {
+					e.preventDefault();
+					setActive((active + 1) % items.length);
+				} else if (e.key === "ArrowUp" || e.key === "k") {
+					e.preventDefault();
+					setActive((active - 1 + items.length) % items.length);
+				} else if (e.key === "Enter") {
+					(items[active] as HTMLElement).click();
+				}
+			}, { signal });
+		}
+		document.addEventListener("astro:page-load", initSelCursor);
 	</script>
 </Layout>

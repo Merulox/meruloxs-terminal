@@ -346,92 +346,101 @@ const groups: LinkGroup[] = [
 	</section>
 
 	<script>
-		const linkItems = Array.from(document.querySelectorAll<HTMLElement>(".guestbook-button, .links-list a, .copy-address"));
-		const headerItems = Array.from(document.querySelectorAll<HTMLElement>(".site-name, .site-nav a"));
-		const CURSOR = "kbd-cursor";
-		let activeIndex = 0;
+		let linksCursorAbort: AbortController | null = null;
+		function initLinksCursor() {
+			linksCursorAbort?.abort();
+			linksCursorAbort = new AbortController();
+			const { signal } = linksCursorAbort;
 
-		function paint(index: number) {
+			const linkItems = Array.from(document.querySelectorAll<HTMLElement>(".guestbook-button, .links-list a, .copy-address"));
 			if (!linkItems.length) return;
-			activeIndex = Math.max(0, Math.min(index, linkItems.length - 1));
-			linkItems.forEach((item, itemIndex) => item.classList.toggle(CURSOR, itemIndex === activeIndex));
-		}
+			const headerItems = Array.from(document.querySelectorAll<HTMLElement>(".site-name, .site-nav a"));
+			const CURSOR = "kbd-cursor";
+			let activeIndex = 0;
 
-		function clearLinks() {
-			linkItems.forEach((item) => item.classList.remove(CURSOR));
-		}
-
-		function focusLink(index: number) {
-			paint(index);
-			const target = linkItems[activeIndex];
-			target.focus({ preventScroll: true });
-			target.scrollIntoView({ block: "nearest" });
-		}
-
-		function focusHeader() {
-			const target =
-				headerItems.find((item) => item.getAttribute("aria-current") === "page") ??
-				headerItems[0];
-			if (!target) return;
-			window.scrollTo({ top: 0, behavior: "smooth" });
-			clearLinks();
-			target.focus({ preventScroll: true });
-		}
-
-		linkItems.forEach((item, index) => {
-			item.addEventListener("mouseenter", () => paint(index));
-			item.addEventListener("focus", () => paint(index));
-		});
-
-		const copyButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".copy-address"));
-		copyButtons.forEach((button) => {
-			button.addEventListener("click", async () => {
-				const address = button.dataset.copyAddress;
-				if (!address) return;
-				const status = button.querySelector<HTMLElement>(".copy-status");
-				try {
-					await navigator.clipboard.writeText(address);
-					if (status) status.textContent = "copied";
-					window.setTimeout(() => {
-						if (status) status.textContent = "copy";
-					}, 1600);
-				} catch {
-					if (status) status.textContent = "select";
-				}
-			});
-		});
-		headerItems.forEach((item) => {
-			item.addEventListener("focus", clearLinks);
-		});
-
-		document.addEventListener("keydown", (event) => {
-			if (event.ctrlKey || event.metaKey || event.altKey) return;
-			const target = event.target as HTMLElement;
-			if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
-			if (!linkItems.length) return;
-
-			if (event.key === "j" || event.key === "ArrowDown") {
-				event.preventDefault();
-				event.stopImmediatePropagation();
-				if (
-					headerItems.includes(document.activeElement as HTMLElement) ||
-					!linkItems.includes(document.activeElement as HTMLElement)
-				) focusLink(0);
-				else if (activeIndex < linkItems.length - 1) focusLink(activeIndex + 1);
-			} else if (event.key === "k" || event.key === "ArrowUp") {
-				event.preventDefault();
-				event.stopImmediatePropagation();
-				if (
-					headerItems.includes(document.activeElement as HTMLElement) ||
-					!linkItems.includes(document.activeElement as HTMLElement) ||
-					document.activeElement === linkItems[0]
-				) focusHeader();
-				else focusLink(activeIndex - 1);
-			} else if (event.key === "Enter" && linkItems.includes(document.activeElement as HTMLElement)) {
-				event.preventDefault();
-				event.stopImmediatePropagation();
-				(document.activeElement as HTMLElement).click();
+			function paint(index: number) {
+				if (!linkItems.length) return;
+				activeIndex = Math.max(0, Math.min(index, linkItems.length - 1));
+				linkItems.forEach((item, itemIndex) => item.classList.toggle(CURSOR, itemIndex === activeIndex));
 			}
-		}, { capture: true });
+
+			function clearLinks() {
+				linkItems.forEach((item) => item.classList.remove(CURSOR));
+			}
+
+			function focusLink(index: number) {
+				paint(index);
+				const target = linkItems[activeIndex];
+				target.focus({ preventScroll: true });
+				target.scrollIntoView({ block: "nearest" });
+			}
+
+			function focusHeader() {
+				const target =
+					headerItems.find((item) => item.getAttribute("aria-current") === "page") ??
+					headerItems[0];
+				if (!target) return;
+				window.scrollTo({ top: 0, behavior: "smooth" });
+				clearLinks();
+				target.focus({ preventScroll: true });
+			}
+
+			linkItems.forEach((item, index) => {
+				item.addEventListener("mouseenter", () => paint(index));
+				item.addEventListener("focus", () => paint(index));
+			});
+
+			const copyButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".copy-address"));
+			copyButtons.forEach((button) => {
+				button.addEventListener("click", async () => {
+					const address = button.dataset.copyAddress;
+					if (!address) return;
+					const status = button.querySelector<HTMLElement>(".copy-status");
+					try {
+						await navigator.clipboard.writeText(address);
+						if (status) status.textContent = "copied";
+						window.setTimeout(() => {
+							if (status) status.textContent = "copy";
+						}, 1600);
+					} catch {
+						if (status) status.textContent = "select";
+					}
+				});
+			});
+			headerItems.forEach((item) => {
+				item.addEventListener("focus", clearLinks);
+			});
+
+			document.addEventListener("keydown", (event) => {
+				if (event.ctrlKey || event.metaKey || event.altKey) return;
+				const target = event.target as HTMLElement;
+				if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+				if (!linkItems.length) return;
+
+				if (event.key === "j" || event.key === "ArrowDown") {
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					if (
+						headerItems.includes(document.activeElement as HTMLElement) ||
+						!linkItems.includes(document.activeElement as HTMLElement)
+					) focusLink(0);
+					else if (activeIndex < linkItems.length - 1) focusLink(activeIndex + 1);
+				} else if (event.key === "k" || event.key === "ArrowUp") {
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					if (
+						headerItems.includes(document.activeElement as HTMLElement) ||
+						!linkItems.includes(document.activeElement as HTMLElement) ||
+						document.activeElement === linkItems[0]
+					) focusHeader();
+					else focusLink(activeIndex - 1);
+				} else if (event.key === "Enter" && linkItems.includes(document.activeElement as HTMLElement)) {
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					(document.activeElement as HTMLElement).click();
+				}
+			}, { capture: true, signal });
+		}
+		document.addEventListener("astro:page-load", initLinksCursor);
 	</script>
 </Layout>

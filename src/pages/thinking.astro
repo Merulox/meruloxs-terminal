@@ -428,6 +428,25 @@ function hasReplyContext(tweet: Tweet) {
 	</section>
 
 	<script>
+		let thinkingAbort: AbortController | null = null;
+		let tweetPollInterval: ReturnType<typeof window.setInterval> | null = null;
+
+		function initThinking() {
+			thinkingAbort?.abort(); // drop the previous run's window-level listener
+			thinkingAbort = new AbortController();
+			const { signal } = thinkingAbort;
+			if (tweetPollInterval !== null) {
+				window.clearInterval(tweetPollInterval); // window persists across navigation — must stop the old poll loop
+				tweetPollInterval = null;
+			}
+
+			// Guard: bail out (after the abort()/clearInterval cleanup above)
+			// if we've navigated to a different page whose DOM doesn't have
+			// this page's elements — otherwise the unconditional
+			// `!`-asserted getElementById calls below would throw on every
+			// other route.
+			if (!document.getElementById("tweets-container")) return;
+
 		// ── Substack ──────────────────────────────────────────────
 		const SUBSTACK_API = "/api/feed";
 
@@ -508,6 +527,13 @@ function hasReplyContext(tweet: Tweet) {
 		const LIVE_TWEETS_API = "/api/tweets";
 		const LIVE_TWEETS_POLL_MS = 30_000;
 		const IS_DEV_HOST = window.location.hostname === "dev.merulox.com";
+		// Local (not module-level) on purpose: ClientRouter swaps in a fresh
+		// DOM subtree for this whole page on every navigation (nothing here
+		// is transition:persist), so there is no user-visible state worth
+		// carrying across re-inits — page 1 / visible-by-default are the
+		// correct fresh defaults, and latestTweetUpdate must be re-read from
+		// the newly rendered #tweets-container's baked-in data attribute
+		// rather than reused from a previous (now-detached) container.
 		let currentTweetPage = 0;
 		let tweetsVisible = true;
 		let latestTweetUpdate = Number(document.getElementById("tweets-container")?.dataset.staticUpdatedAt ?? 0) * 1000;
@@ -725,8 +751,15 @@ function hasReplyContext(tweet: Tweet) {
 		applyTweetVisibility();
 		setupTweetPagination(tweetsContainer);
 		refreshLiveTweets();
-		window.setInterval(refreshLiveTweets, LIVE_TWEETS_POLL_MS);
+		tweetPollInterval = window.setInterval(refreshLiveTweets, LIVE_TWEETS_POLL_MS);
 
+		// Below: #tweet-prev, #tweet-next, #tweets-viewport, #tweets-container,
+		// #tweet-visibility-toggle are all queried fresh via getElementById
+		// THIS run and are part of the page's own (non-persisted) markup, so
+		// they get destroyed along with their listeners on the next
+		// navigation — no { signal } needed on these. `window` is the one
+		// target below that survives navigation, so only its listener needs
+		// the signal.
 		document.getElementById("tweet-prev")?.addEventListener("click", () => {
 			currentTweetPage -= 1;
 			setupTweetPagination(document.getElementById("tweets-container")!);
@@ -743,6 +776,9 @@ function hasReplyContext(tweet: Tweet) {
 		document.getElementById("tweet-visibility-toggle")?.addEventListener("click", (event) => {
 			toggleTweetVisibility(event.currentTarget as HTMLButtonElement);
 		});
-		window.addEventListener("resize", updateTweetScrollHint);
+		window.addEventListener("resize", updateTweetScrollHint, { signal });
+		}
+
+		document.addEventListener("astro:page-load", initThinking);
 		</script>
 </Layout>

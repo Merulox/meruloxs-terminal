@@ -262,33 +262,42 @@ const usefulWhen = [
 	</main>
 
 	<script>
-		const links = Array.from(document.querySelectorAll<HTMLElement>(".landing-kbd"));
-		let active = links.findIndex((link) => link.classList.contains("primary-action"));
-		if (active < 0) active = 0;
+		let landingKbdAbort: AbortController | null = null;
+		function initLandingKbd() {
+			landingKbdAbort?.abort();
+			landingKbdAbort = new AbortController();
+			const { signal } = landingKbdAbort;
 
-		function setActive(index: number) {
-			links.forEach((link, i) => link.classList.toggle("kbd-cursor", i === index));
-			active = index;
-		}
+			const links = Array.from(document.querySelectorAll<HTMLElement>(".landing-kbd"));
+			if (!links.length) return;
+			let active = links.findIndex((link) => link.classList.contains("primary-action"));
+			if (active < 0) active = 0;
 
-		setActive(active);
-		links.forEach((link, index) => {
-			link.addEventListener("mouseenter", () => setActive(index));
-			link.addEventListener("focus", () => setActive(index));
-		});
-
-		document.addEventListener("keydown", (event) => {
-			if (event.ctrlKey || event.metaKey || event.altKey) return;
-			if (event.key === "ArrowRight" || event.key === "l" || event.key === "ArrowDown" || event.key === "j") {
-				event.preventDefault();
-				setActive((active + 1) % links.length);
-			} else if (event.key === "ArrowLeft" || event.key === "h" || event.key === "ArrowUp" || event.key === "k") {
-				event.preventDefault();
-				setActive((active - 1 + links.length) % links.length);
-			} else if (event.key === "Enter" && !links.includes(document.activeElement as HTMLElement)) {
-				event.preventDefault();
-				links[active].click();
+			function setActive(index: number) {
+				links.forEach((link, i) => link.classList.toggle("kbd-cursor", i === index));
+				active = index;
 			}
-		});
+
+			setActive(active);
+			links.forEach((link, index) => {
+				link.addEventListener("mouseenter", () => setActive(index));
+				link.addEventListener("focus", () => setActive(index));
+			});
+
+			document.addEventListener("keydown", (event) => {
+				if (event.ctrlKey || event.metaKey || event.altKey) return;
+				if (event.key === "ArrowRight" || event.key === "l" || event.key === "ArrowDown" || event.key === "j") {
+					event.preventDefault();
+					setActive((active + 1) % links.length);
+				} else if (event.key === "ArrowLeft" || event.key === "h" || event.key === "ArrowUp" || event.key === "k") {
+					event.preventDefault();
+					setActive((active - 1 + links.length) % links.length);
+				} else if (event.key === "Enter" && !links.includes(document.activeElement as HTMLElement)) {
+					event.preventDefault();
+					links[active].click();
+				}
+			}, { signal });
+		}
+		document.addEventListener("astro:page-load", initLandingKbd);
 	</script>
 </Layout>
