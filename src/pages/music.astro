@@ -188,6 +188,43 @@ const periodButtons = `
 			const figs = shuffled.map(figHtml).join("");
 			// duplicate once for a seamless looping marquee (skip when autoscroll is disabled)
 			track.innerHTML = reduceMotion ? figs : figs + figs;
+			if (!reduceMotion) startMoodAutoscroll(track);
+		}
+
+		// JS-driven (not CSS @keyframes) so it can't fall victim to WebKit's
+		// known mask-image + transform-animation compositing bug, and so it
+		// never depends on :hover (which sticks forever on touch — the
+		// classic reason a "pause on hover" marquee looks frozen on mobile).
+		// Mirrors the old 70s-per-loop CSS animation's speed/behavior exactly.
+		function startMoodAutoscroll(track: HTMLElement) {
+			const CYCLE_MS = 70_000;
+			const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+			let paused = false;
+			let start: number | null = null;
+			let pauseStartX = 0;
+
+			if (canHover) {
+				const strip = track.closest(".mood-strip");
+				strip?.addEventListener("mouseenter", () => {
+					paused = true;
+				});
+				strip?.addEventListener("mouseleave", () => {
+					paused = false;
+					start = null; // resume from current visual position, not a time-jump
+				});
+			}
+
+			function frame(ts: number) {
+				const half = track.scrollWidth / 2;
+				if (half > 0 && !paused) {
+					if (start === null) start = ts - (pauseStartX / half) * CYCLE_MS;
+					const elapsed = (ts - start) % CYCLE_MS;
+					pauseStartX = (elapsed / CYCLE_MS) * half;
+					track.style.transform = `translate3d(${-pauseStartX}px,0,0)`;
+				}
+				requestAnimationFrame(frame);
+			}
+			requestAnimationFrame(frame);
 		}
 
 		async function loadUserInfo() {
