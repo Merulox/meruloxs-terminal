@@ -4,7 +4,7 @@
     {
       "date": "2026-10-25",
       "kind": "ship",
-      "text": "Added a small background-music player to meruloxs-terminal. It starts muted, unmutes on the first click, and keeps playing between pages. Most of the day went into autoplay and page-transition bugs that made the audio cut out or never start. In commander-mail, started a read-only mail reader with an isolation check so it can't send anything. In recovery-kit, added a third backup mirror, which is still a partial pilot."
+      "text": "Added a background-music player to the header of meruloxs-terminal. It now keeps playing across page navigation, autoplays muted until the first interaction, starts at a low volume with a slider, and shows prev/next controls on hover; most of the day went into fixing race conditions and flashes on page load. On commander-mail, I started a read-only mail provider built on Proton Bridge, with an isolation check and documented deployment requirements so the read-only guarantee can be verified rather than assumed. The recovery-kit project also got a partial, pilot-stage Proton Drive mirror as a third backup copy."
     },
     {
       "date": "2026-10-24",
