@@ -322,7 +322,7 @@ function hasReplyContext(tweet: Tweet) {
 <Layout title="writing | MERULOX" description="Writing by Merulox.">
 	<h1>Writing</h1>
 
-	<section class="section writing-section" id="x-posts-section">
+	<section class="section writing-section" id="x-posts-section" hidden>
 		<div style="display:flex;align-items:center">
 			<h2 class="eyebrow" style="display:flex;align-items:center;gap:6px;margin:0">
 				<svg width="11" height="11" viewBox="0 0 1200 1227" fill="currentColor" aria-label="X" style="flex-shrink:0;position:relative;top:0.5px">
@@ -535,7 +535,16 @@ function hasReplyContext(tweet: Tweet) {
 		// the newly rendered #tweets-container's baked-in data attribute
 		// rather than reused from a previous (now-detached) container.
 		let currentTweetPage = 0;
-		let tweetsVisible = true;
+		// Defaults to false (not true) so the synchronous applyTweetVisibility()
+		// call a few lines below — which runs before refreshLiveTweets()'s
+		// fetch has resolved — doesn't momentarily reveal the section on the
+		// public site when it's actually meant to stay hidden (previously
+		// visible for ~half a second on load, then hidden again once the
+		// real value arrived). The section's own `hidden` attribute in the
+		// static markup defaults to true for the same reason. IS_DEV_HOST
+		// is unaffected either way, since the dev host always shows it
+		// regardless of tweetsVisible.
+		let tweetsVisible = false;
 		let latestTweetUpdate = Number(document.getElementById("tweets-container")?.dataset.staticUpdatedAt ?? 0) * 1000;
 
 		function escapeHtml(value: unknown) {
