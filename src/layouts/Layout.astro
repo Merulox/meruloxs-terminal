@@ -487,7 +487,10 @@ const navItems = customNavItems ?? defaultNavItems;
 				rawVolume: number;
 				renderTrack: () => void;
 				syncToggleUi: () => void;
-				goToTrack: (delta: number, opts?: { userInitiated?: boolean }) => void;
+				goToTrack: (
+					delta: number,
+					opts?: { userInitiated?: boolean; play?: boolean },
+				) => void;
 				els: {
 					toggle: HTMLButtonElement;
 					track: HTMLElement | null;
@@ -686,24 +689,31 @@ const navItems = customNavItems ?? defaultNavItems;
 							const icon = btn.querySelector(".bgm-icon");
 							if (icon) icon.textContent = playing ? "❚❚" : "▶";
 						},
-						goToTrack: (delta: number, opts: { userInitiated?: boolean } = {}) => {
+						goToTrack: (
+							delta: number,
+							opts: { userInitiated?: boolean; play?: boolean } = {},
+						) => {
 							handle.state.index =
 								(handle.state.index + delta + handle.state.order.length) %
 								handle.state.order.length;
 							handle.state.currentTime = 0;
 							writeBgmState(handle.state);
-							// Use the intended state (state.playing), not the
-							// transient audio.paused read — if autoplay never
-							// actually got going (the stuck-muted-paused case
-							// this exists to route around), audio.paused is
-							// true even though playback was always meant to be
-							// on, and skip/prev should still try to play.
+							// Use the explicit play override when given (the
+							// natural "ended" advance always wants to continue,
+							// regardless of how state.playing happens to read at
+							// that instant); otherwise fall back to the
+							// intended state (state.playing), not the transient
+							// audio.paused read — if autoplay never actually
+							// got going (the stuck-muted-paused case this
+							// exists to route around), audio.paused is true
+							// even though playback was always meant to be on,
+							// and skip/prev should still try to play.
 							// Only a direct button click unmutes: automatic
 							// advance (ended) must not force audio.muted off
 							// without a real user gesture, or a still-muted
 							// autoplay session could get unmuted — and its
 							// play() possibly blocked — with no activation.
-							const shouldPlay = handle.state.playing;
+							const shouldPlay = opts.play ?? handle.state.playing;
 							// The <audio autoplay> HTML attribute fires on its
 							// own whenever .src changes, independent of the
 							// shouldPlay gate below — sync it first so a
@@ -754,20 +764,19 @@ const navItems = customNavItems ?? defaultNavItems;
 
 					// Previously removed itself unconditionally after the first
 					// interaction, even if play() failed or rejected (e.g. a
-					// 'wheel'/scroll as the first interaction doesn't always
-					// count as a strong enough gesture for autoplay policy on
-					// every browser) — that silently burned the one shot and
-					// left playback stuck muted/paused for the rest of the
-					// session. Now only removes itself once play() actually
-					// succeeds (or there's genuinely nothing to do), so a later
-					// stronger interaction still gets a chance. Also skips
-					// entirely when the interaction is a click on the
-					// dedicated transport buttons themselves, which already
-					// handle play/pause/skip directly — otherwise a pointerdown
-					// on the toggle button could start playback here a moment
-					// before the toggle's own click handler reads
-					// audio.paused as already-false and immediately pauses it
-					// again.
+					// borderline gesture that some browser doesn't count as
+					// strong enough to satisfy autoplay policy) — that silently
+					// burned the one shot and left playback stuck muted/paused
+					// for the rest of the session. Now only removes itself once
+					// play() actually succeeds (or there's genuinely nothing to
+					// do), so a later stronger interaction still gets a
+					// chance. Also skips entirely when the interaction is a
+					// click on the dedicated transport buttons themselves,
+					// which already handle play/pause/skip directly —
+					// otherwise a pointerdown on the toggle button could start
+					// playback here a moment before the toggle's own click
+					// handler reads audio.paused as already-false and
+					// immediately pauses it again.
 					const unmuteEvents = ["pointerdown", "keydown", "touchstart"];
 					function cleanupUnmuteListeners() {
 						unmuteEvents.forEach((ev) =>
@@ -827,7 +836,7 @@ const navItems = customNavItems ?? defaultNavItems;
 						handle.syncToggleUi();
 					});
 					audio!.addEventListener("ended", () => {
-						handle.goToTrack(1);
+						handle.goToTrack(1, { play: true });
 					});
 					setInterval(() => {
 						if (!audio!.paused) {
