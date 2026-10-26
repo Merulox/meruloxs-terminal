@@ -1092,6 +1092,43 @@ h2 {
 	border-color: var(--accent);
 }
 
+.bgm-prev,
+.bgm-next {
+	background: none;
+	border: 1px solid var(--line);
+	color: var(--muted);
+	width: 0;
+	height: 22px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	padding: 0;
+	flex: 0 0 auto;
+	overflow: hidden;
+	border-width: 1px;
+	opacity: 0;
+	font-size: 10px;
+	transition: width 160ms ease, opacity 160ms ease, padding 160ms ease;
+}
+
+.home-statusbar-center:hover .bgm-prev,
+.home-statusbar-center:hover .bgm-next,
+.home-statusbar-center:focus-within .bgm-prev,
+.home-statusbar-center:focus-within .bgm-next {
+	width: 20px;
+	opacity: 1;
+}
+
+.bgm-prev:hover,
+.bgm-prev:focus-visible,
+.bgm-next:hover,
+.bgm-next:focus-visible {
+	color: var(--accent);
+	border-color: var(--accent);
+	outline: none;
+}
+
 .bgm-icon {
 	font-size: 10px;
 	line-height: 1;
@@ -1259,6 +1296,10 @@ h2 {
 		display: none;
 	}
 	.bgm-volume {
+		display: none;
+	}
+	.bgm-prev,
+	.bgm-next {
 		display: none;
 	}
 }

@@ -73,6 +73,15 @@ const navItems = customNavItems ?? defaultNavItems;
 			</div>
 			<div class="home-statusbar-center">
 				<button
+					class="bgm-prev"
+					id="bgm-prev"
+					type="button"
+					aria-label="Previous track"
+					hidden
+				>
+					<span aria-hidden="true">⏮</span>
+				</button>
+				<button
 					class="bgm-toggle"
 					id="bgm-toggle"
 					type="button"
@@ -81,6 +90,15 @@ const navItems = customNavItems ?? defaultNavItems;
 					hidden
 				>
 					<span class="bgm-icon" aria-hidden="true">▶</span>
+				</button>
+				<button
+					class="bgm-next"
+					id="bgm-next"
+					type="button"
+					aria-label="Next track"
+					hidden
+				>
+					<span aria-hidden="true">⏭</span>
 				</button>
 				<input
 					class="bgm-volume"
@@ -453,10 +471,7 @@ const navItems = customNavItems ?? defaultNavItems;
 			document.addEventListener("astro:page-load", initKeyboardNav);
 		</script>
 		<script>
-			// Bumped (v2) because gym-class.mp3's timeline shifted 15s when its
-			// source got a start offset — any saved currentTime from before
-			// that change would point at the wrong moment in the new file.
-			const BGM_STATE_KEY = "merulox-bgm-state-v2";
+			const BGM_STATE_KEY = "merulox-bgm-state";
 			const BGM_VOLUME_KEY = "merulox-bgm-volume";
 			const BGM_VOLUME_SCALE = 0.5;
 			type BgmTrack = { slug: string; title: string; artist: string; src: string };
@@ -472,6 +487,7 @@ const navItems = customNavItems ?? defaultNavItems;
 				rawVolume: number;
 				renderTrack: () => void;
 				syncToggleUi: () => void;
+				goToTrack: (delta: number, opts?: { userInitiated?: boolean }) => void;
 				els: {
 					toggle: HTMLButtonElement;
 					track: HTMLElement | null;
@@ -525,6 +541,12 @@ const navItems = customNavItems ?? defaultNavItems;
 				const bgmVolumeEl = document.getElementById(
 					"bgm-volume",
 				) as HTMLInputElement | null;
+				const bgmPrevEl = document.getElementById(
+					"bgm-prev",
+				) as HTMLButtonElement | null;
+				const bgmNextEl = document.getElementById(
+					"bgm-next",
+				) as HTMLButtonElement | null;
 				if (!bgmToggle) return;
 
 				const audio = document.getElementById(
@@ -569,6 +591,22 @@ const navItems = customNavItems ?? defaultNavItems;
 						},
 						{ signal },
 					);
+					if (bgmPrevEl) {
+						bgmPrevEl.hidden = false;
+						bgmPrevEl.addEventListener(
+							"click",
+							() => existing.goToTrack(-1, { userInitiated: true }),
+							{ signal },
+						);
+					}
+					if (bgmNextEl) {
+						bgmNextEl.hidden = false;
+						bgmNextEl.addEventListener(
+							"click",
+							() => existing.goToTrack(1, { userInitiated: true }),
+							{ signal },
+						);
+					}
 				};
 
 				if (host._bgm) {
@@ -648,6 +686,34 @@ const navItems = customNavItems ?? defaultNavItems;
 							const icon = btn.querySelector(".bgm-icon");
 							if (icon) icon.textContent = playing ? "❚❚" : "▶";
 						},
+						goToTrack: (delta: number, opts: { userInitiated?: boolean } = {}) => {
+							handle.state.index =
+								(handle.state.index + delta + handle.state.order.length) %
+								handle.state.order.length;
+							handle.state.currentTime = 0;
+							writeBgmState(handle.state);
+							// Use the intended state (state.playing), not the
+							// transient audio.paused read — if autoplay never
+							// actually got going (the stuck-muted-paused case
+							// this exists to route around), audio.paused is
+							// true even though playback was always meant to be
+							// on, and skip/prev should still try to play.
+							// Only a direct button click unmutes: automatic
+							// advance (ended) must not force audio.muted off
+							// without a real user gesture, or a still-muted
+							// autoplay session could get unmuted — and its
+							// play() possibly blocked — with no activation.
+							const shouldPlay = handle.state.playing;
+							// The <audio autoplay> HTML attribute fires on its
+							// own whenever .src changes, independent of the
+							// shouldPlay gate below — sync it first so a
+							// paused session doesn't get auto-started by the
+							// browser the moment loadTrack reassigns src.
+							audio!.autoplay = shouldPlay;
+							if (opts.userInitiated) audio!.muted = false;
+							loadTrack(0);
+							if (shouldPlay) audio!.play().catch(() => {});
+						},
 						els: { toggle: bgmToggle, track: bgmTrackEl, volume: bgmVolumeEl },
 					};
 					host._bgm = handle;
@@ -672,6 +738,8 @@ const navItems = customNavItems ?? defaultNavItems;
 						bgmVolumeEl.hidden = false;
 						bgmVolumeEl.value = String(rawVolume);
 					}
+					if (bgmPrevEl) bgmPrevEl.hidden = false;
+					if (bgmNextEl) bgmNextEl.hidden = false;
 
 					// The <audio autoplay muted> element (declarative, in the HTML)
 					// gets the lenient "muted autoplay is always allowed" policy
@@ -684,13 +752,40 @@ const navItems = customNavItems ?? defaultNavItems;
 					if (!state.playing) audio!.pause();
 					handle.syncToggleUi();
 
-					const unmuteEvents = ["pointerdown", "keydown", "touchstart", "wheel"];
-					function unmuteOnFirstInteraction() {
-						if (audio!.muted) audio!.muted = false;
-						if (audio!.paused && state.playing) audio!.play().catch(() => {});
+					// Previously removed itself unconditionally after the first
+					// interaction, even if play() failed or rejected (e.g. a
+					// 'wheel'/scroll as the first interaction doesn't always
+					// count as a strong enough gesture for autoplay policy on
+					// every browser) — that silently burned the one shot and
+					// left playback stuck muted/paused for the rest of the
+					// session. Now only removes itself once play() actually
+					// succeeds (or there's genuinely nothing to do), so a later
+					// stronger interaction still gets a chance. Also skips
+					// entirely when the interaction is a click on the
+					// dedicated transport buttons themselves, which already
+					// handle play/pause/skip directly — otherwise a pointerdown
+					// on the toggle button could start playback here a moment
+					// before the toggle's own click handler reads
+					// audio.paused as already-false and immediately pauses it
+					// again.
+					const unmuteEvents = ["pointerdown", "keydown", "touchstart"];
+					function cleanupUnmuteListeners() {
 						unmuteEvents.forEach((ev) =>
 							document.removeEventListener(ev, unmuteOnFirstInteraction),
 						);
+					}
+					function unmuteOnFirstInteraction(event: Event) {
+						const target = event.target as HTMLElement | null;
+						if (target?.closest("#bgm-toggle, #bgm-prev, #bgm-next")) return;
+						if (audio!.muted) audio!.muted = false;
+						if (!state.playing || !audio!.paused) {
+							cleanupUnmuteListeners();
+							return;
+						}
+						audio!.play().then(cleanupUnmuteListeners, () => {
+							/* didn't count as a strong enough gesture — keep
+							   listening for a later, stronger one */
+						});
 					}
 					unmuteEvents.forEach((ev) =>
 						document.addEventListener(ev, unmuteOnFirstInteraction, {
@@ -703,6 +798,12 @@ const navItems = customNavItems ?? defaultNavItems;
 						if (audio!.paused) audio!.play().catch(() => {});
 						else audio!.pause();
 					});
+					bgmPrevEl?.addEventListener("click", () =>
+						handle.goToTrack(-1, { userInitiated: true }),
+					);
+					bgmNextEl?.addEventListener("click", () =>
+						handle.goToTrack(1, { userInitiated: true }),
+					);
 					if (bgmVolumeEl) {
 						bgmVolumeEl.addEventListener("input", () => {
 							const raw = Number(handle.els.volume?.value ?? "0");
@@ -726,11 +827,7 @@ const navItems = customNavItems ?? defaultNavItems;
 						handle.syncToggleUi();
 					});
 					audio!.addEventListener("ended", () => {
-						handle.state.index = (handle.state.index + 1) % handle.state.order.length;
-						handle.state.currentTime = 0;
-						writeBgmState(handle.state);
-						loadTrack(0);
-						audio!.play().catch(() => {});
+						handle.goToTrack(1);
 					});
 					setInterval(() => {
 						if (!audio!.paused) {
