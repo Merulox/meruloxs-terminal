@@ -1,6 +1,16 @@
 {
-  "generated": "2026-10-24",
+  "generated": "2026-10-26",
   "entries": [
+    {
+      "date": "2026-10-25",
+      "kind": "ship",
+      "text": "Added a background music player to the header of meruloxs-terminal. It plays reliably across browsers, keeps playing between pages, starts at a low volume with a slider, and shows prev/next controls on hover. Commander Mail got a read-only reader for Proton Bridge, plus an isolation check that has to pass before the reader is trusted not to send mail. The recovery kit now mirrors to Proton Drive as a third backup location, still a partial pilot, with a free-space check before each fetch."
+    },
+    {
+      "date": "2026-10-24",
+      "kind": "ship",
+      "text": "Spent most of the day redesigning merulox.com. The whole site now uses one terminal-style theme with a status bar showing the clock, what's playing, and visits. The music page got an autoscrolling moodboard strip that refreshes itself, plus a fix for stale cached images. The project pages were rewritten in plainer language and sorted into importance tiers, and a lot of small mobile layout problems got fixed along the way."
+    },
     {
       "date": "2026-10-23",
       "kind": "ship",
