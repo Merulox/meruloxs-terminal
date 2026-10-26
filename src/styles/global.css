@@ -1021,7 +1021,18 @@ h2 {
 .home-statusbar {
 	flex: 0 0 auto;
 	display: grid;
-	grid-template-columns: auto 1fr auto;
+	/* Equal 1fr tracks flanking a fixed auto center: the center is always
+	   mathematically exactly in the middle regardless of how much content
+	   either side has, since both sides get the identical share by
+	   definition — unlike `auto 1fr auto`, where the center's width (and
+	   therefore its position) depended on the right column's auto size,
+	   which visibly shifted the centered bgm player once async content
+	   (now-playing, visit count — both hidden until their fetches
+	   resolve) popped in and changed that column's width. overflow:hidden
+	   clips either side instead of letting it spill into the center if a
+	   side's content happens to be wider than its fair half (matches
+	   existing per-element truncation on .home-tagline/.home-now-playing). */
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 	align-items: center;
 	gap: 10px;
 	padding: 9px 18px;
@@ -1038,6 +1049,7 @@ h2 {
 	align-items: center;
 	gap: 10px;
 	min-width: 0;
+	overflow: hidden;
 }
 
 .home-statusbar-right {
