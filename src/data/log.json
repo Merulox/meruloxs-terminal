@@ -1,6 +1,11 @@
 {
-  "generated": "2026-10-26",
+  "generated": "2026-10-27",
   "entries": [
+    {
+      "date": "2026-10-26",
+      "kind": "ship",
+      "text": "In onchain-terminal, position-episode materialization is now idempotent and only rebuilds when its source data changes. Superseded receipts now have a bounded retention policy, documented in a new ADR, and integration tests refuse to run against the production database. In commander, I added a read-only gate and evidence view for an experimental lab, plus a decision log that checks provenance; malformed or empty decision rows can never count as approvals. Separately, I fixed Boréal's SMS inbox so it no longer re-classifies messages it has already recorded."
+    },
     {
       "date": "2026-10-25",
       "kind": "ship",
