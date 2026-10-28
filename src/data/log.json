@@ -1,6 +1,11 @@
 {
-  "generated": "2026-10-27",
+  "generated": "2026-10-28",
   "entries": [
+    {
+      "date": "2026-10-27",
+      "kind": "ship",
+      "text": "In CyberOps, a review found that some review and ingest operations weren't actually atomic, so I fixed them and added a rollback test that runs against a real database connection. Polasta moved to Kraken spot: an order-book collector, a replay harness, and a paper-trading engine with crash recovery, followed by a round of fixes from an adversarial review that included a P&L bug in fee accounting. Revenue Lab got pre-registered experiment designs with a promotion gate that only passes when the economics can actually be computed. Commander's feature-parity restoration also went on, with several batches reintegrated."
+    },
     {
       "date": "2026-10-26",
       "kind": "ship",
