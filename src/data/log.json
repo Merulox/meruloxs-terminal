@@ -1,6 +1,11 @@
 {
-  "generated": "2026-10-28",
+  "generated": "2026-10-29",
   "entries": [
+    {
+      "date": "2026-10-28",
+      "kind": "ship",
+      "text": "Most of the day went into The Trader v2: a durable job queue, a discovery kernel that generates deterministic rule variants with built-in causality traps, and a dedicated interface reachable from Commander through an authenticated proxy. A new screening tier also ran its first sweep over public Kraken BTC spot data, and as expected no rule held up once trading fees were counted. In Revenue Lab, the importer now brings in shortlisted product ideas with the adversarial review's verdict taking precedence, and work started on a first low-budget digital product, a formula-driven workbook checked by recalculating it against known data. A redesigned Commander also went up as a preview next to the current version."
+    },
     {
       "date": "2026-10-27",
       "kind": "ship",
