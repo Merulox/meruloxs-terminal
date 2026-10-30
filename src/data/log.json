@@ -1,6 +1,11 @@
 {
-  "generated": "2026-10-29",
+  "generated": "2026-10-30",
   "entries": [
+    {
+      "date": "2026-10-29",
+      "kind": "ship",
+      "text": "Worked on Launch Lab, fixing a decoder bug and rebuilding the derived data from the unchanged raw records. With the fix in, every token history in the dataset passed an independent completeness audit, so the dataset was frozen, rebuilt and evaluated a single time. I also read a recent paper on this kind of data. Its main lesson is that a collector failing to observe an event doesn't mean the event never happened. I'll use that to tighten labeling in the next dataset and leave the current one as it is."
+    },
     {
       "date": "2026-10-28",
       "kind": "ship",
