@@ -22,7 +22,7 @@ test("iPhone: candidate model family from CSS size + DPR, frozen OS token kept a
 	assert.equal(d.browser, "Safari 26.6.3");
 	assert.equal(d.physical, "1170×2532 px");
 	assert.deepEqual(d.flags, []);
-	assert.equal(d.confidence, "high");
+	assert.equal(d.confidence, "medium", "a shared multi-model screen family is never high confidence");
 });
 
 test("in-app iPhone UA keeps the real OS version and names the app", () => {
@@ -107,6 +107,37 @@ test("headless Chrome with SwiftShader is classified as an automated client", ()
 	assert.ok(d.flags.includes("headless Chrome"));
 	assert.ok(d.flags.some((f) => f.startsWith("UA says Linux, navigator.platform says Win32")));
 	assert.equal(d.confidence, "low");
+});
+
+test("software GPU alone (VM / acceleration off) is flagged but not called automated", () => {
+	const d = inferDevice(fp({
+		ua: "Mozilla/5.0 (Linux; Android 10; HD1900 Build/QKQ1.190716.003; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/75.0.3770.156 Mobile Safari/537.36",
+		platform: "Android",
+		w: 393, h: 851, dpr: 2.75, touch: 5, avail: [393, 851],
+		renderer: "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+	}));
+	assert.notEqual(d.kind, "bot");
+	assert.equal(d.kind, "phone");
+	assert.ok(d.flags.includes("software GPU (headless / VM)"));
+	assert.doesNotMatch(d.title, /Automated/);
+	const win = inferDevice(fp({ ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36", platform: "Win32", w: 1920, h: 1080, renderer: "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)" }));
+	assert.equal(win.kind, "desktop");
+});
+
+test("stacked environment signals without a headless UA still mark automation", () => {
+	const d = inferDevice(fp({
+		ua: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+		platform: "Linux x86_64",
+		w: 800, h: 600, tz: "UTC",
+		renderer: "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+	}));
+	assert.equal(d.kind, "bot");
+});
+
+test("2560×1440 at 100% with a desktop GPU stays a desktop PC", () => {
+	const d = inferDevice(fp({ ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 OPR/137.0.0.0", platform: "Win32", w: 2560, h: 1440, renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 (0x00002F04) Direct3D11 vs_5_0 ps_5_0, D3D11)", battery: { charging: true, level: 1 } }));
+	assert.equal(d.kind, "desktop");
+	assert.equal(d.title, "Windows PC");
 });
 
 test("iPhone UA from a Chromium emulator is marked spoofed, not trusted", () => {

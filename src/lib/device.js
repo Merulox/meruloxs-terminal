@@ -415,12 +415,18 @@ export function inferDevice(attributes) {
 	if (!renderer && a.webgl !== undefined && kind !== "unknown") flags.push("no WebGL renderer");
 	if (p.mac && !ipadDesktopMode && short !== null && short < 600) flags.push(`desktop UA with phone-sized screen ${w}×${h}`);
 
-	const automation = flags.some((f) => /automation|headless|crawler|software GPU|default headless/.test(f));
+	// Direct signals alone mark automation. Environment signals (software GPU,
+	// headless-default screen, UTC timezone, no WebGL) are common in VMs or with
+	// hardware acceleration off, so they need to stack before we call it a bot.
+	const direct = flags.some((f) => /webdriver|headless Chrome|crawler/.test(f));
+	const environment = flags.filter((f) => /software GPU|default headless|server \/ VM default|no WebGL/.test(f)).length;
+	const automation = direct || environment >= 2;
 	const spoofed = !automation && flags.some((f) => /^UA says|userAgentData on iOS|non-Apple GPU on iOS|pixel ratio|no touch support|phone-sized screen/.test(f));
 	const claimedKind = kind;
 	if (automation) kind = "bot";
 
-	const confidence = flags.length >= 2 ? "low" : flags.length === 1 || !candidates && (claimedKind === "phone" || claimedKind === "tablet") ? "medium" : "high";
+	const sharedFamily = Boolean(candidates && candidates.includes("/"));
+	const confidence = flags.length >= 2 ? "low" : flags.length === 1 || sharedFamily || (!candidates && (claimedKind === "phone" || claimedKind === "tablet")) ? "medium" : "high";
 
 	return {
 		kind,
