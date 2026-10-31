@@ -88,12 +88,16 @@ function gpuToken(renderer) {
 	return (m[2] ?? m[3] ?? m[4]).replace(/^Immortalis-/i, "Mali-");
 }
 
-// AV1 decode evidence: mediaCapabilities powerEfficient (newer snapshots) beats
-// canPlayType (all snapshots).
+// AV1 decode evidence. When mediaCapabilities answered, only its unambiguous
+// states count: supported+powerEfficient → hardware decoder; supported=false →
+// none; supported-but-not-efficient → unknown (no split). canPlayType is used
+// only for older snapshots that have no mediaCapabilities result.
 function av1Support(attributes) {
 	const media = obj(attributes.media);
 	const decoding = obj(obj(media.decoding).av1);
-	if (typeof decoding.powerEfficient === "boolean") return { value: decoding.powerEfficient, basis: "mediaCapabilities powerEfficient" };
+	if (decoding.supported === true && decoding.powerEfficient === true) return { value: true, basis: "mediaCapabilities powerEfficient" };
+	if (decoding.supported === false) return { value: false, basis: "mediaCapabilities unsupported" };
+	if (typeof decoding.supported === "boolean") return null;
 	const video = obj(obj(media.formats).video);
 	const answer = video["video/webm; codecs=av01.0.05M.08"];
 	if (typeof answer === "string") return { value: answer === "probably" || answer === "maybe", basis: "canPlayType" };

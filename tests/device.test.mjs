@@ -194,3 +194,14 @@ test("Android without a model: physical panel + GPU narrows to a family", () => 
 	const fb = inferDevice(fp({ ua: "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/480.0;FBDV/SM-S928B;]", platform: "Linux aarch64", w: 384, h: 832, dpr: 3.75, touch: 5, renderer: "Adreno (TM) 750", avail: [384, 832] }));
 	assert.equal(fb.title, "Samsung SM-S928B");
 });
+
+test("AV1 supported but not power-efficient is unknown, even if canPlayType says yes", () => {
+	const base = fp({ ua: IOS_SAFARI, platform: "iPhone", w: 393, h: 852, dpr: 3, renderer: "Apple GPU", touch: 5, avail: [393, 852] });
+	const fallback = inferDevice(withMedia(base, { [AV1]: "probably" }, { av1: { supported: true, smooth: false, powerEfficient: false } }));
+	assert.match(fallback.candidates, /14 Pro .* 15 .* 16/, "ambiguous mediaCapabilities blocks the canPlayType split");
+	assert.equal(fallback.confidence, "medium");
+	const unknown = inferDevice({ ...base, media: { decoding: { av1: { supported: true, powerEfficient: false } } } });
+	assert.match(unknown.candidates, /14 Pro .* 15 .* 16/, "no evidence → keep the full family");
+	const unsupported = inferDevice(withMedia(base, { [AV1]: "probably" }, { av1: { supported: false, powerEfficient: false } }));
+	assert.equal(unsupported.candidates, "iPhone 14 Pro / 15");
+});
