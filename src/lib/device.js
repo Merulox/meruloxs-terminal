@@ -31,6 +31,75 @@ const IPADS = {
 	"1032x1376@2": "iPad Pro 13\" (M4–M5)",
 };
 
+// Same-screen iPhone families split by AV1 decode. Safari only exposes AV1 on
+// chips with a hardware AV1 decoder (A17 Pro and later), so "AV1 yes" means
+// A17 Pro+ and "AV1 no" means older. Sizes whose members all agree are omitted.
+const IPHONE_AV1_SPLIT = {
+	"390x844@3": { yes: "iPhone 16e", no: "iPhone 12 / 12 Pro / 13 / 13 Pro / 14" },
+	"393x852@3": { yes: "iPhone 15 Pro / 16", no: "iPhone 14 Pro / 15" },
+	"430x932@3": { yes: "iPhone 15 Pro Max / 16 Plus", no: "iPhone 14 Pro Max / 15 Plus" },
+};
+
+// Exact hardware identifiers leaked by in-app browsers (Facebook "FBDV/iPhone14,5",
+// Instagram "(iPhone14,5; iOS 17_5; …)").
+const IPHONE_IDS = {
+	"10,1": "iPhone 8", "10,4": "iPhone 8", "10,2": "iPhone 8 Plus", "10,5": "iPhone 8 Plus", "10,3": "iPhone X", "10,6": "iPhone X",
+	"11,2": "iPhone XS", "11,4": "iPhone XS Max", "11,6": "iPhone XS Max", "11,8": "iPhone XR",
+	"12,1": "iPhone 11", "12,3": "iPhone 11 Pro", "12,5": "iPhone 11 Pro Max", "12,8": "iPhone SE (2nd gen)",
+	"13,1": "iPhone 12 mini", "13,2": "iPhone 12", "13,3": "iPhone 12 Pro", "13,4": "iPhone 12 Pro Max",
+	"14,4": "iPhone 13 mini", "14,5": "iPhone 13", "14,2": "iPhone 13 Pro", "14,3": "iPhone 13 Pro Max", "14,6": "iPhone SE (3rd gen)",
+	"14,7": "iPhone 14", "14,8": "iPhone 14 Plus", "15,2": "iPhone 14 Pro", "15,3": "iPhone 14 Pro Max",
+	"15,4": "iPhone 15", "15,5": "iPhone 15 Plus", "16,1": "iPhone 15 Pro", "16,2": "iPhone 15 Pro Max",
+	"17,3": "iPhone 16", "17,4": "iPhone 16 Plus", "17,1": "iPhone 16 Pro", "17,2": "iPhone 16 Pro Max", "17,5": "iPhone 16e",
+	"18,1": "iPhone 17 Pro", "18,2": "iPhone 17 Pro Max", "18,3": "iPhone 17", "18,4": "iPhone Air",
+};
+
+// Android physical panel (short x long) + GPU → candidates, used only when the
+// browser hides the model (Firefox, reduced UA). Generic panels like 1080x2400
+// are only listed with distinctive GPUs because too many phones share them.
+const ANDROID_PANEL_GPU = {
+	"1440x3200|Adreno 650": "Galaxy S20 / S20+ / S20 Ultra (Snapdragon)",
+	"1440x3088|Adreno 650": "Galaxy Note20 Ultra (Snapdragon)",
+	"1080x2316|Adreno 650": "Galaxy Note20 Ultra (Snapdragon, FHD+ mode)",
+	"1440x3200|Adreno 660": "Galaxy S21 Ultra (Snapdragon)",
+	"1440x3088|Adreno 730": "Galaxy S22 Ultra (Snapdragon)",
+	"1080x2316|Adreno 730": "Galaxy S22 Ultra (Snapdragon, FHD+ mode)",
+	"1440x3088|Xclipse 920": "Galaxy S22 Ultra (Exynos)",
+	"1440x3088|Adreno 740": "Galaxy S23 Ultra",
+	"1080x2316|Adreno 740": "Galaxy S23 Ultra (FHD+ mode)",
+	"1440x3120|Adreno 750": "Galaxy S24 Ultra",
+	"1440x3120|Xclipse 940": "Galaxy S24+ (Exynos)",
+	"1440x3120|Adreno 830": "Galaxy S25 Ultra",
+	"1440x3120|Mali-G78": "Pixel 6 Pro",
+	"1440x3120|Mali-G710": "Pixel 7 Pro",
+	"1080x2400|Mali-G78": "Pixel 6",
+	"1080x2400|Mali-G710": "Pixel 7",
+	"1344x2992|Mali-G715": "Pixel 8 Pro / Pixel 9 Pro XL",
+	"1080x2424|Mali-G715": "Pixel 9",
+	"1280x2856|Mali-G715": "Pixel 9 Pro",
+};
+
+function gpuToken(renderer) {
+	if (!renderer) return null;
+	const m = renderer.match(/Adreno\D*(\d{3})|(Mali-G\d+)|(Immortalis-G\d+)|(Xclipse \d+)/i);
+	if (!m) return null;
+	if (m[1]) return `Adreno ${m[1]}`;
+	// Tensor G3/G4 report Mali-G715 or Immortalis-G715 depending on driver.
+	return (m[2] ?? m[3] ?? m[4]).replace(/^Immortalis-/i, "Mali-");
+}
+
+// AV1 decode evidence: mediaCapabilities powerEfficient (newer snapshots) beats
+// canPlayType (all snapshots).
+function av1Support(attributes) {
+	const media = obj(attributes.media);
+	const decoding = obj(obj(media.decoding).av1);
+	if (typeof decoding.powerEfficient === "boolean") return { value: decoding.powerEfficient, basis: "mediaCapabilities powerEfficient" };
+	const video = obj(obj(media.formats).video);
+	const answer = video["video/webm; codecs=av01.0.05M.08"];
+	if (typeof answer === "string") return { value: answer === "probably" || answer === "maybe", basis: "canPlayType" };
+	return null;
+}
+
 const ADRENO = {
 	"610": "Snapdragon 4xx/6xx-class",
 	"612": "Snapdragon 675/678",
@@ -340,17 +409,43 @@ export function inferDevice(attributes) {
 	let candidates = null;
 	let vendor = null;
 	let chip = null;
+	let av1Basis = null;
 	if (kind === "phone" && (p.iphone || os === "iOS")) {
-		candidates = short !== null ? IPHONES[`${short}x${long}@${dprKey(dpr)}`] ?? null : null;
-		title = candidates ? "iPhone" : "iPhone (unmatched screen)";
+		const key = short !== null ? `${short}x${long}@${dprKey(dpr)}` : null;
+		const hw = ua.match(/iPhone(\d+,\d+)/);
+		candidates = key ? IPHONES[key] ?? null : null;
+		if (hw && IPHONE_IDS[hw[1]]) {
+			title = IPHONE_IDS[hw[1]];
+			candidates = null;
+			hints.push(`exact model from in-app hardware ID iPhone${hw[1]}`);
+		} else {
+			const split = key ? IPHONE_AV1_SPLIT[key] : null;
+			const av1 = split ? av1Support(a) : null;
+			if (split && av1) {
+				candidates = av1.value ? split.yes : split.no;
+				av1Basis = av1.basis;
+				hints.push(`AV1 decode ${av1.value ? "present → A17 Pro or newer" : "absent → older than A17 Pro"} (${av1.basis})`);
+			}
+			title = hw ? `iPhone (unknown ID iPhone${hw[1]})` : candidates ? "iPhone" : "iPhone (unmatched screen)";
+		}
 	} else if (kind === "tablet" && (p.ipad || ipadDesktopMode)) {
 		candidates = short !== null ? IPADS[`${short}x${long}@${dprKey(dpr)}`] ?? null : null;
 		title = "iPad";
 	} else if (p.android) {
-		const model = str(uaData.model) ?? p.model;
+		const fbModel = (ua.match(/FBDV\/([^;]+)/) ?? [])[1];
+		const model = str(uaData.model) ?? p.model ?? str(fbModel);
 		vendor = androidVendor(model);
 		title = [vendor, model].filter(Boolean).join(" ") || `Android ${kind}`;
-		if (!model) hints.push("Android model hidden (reduced UA, no userAgentData model)");
+		if (!model) {
+			hints.push("Android model hidden (reduced UA, no userAgentData model)");
+			const token = gpuToken(renderer);
+			const panelKey = physW && physH ? `${Math.min(physW, physH)}x${Math.max(physW, physH)}` : null;
+			const match = token && panelKey ? ANDROID_PANEL_GPU[`${panelKey}|${token}`] : null;
+			if (match) {
+				candidates = match;
+				hints.push(`panel ${panelKey} + ${token} match`);
+			}
+		}
 		const adreno = renderer?.match(/Adreno\D*(\d{3})/i);
 		if (adreno) chip = `Qualcomm ${ADRENO[adreno[1]] ?? "Snapdragon"} (Adreno ${adreno[1]})`;
 		else if (/Mali-G\d+/i.test(renderer ?? "")) chip = `${renderer?.match(/Mali-G\d+(?: MC\d+)?/i)?.[0]} (Exynos / MediaTek / Tensor)`;
@@ -426,7 +521,10 @@ export function inferDevice(attributes) {
 	if (automation) kind = "bot";
 
 	const sharedFamily = Boolean(candidates && candidates.includes("/"));
-	const confidence = flags.length >= 2 ? "low" : flags.length === 1 || sharedFamily || (!candidates && (claimedKind === "phone" || claimedKind === "tablet")) ? "medium" : "high";
+	// canPlayType is codec support, not hardware-decoder proof: cap at medium.
+	const exactModel = hints.some((h) => h.startsWith("exact model"));
+	const panelGuess = hints.some((h) => /^panel \S+ \+ .* match$/.test(h));
+	const confidence = flags.length >= 2 ? "low" : flags.length === 1 || sharedFamily || panelGuess || av1Basis === "canPlayType" || (!candidates && !exactModel && (claimedKind === "phone" || claimedKind === "tablet")) ? "medium" : "high";
 
 	return {
 		kind,

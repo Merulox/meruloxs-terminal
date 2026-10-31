@@ -378,7 +378,31 @@ async function mediaInfo() {
 			videoinput: rows.filter((item) => item.kind === "videoinput").length,
 		};
 	}
-	return { formats: formatSupport(), devices };
+	return { formats: formatSupport(), devices, decoding: await decodingInfo() };
+}
+
+// Hardware-decode evidence (powerEfficient) narrows chip generations, e.g. AV1
+// is power-efficient only on Apple A17 Pro / M3 and later. Not part of the hash.
+async function decodingInfo() {
+	const mc = (navigator as Navigator & { mediaCapabilities?: MediaCapabilities }).mediaCapabilities;
+	if (!mc?.decodingInfo) return null;
+	const probe = async (contentType: string) => {
+		try {
+			const info = await mc.decodingInfo({
+				type: "file",
+				video: { contentType, width: 1920, height: 1080, bitrate: 5_000_000, framerate: 30 },
+			});
+			return { supported: info.supported, smooth: info.smooth, powerEfficient: info.powerEfficient };
+		} catch {
+			return null;
+		}
+	};
+	const [av1, hevc, vp9] = await Promise.all([
+		probe('video/mp4; codecs="av01.0.08M.08"'),
+		probe('video/mp4; codecs="hvc1.1.6.L123.B0"'),
+		probe('video/webm; codecs="vp09.00.40.08"'),
+	]);
+	return { av1, hevc, vp9 };
 }
 
 async function permissionInfo() {

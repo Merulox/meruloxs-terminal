@@ -159,3 +159,38 @@ test("gpuName unwraps ANGLE strings", () => {
 	assert.equal(gpuName("Intel Iris OpenGL Engine"), "Intel Iris");
 	assert.equal(gpuName(null), null);
 });
+
+const withMedia = (attrs, video, decoding) => ({ ...attrs, media: { formats: { video }, ...(decoding ? { decoding } : {}) } });
+const AV1 = "video/webm; codecs=av01.0.05M.08";
+
+test("AV1 support splits shared iPhone screen families", () => {
+	const base = fp({ ua: IOS_SAFARI, platform: "iPhone", w: 430, h: 932, dpr: 3, renderer: "Apple GPU", touch: 5, avail: [430, 932] });
+	const yes = inferDevice(withMedia(base, { [AV1]: "probably" }));
+	assert.equal(yes.candidates, "iPhone 15 Pro Max / 16 Plus");
+	assert.ok(yes.hints.some((h) => /A17 Pro or newer \(canPlayType\)/.test(h)));
+	const no = inferDevice(withMedia(fp({ ua: IOS_SAFARI, platform: "iPhone", w: 390, h: 844, dpr: 3, renderer: "Apple GPU", touch: 5, avail: [390, 844] }), { [AV1]: "no" }));
+	assert.equal(no.candidates, "iPhone 12 / 12 Pro / 13 / 13 Pro / 14");
+	const e = inferDevice(withMedia(fp({ ua: IOS_SAFARI, platform: "iPhone", w: 390, h: 844, dpr: 3, renderer: "Apple GPU", touch: 5, avail: [390, 844] }), { [AV1]: "probably" }));
+	assert.equal(e.candidates, "iPhone 16e");
+	assert.equal(e.confidence, "medium", "canPlayType alone caps confidence");
+	const pe = inferDevice(withMedia(fp({ ua: IOS_SAFARI, platform: "iPhone", w: 390, h: 844, dpr: 3, renderer: "Apple GPU", touch: 5, avail: [390, 844] }), { [AV1]: "no" }, { av1: { supported: true, smooth: true, powerEfficient: true } }));
+	assert.equal(pe.candidates, "iPhone 16e", "powerEfficient beats canPlayType");
+	assert.equal(pe.confidence, "high");
+});
+
+test("in-app hardware IDs give the exact iPhone model", () => {
+	const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21F79 [FBAN/FBIOS;FBAV/470.0.0.0;FBBV/1;FBDV/iPhone14,5;FBMD/iPhone;FBSN/iOS;FBSV/17.5]";
+	const d = inferDevice(fp({ ua, platform: "iPhone", w: 390, h: 844, dpr: 3, renderer: "Apple GPU", touch: 5, avail: [390, 844] }));
+	assert.equal(d.title, "iPhone 13");
+	assert.equal(d.candidates, null);
+	assert.equal(d.confidence, "high");
+	const ig = inferDevice(fp({ ua: "Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23B85 Instagram 400.0.0 (iPhone17,1; iOS 26_1; en_CA; en; scale=3.00; 1206x2622; 123)", platform: "iPhone", w: 402, h: 874, dpr: 3, renderer: "Apple GPU", touch: 5, avail: [402, 874] }));
+	assert.equal(ig.title, "iPhone 16 Pro");
+});
+
+test("Android without a model: physical panel + GPU narrows to a family", () => {
+	const d = inferDevice(fp({ ua: "Mozilla/5.0 (Android 16; Mobile; rv:158.0) Gecko/158.0 Firefox/158.0", platform: "Linux armv81", w: 456, h: 978, dpr: 3.1578947368421053, renderer: "Adreno (TM) 650, or similar", touch: 5, avail: [456, 978] }));
+	assert.equal(d.candidates, "Galaxy Note20 Ultra (Snapdragon)");
+	const fb = inferDevice(fp({ ua: "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/480.0;FBDV/SM-S928B;]", platform: "Linux aarch64", w: 384, h: 832, dpr: 3.75, touch: 5, renderer: "Adreno (TM) 750", avail: [384, 832] }));
+	assert.equal(fb.title, "Samsung SM-S928B");
+});
