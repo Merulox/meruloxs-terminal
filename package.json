@@ -13,7 +13,7 @@
     "astro": "astro",
     "update:goodreads": "node scripts/update-goodreads.mjs",
     "test:x": "node --test tests/x-workflow.test.mjs tests/dev-auth.test.mjs",
-    "test:visits": "node --test tests/visits.test.mjs",
+    "test:visits": "node --test tests/visits.test.mjs tests/device.test.mjs",
     "test:cameras": "node --test tests/cameras.test.mjs",
     "build:world-map": "node scripts/build-world-map.mjs"
   },
