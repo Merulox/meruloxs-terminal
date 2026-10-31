@@ -139,7 +139,7 @@ const navItems = customNavItems ?? defaultNavItems;
 				<dt><kbd>Enter</kbd></dt>
 				<dd>open the highlighted item</dd>
 				<dt><kbd>p</kbd></dt>
-				<dd>pause the music</dd>
+				<dd>pause / resume the music</dd>
 				<dt><kbd>?</kbd></dt>
 				<dd>toggle this panel</dd>
 				<dt><kbd>Esc</kbd></dt>
@@ -967,12 +967,12 @@ const navItems = customNavItems ?? defaultNavItems;
 
 				initBgm(signal);
 
-				// ── P pauses background music ──
+				// ── P toggles background music ──
 				// Window capture runs before any document-level page handler
 				// (page cursors and the first-interaction unmute listener,
-				// which would otherwise see
-				// the just-paused element as "should be playing" and restart
-				// it). Pause only: an already-paused player stays paused.
+				// which would otherwise react to the same keypress and undo
+				// the toggle). A still-muted autoplay session counts as
+				// "not playing": P makes it audible instead of pausing it.
 				window.addEventListener(
 					"keydown",
 					(e) => {
@@ -983,7 +983,12 @@ const navItems = customNavItems ?? defaultNavItems;
 						if (!audio) return;
 						e.preventDefault();
 						e.stopPropagation();
-						if (!audio.paused) audio.pause();
+						if (audio.paused || audio.muted) {
+							audio.muted = false;
+							audio.play().catch(() => {});
+						} else {
+							audio.pause();
+						}
 					},
 					{ capture: true, signal },
 				);
