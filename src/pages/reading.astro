@@ -546,7 +546,7 @@ function ratingLabel(rating?: number): string {
 				if (event.ctrlKey || event.metaKey || event.altKey) return;
 				const active = document.activeElement as HTMLElement;
 				const current = summaries.indexOf(active);
-				const isNavKey = ["j", "k", "h", "l", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Enter"].includes(event.key);
+				const isNavKey = ["j", "k", "h", "l", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key);
 				if (current < 0 && !isNavKey) return;
 
 				if (event.key === "j" || event.key === "ArrowDown") {
@@ -568,7 +568,7 @@ function ratingLabel(rating?: number): string {
 					const activeDetails = active.closest("details")!;
 					if (activeDetails.open) activeDetails.open = false;
 					else if (current === 0) focusHeader();
-				} else if (event.key === "Enter" && current >= 0) {
+				} else if ((event.key === "Enter" || event.key === " ") && current >= 0) {
 					event.preventDefault();
 					event.stopImmediatePropagation();
 					const details = active.closest("details")!;

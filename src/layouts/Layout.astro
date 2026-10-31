@@ -138,7 +138,7 @@ const navItems = customNavItems ?? defaultNavItems;
 				<dd>move across the top nav</dd>
 				<dt><kbd>Enter</kbd></dt>
 				<dd>open the highlighted item</dd>
-				<dt><kbd>Space</kbd></dt>
+				<dt><kbd>p</kbd></dt>
 				<dd>pause the music</dd>
 				<dt><kbd>?</kbd></dt>
 				<dd>toggle this panel</dd>
@@ -967,21 +967,20 @@ const navItems = customNavItems ?? defaultNavItems;
 
 				initBgm(signal);
 
-				// ── Space pauses background music ──
+				// ── P pauses background music ──
 				// Window capture runs before any document-level page handler
-				// (/reading's capture-phase cursor, the nav cursors, and the
-				// first-interaction unmute listener, which would otherwise see
+				// (page cursors and the first-interaction unmute listener,
+				// which would otherwise see
 				// the just-paused element as "should be playing" and restart
 				// it). Pause only: an already-paused player stays paused.
 				window.addEventListener(
 					"keydown",
 					(e) => {
-						if (e.key !== " " || e.ctrlKey || e.metaKey || e.altKey) return;
+						if ((e.key !== "p" && e.key !== "P") || e.ctrlKey || e.metaKey || e.altKey) return;
 						const target = e.target as HTMLElement | null;
 						if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
 						const audio = document.getElementById("bgm-audio") as HTMLAudioElement | null;
-						const toggle = document.getElementById("bgm-toggle");
-						if (!audio || !toggle || toggle.hidden) return;
+						if (!audio) return;
 						e.preventDefault();
 						e.stopPropagation();
 						if (!audio.paused) audio.pause();
