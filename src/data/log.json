@@ -1,6 +1,11 @@
 {
-  "generated": "2026-10-30",
+  "generated": "2026-10-31",
   "entries": [
+    {
+      "date": "2026-10-30",
+      "kind": "ship",
+      "text": "Most of the day went into Revenue Lab. I added an operator channel for approvals and a daily brief, a capability registry that refuses anything it doesn't recognize, and a first pass at ranking opportunities with a recorded decision. The ranking now has to pick exactly three candidates, and its gate is still not passed until real data comes in. On the side, I fixed two data-integrity bugs in CyberOps, added a speed-to-lead demo form to Boréal, and tested a shadow scan pass for an Aave liquidator against a mainnet fork."
+    },
     {
       "date": "2026-10-29",
       "kind": "ship",
