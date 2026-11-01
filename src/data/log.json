@@ -1,6 +1,11 @@
 {
-  "generated": "2026-10-31",
+  "generated": "2026-11-01",
   "entries": [
+    {
+      "date": "2026-10-31",
+      "kind": "ship",
+      "text": "Most of the day went into Boréal Numérique's internal tooling. I built a per-client operator panel with a lead picker and a tab for managing each client's ad campaigns, and added read-only calendar availability from iCal links, Google and Microsoft. The lead-response demo now checks the calendar before it offers a time, and its demo video was recorded from a real run with personal details masked. On the side, the CyberOps project finished another milestone of offline asset and package inventory work, and each step was reviewed independently."
+    },
     {
       "date": "2026-10-30",
       "kind": "ship",
