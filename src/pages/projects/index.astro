@@ -35,6 +35,7 @@ const archiveDescriptionContext = [
 		id: archiveId(project.name),
 		name: project.name,
 		tier: project.tier,
+		state: project.state,
 		order: i,
 		sourceDescription: project.archiveDescription,
 		description: project.description,
@@ -49,6 +50,7 @@ const archiveDescriptionContext = [
 		id: archiveId(scheme.name),
 		name: scheme.name,
 		tier: scheme.tier,
+		state: scheme.state,
 		order: i,
 		sourceDescription: scheme.description,
 		currentState: scheme.currentState,
@@ -423,7 +425,8 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 		}
 
 		.project-description-editor textarea,
-		.project-description-editor input {
+		.project-description-editor input,
+		.project-description-editor select {
 			width: 100%;
 			border: 1px solid var(--faint);
 			border-radius: 2px;
@@ -435,7 +438,8 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 		}
 
 		.project-description-editor textarea:focus,
-		.project-description-editor input:focus {
+		.project-description-editor input:focus,
+		.project-description-editor select:focus {
 			border-color: var(--accent);
 			outline: none;
 		}
@@ -464,6 +468,10 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 
 		.proj-body .project-description-status[data-error="true"] {
 			color: #d78080;
+		}
+
+		.proj-state.dead {
+			color: #bd6b6b;
 		}
 		.archive-candidate {
 			display: flex;
@@ -520,6 +528,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 				name: string;
 				sourceDescription: string;
 				tier?: string;
+				state?: string;
 				order?: number;
 				description?: string;
 				role?: string;
@@ -543,6 +552,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 				panel: HTMLElement;
 				textarea: HTMLTextAreaElement;
 				tierSelect: HTMLSelectElement;
+				stateSelect: HTMLSelectElement;
 				instruction: HTMLInputElement;
 				preview: HTMLElement;
 				status: HTMLElement;
@@ -570,7 +580,25 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 					record.sourceDescription,
 				]),
 			);
+			const activeTiers = new Map(
+				archiveRecords.map((record) => [itemKey(record.kind, record.id), record.tier ?? "!!"]),
+			);
+			const activeStates = new Map(
+				archiveRecords.map((record) => [
+					itemKey(record.kind, record.id),
+					record.state ?? "prototype",
+				]),
+			);
 			const editors = new Map<string, EditorElements>();
+			const archiveStates = [
+				"active",
+				"prototype",
+				"research",
+				"paused",
+				"dead",
+				"failed",
+				"archived",
+			] as const;
 
 			const apiRequest = async (
 				method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
@@ -598,6 +626,36 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 				}
 				return payload;
 			};
+
+			const archiveWriteQueues = new Map<string, Promise<Record<string, any>>>();
+			const queueArchiveMutation = (
+				kind: ArchiveKind,
+				id: string,
+				mutation: () => Promise<Record<string, any>>,
+			) => {
+				const key = itemKey(kind, id);
+				const previous = archiveWriteQueues.get(key) ?? Promise.resolve({});
+				const request = previous.catch(() => ({})).then(mutation);
+				archiveWriteQueues.set(key, request);
+				const cleanup = () => {
+					if (archiveWriteQueues.get(key) === request) archiveWriteQueues.delete(key);
+				};
+				void request.then(cleanup, cleanup);
+				return request;
+			};
+			const putArchive = (
+				kind: ArchiveKind,
+				id: string,
+				body:
+					| Record<string, unknown>
+					| (() => Record<string, unknown>),
+			) =>
+				queueArchiveMutation(kind, id, () => {
+					const resolvedBody = typeof body === "function" ? body() : body;
+					return apiRequest("PUT", { ...resolvedBody, kind, id });
+				});
+			const deleteArchive = (kind: ArchiveKind, id: string) =>
+				queueArchiveMutation(kind, id, () => apiRequest("DELETE", { kind, id }));
 
 			const descriptionElement = (record: ArchiveDescriptionRecord) =>
 				document.querySelector<HTMLElement>(
@@ -652,8 +710,37 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 				const list = article.parentElement;
 				if (list) sortListByTierOrder(list);
 				const key = itemKey(record.kind, record.id);
+				activeTiers.set(key, tier);
 				const editor = editors.get(key);
 				if (editor) editor.tierSelect.value = tier;
+			};
+
+			const applyState = (record: ArchiveDescriptionRecord, state: string) => {
+				const article = document.querySelector<HTMLElement>(
+					`[data-archive-kind="${record.kind}"][data-archive-id="${CSS.escape(record.id)}"]`,
+				);
+				const badge = article?.querySelector<HTMLElement>(".proj-head .proj-state");
+				if (!article || !badge || !archiveStates.includes(state as (typeof archiveStates)[number])) {
+					return;
+				}
+				article.dataset.state = state;
+				badge.classList.remove(...archiveStates);
+				badge.classList.add(state);
+				badge.textContent = state;
+				const key = itemKey(record.kind, record.id);
+				activeStates.set(key, state);
+				const editor = editors.get(key);
+				if (editor) editor.stateSelect.value = state;
+			};
+
+			const restoreEditorSelections = (
+				record: ArchiveDescriptionRecord,
+				editor: EditorElements,
+			) => {
+				const key = itemKey(record.kind, record.id);
+				editor.tierSelect.value = activeTiers.get(key) ?? record.tier ?? "!!";
+				editor.stateSelect.value =
+					activeStates.get(key) ?? record.state ?? "prototype";
 			};
 
 			const makeButton = (label: string) => {
@@ -676,9 +763,21 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 			) => {
 				editor.busy = busy;
 				editor.textarea.disabled = busy;
+				editor.tierSelect.disabled = busy;
+				editor.stateSelect.disabled = busy;
 				editor.instruction.disabled = busy;
 				editor.acknowledgment.disabled = busy;
 				editor.editButton.disabled = busy;
+				document.querySelectorAll<HTMLElement>(".proj-list").forEach((list) => {
+					const listBusy = [...editors.values()].some(
+						(candidate) =>
+							candidate.busy &&
+							candidate.panel.closest<HTMLElement>(".proj-list") === list,
+					);
+					list.querySelectorAll<HTMLButtonElement>(".proj-move-button").forEach((button) => {
+						button.disabled = listBusy;
+					});
+				});
 				editor.actionButtons.forEach((button) => {
 					button.disabled = busy;
 				});
@@ -740,7 +839,9 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 
 					const editContainer = document.createElement("div");
 					editContainer.className = "project-description-edit";
-					const editButton = makeButton("edit description");
+					const editButton = makeButton(
+						record.kind === "project" ? "edit project" : "edit money scheme",
+					);
 					const panelId = `archive-description-editor-${record.kind}-${record.id}`;
 					editButton.setAttribute("aria-controls", panelId);
 					editButton.setAttribute("aria-expanded", "false");
@@ -778,7 +879,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 					panel.className = "project-description-editor";
 					panel.id = panelId;
 					panel.hidden = true;
-					panel.setAttribute("aria-label", `Edit ${record.name} description`);
+					panel.setAttribute("aria-label", `Edit ${record.name}`);
 
 					const descriptionLabel = document.createElement("label");
 					descriptionLabel.textContent = "Description";
@@ -802,6 +903,20 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 						typeof record.tier === "string" ? record.tier : "!!";
 					tierSelect.setAttribute("aria-label", `${record.name} importance tier`);
 					tierLabel.append(tierSelect);
+
+					const stateLabel = document.createElement("label");
+					stateLabel.textContent = "Status";
+					const stateSelect = document.createElement("select");
+					for (const value of archiveStates) {
+						const option = document.createElement("option");
+						option.value = value;
+						option.textContent = value;
+						stateSelect.append(option);
+					}
+					stateSelect.value =
+						typeof record.state === "string" ? record.state : "prototype";
+					stateSelect.setAttribute("aria-label", `${record.name} status`);
+					stateLabel.append(stateSelect);
 
 					const instructionLabel = document.createElement("label");
 					instructionLabel.textContent = "AI instruction (optional)";
@@ -835,6 +950,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 					panel.append(
 						descriptionLabel,
 						tierLabel,
+						stateLabel,
 						instructionLabel,
 						previewLabel,
 						preview,
@@ -850,6 +966,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 						panel,
 						textarea,
 						tierSelect,
+						stateSelect,
 						instruction,
 						preview,
 						status,
@@ -878,6 +995,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 						panel.hidden = !opening;
 						editButton.setAttribute("aria-expanded", opening ? "true" : "false");
 						const current = activeDescriptions.get(key) ?? record.sourceDescription;
+						restoreEditorSelections(record, editor);
 						if (opening) {
 							textarea.value = current;
 							preview.textContent = current;
@@ -925,11 +1043,10 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 						setEditorBusy(editor, true, "Saving…");
 						try {
 							const candidateVersion = useCandidateButton.dataset.version;
-							const payload = await apiRequest("PUT", {
-								kind: record.kind,
-								id: record.id,
+							const payload = await putArchive(record.kind, record.id, {
 								description: textarea.value,
 								tier: tierSelect.value,
+								state: stateSelect.value,
 								clearCandidate: Boolean(candidateVersion),
 								candidateVersion,
 							});
@@ -943,6 +1060,9 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 									payload.tier,
 									typeof payload.order === "number" ? payload.order : undefined,
 								);
+							}
+							if (typeof payload.state === "string") {
+								applyState(record, payload.state);
 							}
 							textarea.value = payload.description;
 							preview.textContent = payload.description;
@@ -971,8 +1091,18 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 					resetButton.addEventListener("click", async () => {
 						setEditorBusy(editor, true, "Resetting…");
 						try {
-							await apiRequest("DELETE", { kind: record.kind, id: record.id });
+							await deleteArchive(record.kind, record.id);
 							applyDescription(record, record.sourceDescription);
+							if (typeof record.tier === "string") {
+								applyTier(
+									record,
+									record.tier,
+									typeof record.order === "number" ? record.order : undefined,
+								);
+							}
+							if (typeof record.state === "string") {
+								applyState(record, record.state);
+							}
 							textarea.value = record.sourceDescription;
 							preview.textContent = record.sourceDescription;
 							setEditorBusy(editor, false, "Override removed; source description restored.");
@@ -983,6 +1113,7 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 
 					cancelButton.addEventListener("click", () => {
 						const current = activeDescriptions.get(key) ?? record.sourceDescription;
+						restoreEditorSelections(record, editor);
 						output.textContent = current;
 						textarea.value = current;
 						preview.textContent = current;
@@ -1063,12 +1194,19 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 						const description = activeDescriptions.get(key);
 						if (description === undefined) return;
 						updates.push(
-							apiRequest("PUT", {
-								kind,
-								id,
-								description,
-								tier,
-								order: index,
+							putArchive(kind, id, () => {
+								const currentSiblings = item.parentElement
+									? Array.from(
+											item.parentElement.querySelectorAll<HTMLElement>(":scope > article"),
+										)
+									: [];
+								const currentOrder = currentSiblings.indexOf(item);
+								return {
+									description: activeDescriptions.get(key) ?? description,
+									tier: activeTiers.get(key) ?? tier,
+									state: activeStates.get(key) ?? item.dataset.state ?? "prototype",
+									order: currentOrder >= 0 ? currentOrder : index,
+								};
 							}).catch(() => {
 								// Best-effort; a failed reorder write leaves the DOM order
 								// as the source of truth until the next reload.
@@ -1138,6 +1276,9 @@ const serializedArchiveDescriptionContext = JSON.stringify(
 								override.tier,
 								typeof override.order === "number" ? override.order : undefined,
 							);
+						}
+						if (override && typeof override.state === "string") {
+							applyState(record, override.state);
 						}
 						const editor = editors.get(itemKey(record.kind, record.id));
 						if (editor) {

@@ -4,6 +4,7 @@ export type ArchiveStatus =
 	| "prototype"
 	| "research"
 	| "failed"
+	| "dead"
 	| "archived";
 
 export type SchemeDecision = "pursue" | "hold" | "drop";
@@ -711,31 +712,141 @@ export const projects = archiveProjects.filter(
 
 export const moneySchemes: MoneyScheme[] = [
 	{
-		name: "Permissioned short-form clipping",
+		name: "Wedding planning workbook",
 		tier: "!!!",
-		state: "research",
-		date: "2026-08–now",
+		state: "active",
+		date: "2026-10–now",
 		description:
-			"Clip other people's licensed videos into short-form content, get paid per eligible view through a marketplace, and see if that ever becomes real retainers or my own channels.",
+			"Sell a practical wedding-planning workbook for US$12 after prospects use a free functional sample with one real row.",
 		currentState:
-			"This is the current non-Boréal revenue hypothesis, but no campaign, accepted clip, eligible view, or payout has been recorded.",
+			"A preregistered ten-prospect test is running in Revenue Lab through November 20. It currently has zero recorded observations, purchases, or revenue.",
 		decision: "pursue",
 		bottleneck:
-			"Campaign access and usage rights come first; the real test is whether accepted clips produce repeatable retention and an attributable payout above a chosen hourly floor.",
+			"The test needs ten genuinely engaged wedding planners reached through allowed channels; friendly purchases and passive listing views do not count.",
 		history: [
 			{
-				date: "2026-08",
+				date: "2026-10-31",
 				attemptedModel:
-					"One licensed campaign, one niche, seven days, and 12–15 clips; measure acceptance, views, retention, labor, and payout.",
+					"Give eligible wedding planners a usable sample, ask them to enter one real row, then offer the complete workbook at a fixed price.",
 				work:
-					"Compared marketplace, retainer, and owned-media economics; reconciled campaign rules; defined creative cells and explicit go/stop conditions.",
+					"Defined the sample, price, eligibility, primary metric, seven-day observation window, confounders, guardrail, stop rule, and deadline; approved and started the manual experiment.",
 				result:
-					"Research found marketplace clipping useful for proof but weak as a terminal business at common $1–$2 per 1,000 eligible-view rates. The canary remains unlaunched.",
-				state: "research",
-				proof: [{ label: "Evidence-backed canary plan" }],
+					"The experiment is running, but no eligible observation or purchase has been recorded yet.",
+				state: "active",
+				proof: [{ label: "Running preregistered Revenue Lab experiment" }],
 			},
 		],
-		tags: ["Content", "Marketplace", "Creator services", "Owned media"],
+		tags: ["Digital product", "Wedding planning", "Revenue Lab", "Manual experiment"],
+	},
+	{
+		name: "Mon Artisan local-demand brokerage",
+		tier: "!!!",
+		state: "prototype",
+		date: "2026-10–now",
+		description:
+			"Find local home-service demand, qualify it, and route it to a vetted contractor under explicit capacity and payment terms.",
+		currentState:
+			"The synthetic economic loop, control dashboard, public brand, and an 18-plumber shortlist exist. No contractor has joined a real pilot, no homeowner request has been routed, and no money has settled.",
+		decision: "pursue",
+		bottleneck:
+			"One licensed partner must agree to a bounded pilot before traffic, lead promises, or revenue claims are justified.",
+		history: [
+			{
+				date: "2026-10",
+				attemptedModel:
+					"Start with one capable plumbing partner in Trois-Rivières or Shawinigan, then acquire and route a small measured stream of demand.",
+				work:
+					"Built the exact-money domain, consent and allocation contracts, transactional outbox, evidence gates, control service, brand surface, and licensed-contractor shortlist.",
+				result:
+					"The machinery and partner research are ready for interviews; the real partner, demand, settlement, and contribution gates remain untested.",
+				state: "prototype",
+				proof: [{ label: "Verified synthetic loop and partner shortlist" }],
+			},
+		],
+		tags: ["Lead brokerage", "Home services", "Local demand", "Partner pilot"],
+	},
+	{
+		name: "Early token launch intelligence",
+		tier: "!!!",
+		state: "research",
+		date: "2026-10–now",
+		description:
+			"Test whether any signal visible before a new Solana token pumps remains profitable after real latency, quotes, and costs.",
+		currentState:
+			"The read-only lab is live and a bounded 24-hour token-link harvester is collecting free discovery data. Prospective shadow testing has not started and no capital is authorized.",
+		decision: "pursue",
+		bottleneck:
+			"Discovery sources must produce a frozen, prospectively testable signal that survives matched controls and executable quote economics.",
+		history: [
+			{
+				date: "2026-10-31",
+				attemptedModel:
+					"Collect pump.fun launches, paid-promotion events, token-linked communities, and executable outcomes at zero monthly data cost before freezing a signal.",
+				work:
+					"Built the capture contracts, source and signal ledgers, hypotheses and kill criteria, live read-only lab, and a hardened token-to-channel harvester.",
+				result:
+					"Collection is active, but there is no prospective result, trading edge, paper return, or live-capital approval.",
+				state: "research",
+				proof: [
+					{ label: "Live private launch lab", href: "https://launch.merulox.com" },
+				],
+			},
+		],
+		tags: ["Solana", "Market intelligence", "Prospective research", "Pump.fun"],
+	},
+	{
+		name: "Aave liquidation searcher",
+		tier: "!!",
+		state: "prototype",
+		date: "2026-10–now",
+		description:
+			"Build a zero-spend Aave v3 liquidation searcher, prove it in shadow mode, and expose capital only after fork, economics, and reconciliation gates pass.",
+		currentState:
+			"The Rust indexer, chain I/O, persistence, Aave strategy work, and Solidity executor contract are built and locally tested. No shadow opportunity, execution, settlement, or revenue is recorded.",
+		decision: "pursue",
+		bottleneck:
+			"Paid primary and backup RPCs, a funded signer, relay identity, pinned-fork equivalence, bid economics, and a completed shadow window are still required before live activation.",
+		history: [
+			{
+				date: "2026-10",
+				attemptedModel:
+					"Follow Ethereum heads, maintain borrower state, reproduce Aave v3.7 liquidation semantics, and test an atomic executor before evaluating bids.",
+				work:
+					"Implemented ordered Rust modules, fail-closed configuration, chain reads, persistent indexing, strategy logic, and Foundry executor tests; 132 Rust tests and 15 Forge tests pass.",
+				result:
+					"The implementation has reached a substantial local prototype, but the fork, shadow, live-capital, and profit gates remain closed.",
+				state: "prototype",
+				proof: [{ label: "Locally tested searcher and executor modules" }],
+			},
+		],
+		tags: ["Aave", "MEV", "Rust", "Ethereum", "Shadow trading"],
+	},
+	{
+		name: "Trace Supply data brokerage",
+		tier: "!!",
+		state: "active",
+		date: "2026-10–now",
+		description:
+			"Sell a paid feasibility and sourcing sprint for difficult, rights-cleared AI datasets before recruiting suppliers or buying inventory.",
+		currentState:
+			"The buyer and supplier intake, lead store, research ledger, rights-first offer, outreach, and reply monitoring exist. No qualified buyer, paid sprint, transferred sample, or brokerage revenue is recorded.",
+		decision: "pursue",
+		bottleneck:
+			"One buyer must commit to a concrete data specification and pay for the US$500 feasibility sprint before supplier recruitment can begin.",
+		history: [
+			{
+				date: "2026-10",
+				attemptedModel:
+					"Start with customer-support resolution trajectories and sell the specification and sourcing work before handling any dataset.",
+				work:
+					"Built the dedicated brokerage stack, buyer research, dated outreach ledger, rights gates, channel-partner boundary, and durable reply alerts.",
+				result:
+					"Outreach was delivered, but no evidence-bearing buyer reply, paid sprint, supplier engagement, or transaction followed.",
+				state: "active",
+				proof: [{ label: "Dated buyer outreach and governed intake" }],
+			},
+		],
+		tags: ["Data brokerage", "AI datasets", "Rights", "B2B services"],
 	},
 	{
 		name: "Quebec trades automation agency",
@@ -745,7 +856,7 @@ export const moneySchemes: MoneyScheme[] = [
 		description:
 			"Sell Quebec trades missed-call recovery and lead follow-up — a setup fee plus a monthly retainer.",
 		currentState:
-			"The service and delivery stack exists. The current signal ledger records 536 outbound messages, six qualified replies, zero completed discovery calls, and zero signed clients.",
+			"The operational-scaffolding offer and delivery stack exist. The ledger records 1,012 SMS messages, 98 responses, and one discovery call booked but not completed; no client or case-study install is recorded.",
 		decision: "pursue",
 		bottleneck:
 			"Trust, case-study proof, and reply-to-call conversion—not missing software or lead volume. Broad outbound scaling is held until that gate moves.",
@@ -920,87 +1031,6 @@ export const moneySchemes: MoneyScheme[] = [
 		tags: ["Digital products", "n8n", "Gumroad", "Automation"],
 	},
 	{
-		name: "Contractor missed-lead recovery kit",
-		tier: "!!!",
-		state: "research",
-		date: "2026-09",
-		description:
-			"A $49 manual kit to help contractors recover leads they missed, tested on 30 targeted emails, no ad spend.",
-		currentState:
-			"The card and probe are approved, but no exposure may be recorded until outbound delivery and CAD checkout receipt capture pass smoke tests.",
-		decision: "pursue",
-		bottleneck:
-			"The exposure and payment-receipt lane is not active, and the existing pain evidence does not establish urgency or willingness to pay.",
-		history: [
-			{
-				date: "2026-09",
-				attemptedModel:
-					"Sell a finite missed-lead recovery kit before building more software.",
-				work:
-					"Froze the buyer, problem, offer, CAD 49 price, cohort, evidence ladder, lane, time window, and stop rules.",
-				result:
-					"Approved pending lane smoke; zero delivered exposures, checkout attempts, payments, or fulfillments so far.",
-				state: "research",
-				proof: [{ label: "Immutable Market Lab probe" }],
-			},
-		],
-		tags: ["Market probe", "Trades", "CAD 49", "Manual outreach"],
-	},
-	{
-		name: "Contractor estimate-follow-up kit",
-		tier: "!!!",
-		state: "research",
-		date: "2026-09",
-		description:
-			"Same $49 test, same channel, different problem: following up on estimates that never got answered.",
-		currentState:
-			"The comparative probe is approved but has not produced an exposure, checkout attempt, payment, or fulfillment.",
-		decision: "pursue",
-		bottleneck:
-			"Payment is unvalidated and follow-up cadence may not be the real problem; qualification, pricing, timing, or proposal quality could dominate.",
-		history: [
-			{
-				date: "2026-09",
-				attemptedModel:
-					"Hold buyer, price, and channel stable while changing the problem from missed leads to unsold estimates.",
-				work:
-					"Registered the frozen niche card and probe, with practitioner evidence and counterevidence preserved.",
-				result:
-					"Approved pending the shared lane smoke; no customer action has tested the hypothesis.",
-				state: "research",
-				proof: [{ label: "Immutable Market Lab probe" }],
-			},
-		],
-		tags: ["Market probe", "Trades", "CAD 49", "Follow-up"],
-	},
-	{
-		name: "Med-spa missed-inquiry recovery kit",
-		tier: "!!!",
-		state: "research",
-		date: "2026-09",
-		description:
-			"Same recovery idea, different buyer: Quebec med-spas missing inquiries instead of contractors missing calls.",
-		currentState:
-			"The probe is approved but unstarted; its pain evidence is weaker and more vendor-contaminated than the contractor cards.",
-		decision: "pursue",
-		bottleneck:
-			"Weak source verifiability, healthcare privacy boundaries, and no proof that inquiry leakage—not demand or management—is the causal problem.",
-		history: [
-			{
-				date: "2026-09",
-				attemptedModel:
-					"Change the buyer while keeping the recovery mechanism and CAD 49 test structure comparable.",
-				work:
-					"Froze the card, probe, evidence ladder, and qualitative pain record with explicit source limitations.",
-				result:
-					"Approved pending lane smoke; no exposure or financial commitment exists.",
-				state: "research",
-				proof: [{ label: "Immutable Market Lab probe" }],
-			},
-		],
-		tags: ["Market probe", "Med-spa", "CAD 49", "Lead recovery"],
-	},
-	{
 		name: "Quantitative trading strategies",
 		tier: "!!!",
 		state: "research",
@@ -1173,33 +1203,6 @@ export const moneySchemes: MoneyScheme[] = [
 			},
 		],
 		tags: ["E-commerce", "Cannabis", "Stripe", "Regulated market"],
-	},
-	{
-		name: "AI implementation brokerage",
-		tier: "!",
-		state: "archived",
-		date: "2026-04",
-		description:
-			"Sell big AI automation projects, then hand delivery to vetted specialists and keep a cut. Never got a single deal or partner signed. Archived.",
-		currentState:
-			"The deal structure and partner-vetting system were documented, but every specialist slot remained unsourced and no executed deal was recorded.",
-		decision: "drop",
-		bottleneck:
-			"Credibility, qualified deal flow, and vetted delivery partners. The activation rule itself required two prior client wins before sourcing partners.",
-		history: [
-			{
-				date: "2026-04",
-				attemptedModel:
-					"Own discovery and the client relationship while specialist partners perform technical delivery.",
-				work:
-					"Designed the deal flow, margin structure, non-circumvention terms, five partner specialties, and a four-step vetting protocol.",
-				result:
-					"Zero partner slots were filled and no client deal reached execution. The model remained a plan rather than an operating channel.",
-				state: "archived",
-				proof: [{ label: "Archived deal and partner registry" }],
-			},
-		],
-		tags: ["Brokerage", "AI services", "White-label delivery"],
 	},
 	{
 		name: "Automated Substack essay engine",

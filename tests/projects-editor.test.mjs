@@ -137,10 +137,12 @@ test("apex, www, and dev GET expose kind-separated published overrides with no-s
 	await seed(kv, "project-description:sample-project", {
 		description: "Published project copy",
 		updatedAt: "2026-10-18T00:00:00.000Z",
+		state: "dead",
 	});
 	await seed(kv, "scheme-description:sample-project", {
 		description: "Published scheme copy",
 		updatedAt: "2026-10-18T00:01:00.000Z",
+		state: "paused",
 	});
 
 	for (const host of ["merulox.com", "www.merulox.com", "dev.merulox.com"]) {
@@ -150,6 +152,8 @@ test("apex, www, and dev GET expose kind-separated published overrides with no-s
 		const body = await payload(response);
 		assert.equal(body.overrides["sample-project"].description, "Published project copy");
 		assert.equal(body.schemeOverrides["sample-project"].description, "Published scheme copy");
+		assert.equal(body.overrides["sample-project"].state, "dead");
+		assert.equal(body.schemeOverrides["sample-project"].state, "paused");
 		assert.equal(body.candidates, undefined);
 	}
 	assert.equal(
@@ -267,6 +271,70 @@ test("PUT keeps legacy project keys, separates scheme keys, and can clear one ca
 	assert.equal(
 		(await payload(await onRequest(context({ kv })))).candidates.scheme["sample-project"],
 		undefined,
+	);
+});
+
+test("PUT publishes, preserves, exposes, and validates archive status", async () => {
+	const kv = new MemoryKv();
+	await seed(kv, "project-description:sample-project", {
+		description: "Existing copy",
+		tier: "!!",
+		order: 2,
+		state: "paused",
+	});
+
+	const preservedResponse = await onRequest(
+		context({
+			method: "PUT",
+			body: { id: "sample-project", description: "Updated copy" },
+			origin: "https://dev.merulox.com",
+			kv,
+		}),
+	);
+	assert.equal(preservedResponse.status, 200);
+	assert.equal((await payload(preservedResponse)).state, "paused");
+	assert.equal(
+		JSON.parse(kv.values.get("project-description:sample-project")).state,
+		"paused",
+	);
+
+	const changedResponse = await onRequest(
+		context({
+			method: "PUT",
+			body: {
+				kind: "project",
+				id: "sample-project",
+				description: "Updated copy",
+				state: "dead",
+			},
+			origin: "https://dev.merulox.com",
+			kv,
+		}),
+	);
+	assert.equal(changedResponse.status, 200);
+	assert.equal((await payload(changedResponse)).state, "dead");
+	const published = await payload(
+		await onRequest(context({ host: "merulox.com", authenticated: false, kv })),
+	);
+	assert.equal(published.overrides["sample-project"].state, "dead");
+
+	const invalidResponse = await onRequest(
+		context({
+			method: "PUT",
+			body: {
+				kind: "project",
+				id: "sample-project",
+				description: "Should not publish",
+				state: "zombie",
+			},
+			origin: "https://dev.merulox.com",
+			kv,
+		}),
+	);
+	assert.equal(invalidResponse.status, 400);
+	assert.equal(
+		JSON.parse(kv.values.get("project-description:sample-project")).description,
+		"Updated copy",
 	);
 });
 
@@ -547,6 +615,19 @@ test("invalid kinds, candidate fields, JSON, content type, and body limits fail 
 		],
 		[
 			context({
+				method: "PUT",
+				body: {
+					kind: "project",
+					id: "sample-project",
+					description: "copy",
+					state: "zombie",
+				},
+				origin: "https://dev.merulox.com",
+			}),
+			400,
+		],
+		[
+			context({
 				method: "PATCH",
 				body: { id: "sample-project", action: "dismiss" },
 				origin: "https://dev.merulox.com",
@@ -619,7 +700,10 @@ test("archive source shares safe project and scheme editing without exposing con
 	assert.match(source, /Archive item collision/);
 	assert.match(source, /data-archive-kind="scheme"/);
 	assert.match(source, /data-scheme-id=\{id\}/);
-	assert.match(source, /<dd id=\{descriptionId\} class="scheme-description" data-archive-description>/);
+	assert.match(
+		source,
+		/<dd\s+id=\{descriptionId\}\s+class="scheme-description"\s+data-archive-description/,
+	);
 	assert.match(source, /id="archive-description-context"/);
 	assert.match(source, /window\.location\.hostname === "dev\.merulox\.com"/);
 	assert.match(source, /Scheduled review draft is ready\./);
@@ -640,9 +724,37 @@ test("archive source shares safe project and scheme editing without exposing con
 	assert.match(source, /candidateVersion/);
 	assert.match(source, /saveButton\.addEventListener\("click", async \(\) =>/);
 	assert.equal((source.match(/apiRequest\("PUT"/g) ?? []).length, 1);
+	assert.equal((source.match(/putArchive\(/g) ?? []).length, 2);
+	assert.match(source, /const archiveWriteQueues = new Map/);
+	assert.match(source, /const previous = archiveWriteQueues\.get\(key\)/);
+	assert.match(source, /typeof body === "function" \? body\(\) : body/);
+	assert.match(source, /state: activeStates\.get\(key\)/);
+	assert.match(source, /querySelectorAll<HTMLButtonElement>\("\.proj-move-button"\)/);
+	assert.match(source, /const currentOrder = currentSiblings\.indexOf\(item\)/);
+	assert.match(source, /order: currentOrder >= 0 \? currentOrder : index/);
+	assert.match(source, /const queueArchiveMutation =/);
+	assert.match(source, /const deleteArchive =/);
+	assert.match(source, /await deleteArchive\(record\.kind, record\.id\)/);
+	assert.match(source, /candidate\.busy/);
+	assert.match(source, /button\.disabled = listBusy/);
+	assert.match(
+		source,
+		/document\.querySelectorAll<HTMLElement>\("\.proj-list"\)\.forEach/,
+	);
 	assert.match(source, /apiRequest\("PATCH"/);
 	assert.match(source, /apiRequest\("DELETE"/);
 	assert.match(source, /output\.textContent = description/);
+	assert.match(source, /stateLabel\.textContent = "Status"/);
+	assert.match(source, /state: stateSelect\.value/);
+	assert.match(source, /const applyState =/);
+	assert.match(source, /applyState\(record, override\.state\)/);
+	assert.match(source, /"dead"/);
+	assert.match(source, /const activeStates = new Map/);
+	assert.match(source, /const restoreEditorSelections =/);
+	assert.equal(
+		(source.match(/restoreEditorSelections\(record, editor\)/g) ?? []).length,
+		2,
+	);
 	assert.doesNotMatch(source, /\.innerHTML\s*=/);
 	assert.doesNotMatch(source, /dataset\.evidence/);
 	assert.doesNotMatch(source, /repositories:/);
@@ -651,6 +763,24 @@ test("archive source shares safe project and scheme editing without exposing con
 	const data = await readFile(new URL("../src/data/projects.ts", import.meta.url), "utf8");
 	assert.equal((data.match(/\n\s*github:/g) ?? []).length, 3);
 	assert.equal((data.match(/\n\s*repositories:/g) ?? []).length, 0);
+	for (const retained of [
+		"Wedding planning workbook",
+		"Mon Artisan local-demand brokerage",
+		"Early token launch intelligence",
+		"Aave liquidation searcher",
+		"Trace Supply data brokerage",
+	]) {
+		assert.match(data, new RegExp(`name: "${retained}"`));
+	}
+	for (const discarded of [
+		"Permissioned short-form clipping",
+		"Contractor missed-lead recovery kit",
+		"Contractor estimate-follow-up kit",
+		"Med-spa missed-inquiry recovery kit",
+		"AI implementation brokerage",
+	]) {
+		assert.doesNotMatch(data, new RegExp(`name: "${discarded}"`));
+	}
 
 	const wrangler = await readFile(new URL("../wrangler.toml", import.meta.url), "utf8");
 	assert.equal((wrangler.match(/binding = "PROJECT_DESCRIPTION_OVERRIDES"/g) ?? []).length, 2);

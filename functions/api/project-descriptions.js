@@ -15,6 +15,15 @@ const ITEM_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CANDIDATE_VERSION_PATTERN = /^[A-Za-z0-9._:-]{1,100}$/;
 const KINDS = new Set(["project", "scheme"]);
 const VALID_TIERS = new Set(["!!!", "!!", "!"]);
+const VALID_STATES = new Set([
+	"active",
+	"prototype",
+	"research",
+	"paused",
+	"dead",
+	"failed",
+	"archived",
+]);
 
 function json(body, status = 200, extraHeaders = {}) {
 	return new Response(JSON.stringify(body), {
@@ -185,6 +194,9 @@ function normalizedDescription(stored) {
 	}
 	if (typeof stored.order === "number" && Number.isFinite(stored.order)) {
 		result.order = stored.order;
+	}
+	if (typeof stored.state === "string" && VALID_STATES.has(stored.state)) {
+		result.state = stored.state;
 	}
 	return result;
 }
@@ -379,8 +391,9 @@ async function handlePut(context) {
 	const description = boundedString(body.description, "description", MAX_DESCRIPTION);
 	let tier;
 	let order;
+	let state;
 	let existing;
-	if (body.tier === undefined || body.order === undefined) {
+	if (body.tier === undefined || body.order === undefined || body.state === undefined) {
 		existing = await kv.get(`${prefixFor(kind)}${body.id}`, "json");
 	}
 	if (body.tier !== undefined) {
@@ -399,10 +412,26 @@ async function handlePut(context) {
 	} else if (existing && typeof existing.order === "number" && Number.isFinite(existing.order)) {
 		order = existing.order;
 	}
+	if (body.state !== undefined) {
+		if (typeof body.state !== "string" || !VALID_STATES.has(body.state)) {
+			throw new RequestError(
+				"state must be one of active, prototype, research, paused, dead, failed, archived",
+				400,
+			);
+		}
+		state = body.state;
+	} else if (
+		existing &&
+		typeof existing.state === "string" &&
+		VALID_STATES.has(existing.state)
+	) {
+		state = existing.state;
+	}
 	const updatedAt = new Date().toISOString();
 	const record = { description, updatedAt };
 	if (tier) record.tier = tier;
 	if (order !== undefined) record.order = order;
+	if (state) record.state = state;
 	await kv.put(`${prefixFor(kind)}${body.id}`, JSON.stringify(record));
 	let candidateCleared = null;
 	if (body.clearCandidate === true && candidateVersion) {
@@ -421,6 +450,7 @@ async function handlePut(context) {
 		description,
 		tier: tier ?? null,
 		order: order ?? null,
+		state: state ?? null,
 		updatedAt,
 		candidateCleared,
 	});
