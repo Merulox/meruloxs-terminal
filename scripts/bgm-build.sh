@@ -13,6 +13,9 @@ cd "$ROOT_DIR"
 SRC_DIR="${BGM_SRC_DIR:-audio}"
 OUT_DIR="${BGM_OUT_DIR:-public/audio}"
 BITRATE="${BGM_BITRATE:-160k}"
+TARGET_I="${BGM_LOUDNESS_I:--16}"
+TARGET_TP="${BGM_LOUDNESS_TP:--1.5}"
+TARGET_LRA="${BGM_LOUDNESS_LRA:-11}"
 
 declare -A TITLES=(
 	[gym-class-v2]="Gym Class"
@@ -64,12 +67,41 @@ while IFS= read -r -d '' source_file; do
 	seen_slugs[$slug]="$source_file"
 
 	encoded_file="$build_dir/.encoded-${#manifest_entries[@]}.mp3"
+	analysis_file="$build_dir/.loudness-${#manifest_entries[@]}.json"
 	offset="${START_OFFSET[$slug]:-0}"
-	if ! ffmpeg -y -nostdin -loglevel error -ss "$offset" -i "$source_file" \
-		-vn -b:a "$BITRATE" -ar 44100 "$encoded_file"; then
-		echo "failed to convert: $source_file" >&2
+	if ! ffmpeg -y -nostdin -hide_banner -loglevel info -ss "$offset" -i "$source_file" \
+		-vn -af "loudnorm=I=$TARGET_I:TP=$TARGET_TP:LRA=$TARGET_LRA:print_format=json" \
+		-f null - 2>&1 | sed -n '/^{/,/^}/p' > "$analysis_file"; then
+		echo "failed to measure loudness: $source_file" >&2
 		exit 1
 	fi
+
+	# shellcheck disable=SC2016 # JavaScript template literal, not shell expansion.
+	mapfile -t loudness < <(node -e '
+		const fs = require("node:fs");
+		const measurement = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+		for (const key of ["input_i", "input_tp", "input_lra", "input_thresh", "target_offset"]) {
+			const value = Number(measurement[key]);
+			if (!Number.isFinite(value)) throw new Error(`invalid loudness ${key}: ${measurement[key]}`);
+			console.log(measurement[key]);
+		}
+	' "$analysis_file")
+	if [[ "${#loudness[@]}" -ne 5 ]]; then
+		echo "incomplete loudness measurement: $source_file" >&2
+		exit 1
+	fi
+
+	loudnorm_filter="loudnorm=I=$TARGET_I:TP=$TARGET_TP:LRA=$TARGET_LRA"
+	loudnorm_filter+=":measured_I=${loudness[0]}:measured_TP=${loudness[1]}"
+	loudnorm_filter+=":measured_LRA=${loudness[2]}:measured_thresh=${loudness[3]}"
+	loudnorm_filter+=":offset=${loudness[4]}:linear=true:print_format=summary"
+	if ! ffmpeg -y -nostdin -hide_banner -loglevel error -ss "$offset" -i "$source_file" \
+		-vn -af "$loudnorm_filter" -b:a "$BITRATE" -ar 44100 -map_metadata -1 "$encoded_file"; then
+		echo "failed to normalize and convert: $source_file" >&2
+		exit 1
+	fi
+	rm -f "$analysis_file"
+	echo "normalized: $slug ${loudness[0]} LUFS -> $TARGET_I LUFS"
 
 	content_hash=$(sha256sum "$encoded_file" | cut -d' ' -f1)
 	output_name="${content_hash:0:20}.mp3"

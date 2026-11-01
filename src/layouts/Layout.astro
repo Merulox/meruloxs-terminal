@@ -62,6 +62,15 @@ const navItems = customNavItems ?? defaultNavItems;
 			crossorigin
 		/>
 		<ClientRouter />
+		<style is:global>
+			#bgm-prev,
+			#bgm-toggle,
+			#bgm-next,
+			#bgm-volume {
+				position: relative;
+				z-index: 1;
+			}
+		</style>
 	</head>
 	<body>
 		<audio id="bgm-audio" preload="auto" autoplay muted transition:persist></audio>
@@ -499,11 +508,18 @@ const navItems = customNavItems ?? defaultNavItems;
 					volume: HTMLInputElement | null;
 				};
 			};
-			function shuffledSlugs(tracks: BgmTrack[]): string[] {
+			function shuffledSlugs(
+				tracks: BgmTrack[],
+				avoidFirstSlug?: string,
+			): string[] {
 				const slugs = tracks.map((t) => t.slug);
 				for (let i = slugs.length - 1; i > 0; i--) {
 					const j = Math.floor(Math.random() * (i + 1));
 					[slugs[i], slugs[j]] = [slugs[j], slugs[i]];
+				}
+				if (slugs.length > 1 && slugs[0] === avoidFirstSlug) {
+					const swapIndex = 1 + Math.floor(Math.random() * (slugs.length - 1));
+					[slugs[0], slugs[swapIndex]] = [slugs[swapIndex], slugs[0]];
 				}
 				return slugs;
 			}
@@ -514,8 +530,11 @@ const navItems = customNavItems ?? defaultNavItems;
 					const parsed = JSON.parse(raw) as BgmState;
 					if (
 						!Array.isArray(parsed.order) ||
-						parsed.order.length !== validSlugs.length ||
-						!parsed.order.every((s) => validSlugs.includes(s))
+						!Number.isInteger(parsed.index) ||
+						parsed.index < 0 ||
+						parsed.index >= parsed.order.length ||
+						!validSlugs.includes(parsed.order[parsed.index]) ||
+						typeof parsed.playing !== "boolean"
 					) {
 						return null;
 					}
@@ -650,11 +669,19 @@ const navItems = customNavItems ?? defaultNavItems;
 
 					const bySlug = new Map(tracks.map((t) => [t.slug, t]));
 					const slugs = tracks.map((t) => t.slug);
-					const state: BgmState = readBgmState(slugs) ?? {
-						order: shuffledSlugs(tracks),
+					const previousState = readBgmState(slugs);
+					const previousSlug = previousState
+						? previousState.order[previousState.index]
+						: undefined;
+					// A hard reload creates a fresh audio element, so start a new
+					// shuffled session and never repeat the prior current track.
+					// Client-side Astro navigation still returns through host._bgm
+					// above and preserves the currently playing element untouched.
+					const state: BgmState = {
+						order: shuffledSlugs(tracks, previousSlug),
 						index: 0,
 						currentTime: 0,
-						playing: true,
+						playing: previousState?.playing ?? true,
 					};
 					writeBgmState(state);
 

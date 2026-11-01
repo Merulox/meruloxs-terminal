@@ -8,7 +8,9 @@ import test from "node:test";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const builder = join(repoRoot, "scripts", "bgm-build.sh");
+const moodboardBuilder = join(repoRoot, "scripts", "moodboard-build.sh");
 const refresher = join(repoRoot, "scripts", "moodboard-auto-refresh.sh");
+const layout = join(repoRoot, "src", "layouts", "Layout.astro");
 
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "bgm-build-test-"));
@@ -16,7 +18,7 @@ function fixture() {
   mkdirSync(join(root, "public"), { recursive: true });
   execFileSync("ffmpeg", [
     "-y", "-nostdin", "-loglevel", "error",
-    "-f", "lavfi", "-i", "sine=frequency=440:duration=0.15",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
     "-q:a", "9", join(root, "audio", "quoted-\"track.mp3"),
   ]);
   writeFileSync(join(root, "audio", "quoted-\"track.txt"), "non-audio sidecar\n");
@@ -35,6 +37,18 @@ function outputSnapshot(root) {
   const output = join(root, "public", "audio");
   const names = readdirSync(output).sort();
   return names.map((name) => [name, readFileSync(join(output, name)).toString("base64")]);
+}
+
+function measureLoudness(file) {
+  const measured = spawnSync("ffmpeg", [
+    "-hide_banner", "-nostats", "-i", file,
+    "-af", "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json",
+    "-f", "null", "-",
+  ], { encoding: "utf8" });
+  assert.equal(measured.status, 0, measured.stderr);
+  const json = measured.stderr.match(/\{\s*"input_i"[\s\S]*?\}/)?.[0];
+  assert.ok(json, `missing loudness JSON for ${file}`);
+  return JSON.parse(json);
 }
 
 test("audio build publishes valid content-addressed outputs transactionally", () => {
@@ -58,6 +72,33 @@ test("audio build publishes valid content-addressed outputs transactionally", ()
   }
 });
 
+test("audio build normalizes quiet and loud inputs to the same perceived level", { timeout: 60_000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), "bgm-loudness-test-"));
+  try {
+    mkdirSync(join(root, "audio"), { recursive: true });
+    mkdirSync(join(root, "public"), { recursive: true });
+    for (const [name, volume] of [["quiet", "0.05"], ["loud", "1.0"]]) {
+      execFileSync("ffmpeg", [
+        "-y", "-nostdin", "-loglevel", "error",
+        "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+        "-af", `volume=${volume}`,
+        "-q:a", "9", join(root, "audio", `${name}.mp3`),
+      ]);
+    }
+
+    const result = runBuilder(root);
+    assert.equal(result.status, 0, result.stderr);
+    const manifest = JSON.parse(readFileSync(join(root, "public", "audio", "manifest.json"), "utf8"));
+    assert.equal(manifest.length, 2);
+    const levels = manifest.map((track) =>
+      Number(measureLoudness(join(root, "public", track.src)).input_i));
+    assert.ok(levels.every((level) => Math.abs(level - (-16)) <= 0.7), `levels=${levels}`);
+    assert.ok(Math.max(...levels) - Math.min(...levels) <= 0.4, `spread=${levels}`);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("failed conversion preserves the previously published directory", () => {
   const root = fixture();
   try {
@@ -70,7 +111,7 @@ test("failed conversion preserves the previously published directory", () => {
     writeFileSync(join(fakeBin, "ffmpeg"), "#!/usr/bin/env bash\nexit 42\n", { mode: 0o755 });
     const failed = runBuilder(root, { PATH: `${fakeBin}:${process.env.PATH}` });
     assert.notEqual(failed.status, 0);
-    assert.match(failed.stderr, /failed to convert/);
+    assert.match(failed.stderr, /failed to (measure loudness|normalize and convert)/);
     assert.deepEqual(outputSnapshot(root), before, "failed build changed published output");
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -102,8 +143,32 @@ test("asset refresher serializes, isolates, scopes, and receipts publication", (
   assert.match(source, /git -C "\$worktree" add -- public\/moodboard\//);
   assert.match(source, /MERULOX_ASSET_AUTODEPLOY_DRY_RUN/);
   assert.match(source, /source changed during build; deferring/);
+  assert.match(source, /sha256sum scripts\/bgm-build\.sh/);
+  assert.match(source, /sha256sum scripts\/moodboard-build\.sh/);
+  assert.match(source, /BGM_LOUDNESS_I/);
+  assert.match(source, /BGM_LOUDNESS_TP/);
+  assert.match(source, /BGM_LOUDNESS_LRA/);
   assert.ok(source.indexOf("deploy_commit") < source.indexOf('write_state "$audio_state_file"'));
   assert.ok(source.indexOf("git -C \"$worktree\" push") < source.indexOf("deploy_commit \"$candidate_commit\""));
+});
+
+test("hard reload reshuffles away from the prior track while SPA navigation persists", () => {
+  const source = readFileSync(layout, "utf8");
+  assert.match(source, /const previousState = readBgmState\(slugs\)/);
+  assert.match(source, /previousState\.order\[previousState\.index\]/);
+  assert.match(source, /order: shuffledSlugs\(tracks, previousSlug\)/);
+  assert.match(source, /playing: previousState\?\.playing \?\? true/);
+  assert.match(source, /if \(slugs\.length > 1 && slugs\[0\] === avoidFirstSlug\)/);
+  assert.match(source, /if \(host\._bgm\)[\s\S]*bindResumeUi\(host\._bgm\)/);
+  assert.doesNotMatch(source, /const state: BgmState = readBgmState\(slugs\) \?\?/);
+  assert.match(source, /validSlugs\.includes\(parsed\.order\[parsed\.index\]\)/);
+  assert.doesNotMatch(source, /parsed\.order\.length !== validSlugs\.length/);
+});
+
+test("music controls sit above the expanded hover target", () => {
+  const source = readFileSync(layout, "utf8");
+  assert.match(source, /#bgm-prev,[\s\S]*#bgm-toggle,[\s\S]*#bgm-next,[\s\S]*#bgm-volume/);
+  assert.match(source, /position: relative;[\s\S]*z-index: 1;/);
 });
 
 test("audio-only refresher publishes from a worktree, receipts success, and ignores mtime-only retriggers", { timeout: 60_000 }, () => {
@@ -130,6 +195,7 @@ test("audio-only refresher publishes from a worktree, receipts success, and igno
     mkdirSync(state);
     mkdirSync(production);
     cpSync(builder, join(seed, "scripts", "bgm-build.sh"));
+    cpSync(moodboardBuilder, join(seed, "scripts", "moodboard-build.sh"));
     cpSync(refresher, join(seed, "scripts", "moodboard-auto-refresh.sh"));
     writeFileSync(join(seed, ".gitignore"), "/audio/\n/moodboard/\n/dist/\n/node_modules/\n");
     writeFileSync(join(seed, "package.json"), "{\"scripts\":{\"build\":\"true\"}}\n");
@@ -148,11 +214,11 @@ test("audio-only refresher publishes from a worktree, receipts success, and igno
     mkdirSync(join(seed, "moodboard"));
     execFileSync("ffmpeg", [
       "-y", "-nostdin", "-loglevel", "error",
-      "-f", "lavfi", "-i", "sine=frequency=523:duration=0.15",
+      "-f", "lavfi", "-i", "sine=frequency=523:duration=2",
       "-q:a", "9", join(seed, "audio", "fixture.mp3"),
     ]);
     const moodHash = execFileSync("bash", ["-c",
-      "find moodboard -type f -printf '%p %s %T@\\n' 2>/dev/null | sort | sha256sum | cut -d' ' -f1",
+      "{ find moodboard -type f -printf '%p %s %T@\\n' 2>/dev/null | sort; printf 'builder\\0'; sha256sum scripts/moodboard-build.sh; } | sha256sum | cut -d' ' -f1",
     ], { cwd: seed, encoding: "utf8" }).trim();
     writeFileSync(join(state, "moodboard-source.sha256"), `${moodHash}\n`);
 
@@ -224,6 +290,20 @@ esac
     assert.equal(second.status, 0, second.stderr);
     assert.equal(git(["--git-dir", remote, "rev-parse", "main"]), remoteHead);
     assert.equal(readFileSync(deployLog, "utf8"), "deploy\n", "mtime-only trigger redeployed");
+
+    const targetChanged = spawnSync("bash", [join(seed, "scripts", "moodboard-auto-refresh.sh")], {
+      cwd: seed,
+      env: { ...env, BGM_LOUDNESS_I: "-18" },
+      encoding: "utf8",
+    });
+    assert.equal(targetChanged.status, 0, `${targetChanged.stdout}\n${targetChanged.stderr}`);
+    const targetHead = git(["--git-dir", remote, "rev-parse", "main"]);
+    assert.notEqual(targetHead, remoteHead, "target-only loudness change did not rebuild");
+    assert.equal(readFileSync(deployLog, "utf8"), "deploy\ndeploy\n");
+    const targetManifest = JSON.parse(readFileSync(join(production, "audio", "manifest.json"), "utf8"));
+    assert.notEqual(targetManifest[0].src, remoteManifest[0].src);
+    const targetLevel = Number(measureLoudness(join(production, targetManifest[0].src)).input_i);
+    assert.ok(Math.abs(targetLevel - (-18)) <= 0.7, `targetLevel=${targetLevel}`);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

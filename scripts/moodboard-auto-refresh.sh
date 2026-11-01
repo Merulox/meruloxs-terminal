@@ -33,6 +33,11 @@ audio_hash() {
 			printf '%s\0' "$source_file"
 			sha256sum "$source_file"
 		done < <(find audio -type f -print0 | sort -z)
+		printf 'builder\0'
+		sha256sum scripts/bgm-build.sh
+		printf 'loudness_i=%s\0' "${BGM_LOUDNESS_I:--16}"
+		printf 'loudness_tp=%s\0' "${BGM_LOUDNESS_TP:--1.5}"
+		printf 'loudness_lra=%s\0' "${BGM_LOUDNESS_LRA:-11}"
 	) | sha256sum | cut -d' ' -f1
 }
 
@@ -42,6 +47,8 @@ moodboard_hash() {
 	(
 		cd "$root"
 		find moodboard -type f -printf '%p %s %T@\n' 2>/dev/null | sort
+		printf 'builder\0'
+		sha256sum scripts/moodboard-build.sh
 	) | sha256sum | cut -d' ' -f1
 }
 
