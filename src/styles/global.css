@@ -1295,6 +1295,12 @@ h2 {
 	font-family: "DejaVu Sans Mono", "Noto Sans Mono", sans-serif;
 }
 
+@media (max-width: 1000px) {
+	.bgm-track {
+		display: none;
+	}
+}
+
 @media (max-width: 760px) {
 	.home-shortcuts-btn {
 		display: none;
@@ -1308,9 +1314,6 @@ h2 {
 	}
 	.home-now-playing {
 		max-width: 150px;
-	}
-	.bgm-track {
-		display: none;
 	}
 	.bgm-volume {
 		display: none;
