@@ -1,4 +1,6 @@
 [
-  {"slug":"ether","title":"Éther tune","artist":"Takeshi Kobayashi & Yui Makino","src":"/audio/ether.mp3"},
-  {"slug":"gym-class-v2","title":"Gym Class","artist":"Lil Peep","src":"/audio/gym-class-v2.mp3"}
+  {"slug":"ether","title":"Éther tune","artist":"Takeshi Kobayashi & Yui Makino","src":"/audio/5c1a5a4f2c77693aefcc.mp3"},
+  {"slug":"gym-class-v2","title":"Gym Class","artist":"Lil Peep","src":"/audio/6c8dbaf1224eee9e54d9.mp3"},
+  {"slug":"sleeper","title":"Sleeper","artist":"","src":"/audio/d075f154b845f1fb0078.mp3"},
+  {"slug":"Who Is She","title":"Who Is She","artist":"","src":"/audio/46b8bd5b6d2495466f9f.mp3"}
 ]
