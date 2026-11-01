@@ -61,6 +61,24 @@ const navItems = customNavItems ?? defaultNavItems;
 			type="font/woff2"
 			crossorigin
 		/>
+		<script is:inline>
+			(() => {
+				// Pick a background once per hard load, never the same as last time;
+				// re-apply after ClientRouter swaps replace <html> attributes.
+				const options = ["bayer", "halftone", "grain", "wires", "pole", "monitors"];
+				if (!window.__meruloxBg) {
+					let last = "";
+					try { last = sessionStorage.getItem("merulox-bg") || ""; } catch {}
+					const pool = options.filter((o) => o !== last);
+					window.__meruloxBg = pool[Math.floor(Math.random() * pool.length)];
+					try { sessionStorage.setItem("merulox-bg", window.__meruloxBg); } catch {}
+					document.addEventListener("astro:after-swap", () => {
+						document.documentElement.dataset.bg = window.__meruloxBg;
+					});
+				}
+				document.documentElement.dataset.bg = window.__meruloxBg;
+			})();
+		</script>
 		<ClientRouter />
 		<style is:global>
 			#bgm-prev,
