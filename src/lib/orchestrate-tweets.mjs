@@ -4,7 +4,7 @@
 
 const toTime = (tweet) => Date.parse(tweet.timestamp ?? "") || 0;
 
-export function orchestrateTweets(input) {
+export function orchestrateTweets(input, { limit = Infinity } = {}) {
 	const replies = new Map();
 	const roots = [];
 	const urls = new Set(input.map((tweet) => tweet.url));
@@ -33,7 +33,14 @@ export function orchestrateTweets(input) {
 	const ordered = roots.slice().sort(newestFirst).flatMap(collect);
 	// Anything unreachable from a root (a reply cycle) is still shown rather than dropped.
 	const orphans = input.filter((tweet) => !seen.has(tweet.url)).sort(newestFirst).flatMap(collect);
-	return [...ordered, ...orphans];
+	const all = [...ordered, ...orphans];
+	if (all.length <= limit) return all;
+	// Cap by whole conversations: never cut between a parent and its replies.
+	const shown = new Set(all.map((tweet) => tweet.url));
+	const isRoot = (tweet) => !(tweet.isReply && tweet.replyToUrl && shown.has(tweet.replyToUrl) && tweet.replyToUrl !== tweet.url);
+	let end = limit;
+	while (end < all.length && !isRoot(all[end])) end += 1;
+	return all.slice(0, end);
 }
 
 // Full-size variant of an X media URL for the lightbox.

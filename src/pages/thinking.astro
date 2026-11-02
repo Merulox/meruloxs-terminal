@@ -23,11 +23,8 @@ type Tweet = {
 	media?: string[];
 };
 
-const byNewest = (a: Tweet, b: Tweet) => (Date.parse(b.timestamp ?? "") || 0) - (Date.parse(a.timestamp ?? "") || 0);
 const tweets = orchestrateTweets(((tweetData.tweets ?? []) as Tweet[])
-	.filter((tweet) => tweet.text && tweet.url)
-	.sort(byNewest)
-	.slice(0, 300));
+	.filter((tweet) => tweet.text && tweet.url), { limit: 300 });
 const ownTweetUrls = new Set(tweets.map((tweet) => tweet.url));
 const TWEET_PAGE_SIZE = 100;
 
@@ -588,7 +585,7 @@ function hasReplyContext(tweet: Tweet) {
 		}
 
 		function renderLiveTweets(input: any[]) {
-			const tweets = orchestrateTweets(input.filter((tweet) => tweet?.text && tweet?.url).sort((a, b) => (Date.parse(b.timestamp ?? "") || 0) - (Date.parse(a.timestamp ?? "")  || 0)).slice(0, 300));
+			const tweets = orchestrateTweets(input.filter((tweet) => tweet?.text && tweet?.url), { limit: 300 });
 			const ownUrls = new Set(tweets.map((tweet) => tweet.url));
 			const container = document.getElementById("tweets-container")!;
 			container.innerHTML = tweets.map((tweet, index) => {

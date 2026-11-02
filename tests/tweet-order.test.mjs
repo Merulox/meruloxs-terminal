@@ -26,3 +26,15 @@ test("self-threads stay attached regardless of time gaps and cycles cannot loop"
 test("full-size media URL requests the large jpg variant", () => {
 	assert.equal(fullSizeMediaUrl("https://pbs.twimg.com/media/abc?format=jpg&name=medium"), "https://pbs.twimg.com/media/abc?format=jpg&name=large");
 });
+
+test("display cap never separates a reply from its parent conversation", () => {
+	const feed = [];
+	for (let i = 0; i < 6; i += 1) feed.push(post(100 + i, `2026-10-${10 + i}T00:00:00Z`));
+	// Old parent just outside the cap by time, but its reply is the newest item.
+	const parent = post(1, "2026-09-01T00:00:00Z");
+	const child = post(2, "2026-11-01T00:00:00Z", { isReply: true, replyToUrl: parent.url });
+	const result = orchestrateTweets([...feed, parent, child], { limit: 3 });
+	const urls = result.map((t) => t.url);
+	assert.equal(urls.includes(child.url), urls.includes(parent.url));
+	assert.ok(result.length >= 3);
+});
