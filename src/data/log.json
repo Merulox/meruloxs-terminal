@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-01",
+  "generated": "2026-11-02",
   "entries": [
+    {
+      "date": "2026-11-01",
+      "kind": "ship",
+      "text": "Most of the day went into Launch Intel: I wrote my own decoder for pump.fun and PumpSwap on-chain activity so the project no longer relies on a third-party feed, added frozen, versioned wallet cohorts with a watcher and a Wallets tab, and started a free wallet dataset that has to clear a quality gate before I pay for a bigger data stream. The harvester also became a supervised continuous service that stops safely when disk space runs low. On Boréal, I added a branded agreement that can be signed and exported as a PDF, and the dev panel's Implementation tab now does setup work that used to need manual steps. I also closed a CyberOps milestone after rehearsing a real upgrade and restore of the schema changes."
+    },
     {
       "date": "2026-10-31",
       "kind": "ship",
