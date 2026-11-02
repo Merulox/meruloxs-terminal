@@ -97,3 +97,27 @@ test("dev-authenticated requests can toggle public tweet visibility", async () =
   assert.equal(response.status, 200);
   assert.equal(state.visible, false);
 });
+
+test("ingest canonicalizes stored /photo/1 URLs and repairs timestamps that disagree with the status id", async () => {
+	const id = "2065085476126486737";
+	let state = {
+		tweets: [{ text: "old", url: `https://x.com/merulox/status/${id}/photo/1`, timestamp: "2020-01-01T00:00:00Z", date: "2020-01-01", threadResolved: true, threadVersion: 6 }],
+		tombstones: [],
+		updatedAt: 1,
+	};
+	const kv = { async get() { return structuredClone(state); }, async put(_k, v) { state = JSON.parse(v); } };
+	const originalFetch = globalThis.fetch;
+	globalThis.fetch = async () => new Response("", { status: 404 });
+	try {
+		const response = await onRequestPost(requestContext(kv, "POST", { tweets: [
+			{ text: "new", url: "https://x.com/merulox/status/2113439957830500584", timestamp: "2026-10-23T01:18:46Z", threadResolved: true, threadVersion: 6 },
+		] }));
+		assert.equal(response.status, 200);
+		const repaired = state.tweets.filter((tweet) => tweet.url.includes(id));
+		assert.equal(repaired.length, 1);
+		assert.equal(repaired[0].url, `https://x.com/merulox/status/${id}`);
+		assert.equal(repaired[0].timestamp.slice(0, 7), "2026-06");
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});

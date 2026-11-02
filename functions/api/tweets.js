@@ -42,6 +42,40 @@ function normalizeTweetUrl(value) {
 	return match ? `https://x.com/${match[1]}/status/${match[2]}` : null;
 }
 
+function snowflakeTime(url) {
+	const id = url.match(/\/status\/(\d+)/)?.[1];
+	if (!id) return null;
+	try {
+		const ms = Number((BigInt(id) >> 22n) + 1288834974657n);
+		return ms > Date.UTC(2012, 0, 1) && ms < Date.now() + 86_400_000 ? ms : null;
+	} catch {
+		return null;
+	}
+}
+
+// The status id encodes the true creation time; repair stored times that materially disagree.
+function repairTimestamp(post) {
+	const created = snowflakeTime(post.url);
+	if (!created) return post;
+	const stored = Date.parse(post.timestamp ?? "");
+	if (Number.isNaN(stored) || Math.abs(stored - created) > 3_600_000) {
+		const timestamp = new Date(created).toISOString();
+		return { ...post, timestamp, date: timestamp.slice(0, 10) };
+	}
+	return post;
+}
+
+// Canonicalize stored URLs (e.g. ".../status/ID/photo/1") and merge duplicates.
+function repairStored(posts) {
+	const byUrl = new Map();
+	for (const post of posts) {
+		const url = normalizeTweetUrl(post?.url);
+		if (!url) continue;
+		byUrl.set(url, repairTimestamp({ ...(byUrl.get(url) ?? {}), ...post, url }));
+	}
+	return Array.from(byUrl.values());
+}
+
 function tombstoneUrls(stored) {
 	return new Set((stored?.tombstones ?? []).map((item) => item?.url).filter(Boolean));
 }
@@ -77,7 +111,7 @@ function normalizePost(post) {
 		const replyThread = post.replyThread.slice(0, 5).map(normalizePost).filter(Boolean);
 		if (replyThread.length) normalized.replyThread = replyThread;
 	}
-	return normalized;
+	return repairTimestamp(normalized);
 }
 
 function standalonePost(post) {
@@ -180,7 +214,7 @@ export async function onRequestPost(context) {
 	const resolvedIncoming = await Promise.all(incoming.map(resolveThread));
 	let publishableCount = 0;
 	const payload = await mutateStore(context, (stored) => {
-		const existing = Array.isArray(stored?.tweets) ? stored.tweets : [];
+		const existing = repairStored(Array.isArray(stored?.tweets) ? stored.tweets : []);
 		const tombstones = Array.isArray(stored?.tombstones) ? stored.tombstones : [];
 		const deletedUrls = tombstoneUrls(stored);
 		const existingByUrl = new Map(existing.map((tweet) => [tweet.url, tweet]));
