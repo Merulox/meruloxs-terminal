@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import tweetData from "../data/tweets.json";
+import { orchestrateTweets, fullSizeMediaUrl } from "../lib/orchestrate-tweets.mjs";
 
 type ThreadPost = {
 	text: string;
@@ -22,48 +23,10 @@ type Tweet = {
 	media?: string[];
 };
 
-function orchestrateTweets(input: Tweet[]) {
-	const replies = new Map<string, Tweet[]>();
-	const roots: Tweet[] = [];
-	const urls = new Set(input.map((tweet) => tweet.url));
-	const inputOrder = new Map(input.map((tweet, index) => [tweet.url, index]));
-	const timestamp = (tweet: Tweet) => Date.parse(tweet.timestamp ?? "") || 0;
-
-	for (const tweet of input) {
-		if (tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl)) {
-			replies.set(tweet.replyToUrl, [...(replies.get(tweet.replyToUrl) ?? []), tweet]);
-		} else {
-			roots.push(tweet);
-		}
-	}
-
-	for (const children of replies.values()) {
-		children.sort((a, b) => timestamp(a) - timestamp(b) || (inputOrder.get(a.url) ?? 0) - (inputOrder.get(b.url) ?? 0));
-	}
-
-	const collectThread = (tweet: Tweet): Tweet[] => [
-		tweet,
-		...(replies.get(tweet.url) ?? []).flatMap(collectThread),
-	];
-	const chronological = (a: Tweet, b: Tweet) => {
-		const timeDifference = timestamp(a) - timestamp(b);
-		if (timeDifference) return timeDifference;
-		if (a.replyToUrl === b.url) return 1;
-		if (b.replyToUrl === a.url) return -1;
-		return (inputOrder.get(a.url) ?? 0) - (inputOrder.get(b.url) ?? 0);
-	};
-
-	return roots
-		.map((root) => {
-			const thread = collectThread(root).sort(chronological);
-			return { thread, latest: Math.max(...thread.map(timestamp)) };
-		})
-		.sort((a, b) => b.latest - a.latest || (inputOrder.get(a.thread[0].url) ?? 0) - (inputOrder.get(b.thread[0].url) ?? 0))
-		.flatMap(({ thread }) => thread);
-}
-
+const byNewest = (a: Tweet, b: Tweet) => (Date.parse(b.timestamp ?? "") || 0) - (Date.parse(a.timestamp ?? "") || 0);
 const tweets = orchestrateTweets(((tweetData.tweets ?? []) as Tweet[])
 	.filter((tweet) => tweet.text && tweet.url)
+	.sort(byNewest)
 	.slice(0, 300));
 const ownTweetUrls = new Set(tweets.map((tweet) => tweet.url));
 const TWEET_PAGE_SIZE = 100;
@@ -267,11 +230,60 @@ function hasReplyContext(tweet: Tweet) {
 		font-style: italic;
 	}
 	.tweet-media {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
+		display: grid;
+		gap: 4px;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		margin-top: 8px;
+		max-width: 360px;
 	}
+	.tweet-media-1 {
+		grid-template-columns: minmax(0, 1fr);
+		max-width: 300px;
+	}
+	.tweet-media-item {
+		aspect-ratio: 1;
+		background: #0b0b0b;
+		cursor: zoom-in;
+		display: block;
+		overflow: hidden;
+	}
+	.tweet-media-1 .tweet-media-item {
+		aspect-ratio: auto;
+		max-height: 300px;
+	}
+	.tweet-media-3 .tweet-media-item:first-child {
+		aspect-ratio: auto;
+		grid-row: span 2;
+	}
+	.tweet-lightbox {
+		align-items: center;
+		background: rgba(0, 0, 0, 0.92);
+		display: flex;
+		inset: 0;
+		justify-content: center;
+		position: fixed;
+		z-index: 10000;
+	}
+	.tweet-lightbox[hidden] {
+		display: none;
+	}
+	.tweet-lightbox img {
+		max-height: 92vh;
+		max-width: 94vw;
+		object-fit: contain;
+	}
+	.tweet-lightbox button {
+		background: rgba(0, 0, 0, 0.5);
+		border: 0;
+		color: #ddd;
+		cursor: pointer;
+		font: 22px/1 "SFMono-Regular", Consolas, monospace;
+		padding: 12px 16px;
+		position: absolute;
+	}
+	.tweet-lightbox .lb-close { right: 8px; top: 8px; }
+	.tweet-lightbox .lb-prev { left: 8px; top: 50%; }
+	.tweet-lightbox .lb-next { right: 8px; top: 50%; }
 	.tweet-content {
 		min-width: 0;
 	}
@@ -298,10 +310,15 @@ function hasReplyContext(tweet: Tweet) {
 		opacity: 0.35;
 	}
 	.tweet-img {
-		border: 1px solid #1d1d1d;
-		max-height: 240px;
-		max-width: 300px;
+		display: block;
+		height: 100%;
 		object-fit: cover;
+		width: 100%;
+	}
+	.tweet-media-1 .tweet-img {
+		height: auto;
+		max-height: 300px;
+		object-fit: contain;
 	}
 	@media (max-width: 600px) {
 		.tweets-viewport {
@@ -374,9 +391,9 @@ function hasReplyContext(tweet: Tweet) {
 												<p style="font-size:13px;max-width:58ch;color:var(--text);margin:0">{tweet.text}</p>
 											</a>
 											{tweet.media && tweet.media.length > 0 && (
-												<div class="tweet-media">
-													{tweet.media.map((url) => (
-														<a href={tweet.url} target="_blank" rel="noopener">
+												<div class={`tweet-media tweet-media-${Math.min(tweet.media.length, 4)}`} data-tweet-url={tweet.url}>
+													{tweet.media.slice(0, 4).map((url, mediaIndex) => (
+														<a class="tweet-media-item" href={fullSizeMediaUrl(url)} data-full={fullSizeMediaUrl(url)} data-index={mediaIndex} target="_blank" rel="noopener">
 															<img src={url} alt="" loading="lazy" class="tweet-img" />
 														</a>
 													))}
@@ -428,6 +445,7 @@ function hasReplyContext(tweet: Tweet) {
 	</section>
 
 	<script>
+		import { orchestrateTweets, fullSizeMediaUrl } from "../lib/orchestrate-tweets.mjs";
 		let thinkingAbort: AbortController | null = null;
 		let tweetPollInterval: ReturnType<typeof window.setInterval> | null = null;
 
@@ -556,39 +574,6 @@ function hasReplyContext(tweet: Tweet) {
 				.replaceAll("'", "&#39;");
 		}
 
-		function orchestrateLiveTweets(input: any[]) {
-			const replies = new Map<string, any[]>();
-			const roots: any[] = [];
-			const urls = new Set(input.map((tweet) => tweet.url));
-			const inputOrder = new Map(input.map((tweet, index) => [tweet.url, index]));
-			const timestamp = (tweet: any) => Date.parse(tweet.timestamp ?? "") || 0;
-			for (const tweet of input) {
-				if (tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl)) {
-					replies.set(tweet.replyToUrl, [...(replies.get(tweet.replyToUrl) ?? []), tweet]);
-				} else {
-					roots.push(tweet);
-				}
-			}
-			for (const children of replies.values()) {
-				children.sort((a, b) => timestamp(a) - timestamp(b) || (inputOrder.get(a.url) ?? 0) - (inputOrder.get(b.url) ?? 0));
-			}
-			const collect = (tweet: any): any[] => [tweet, ...(replies.get(tweet.url) ?? []).flatMap(collect)];
-			const chronological = (a: any, b: any) => {
-				const timeDifference = timestamp(a) - timestamp(b);
-				if (timeDifference) return timeDifference;
-				if (a.replyToUrl === b.url) return 1;
-				if (b.replyToUrl === a.url) return -1;
-				return (inputOrder.get(a.url) ?? 0) - (inputOrder.get(b.url) ?? 0);
-			};
-			return roots
-				.map((root) => {
-					const thread = collect(root).sort(chronological);
-					return { thread, latest: Math.max(...thread.map(timestamp)) };
-				})
-				.sort((a, b) => b.latest - a.latest || (inputOrder.get(a.thread[0].url) ?? 0) - (inputOrder.get(b.thread[0].url) ?? 0))
-				.flatMap(({ thread }) => thread);
-		}
-
 		function formatLiveTweetTimestamp(tweet: any) {
 			if (!tweet.timestamp) return tweet.date ?? "";
 			return new Intl.DateTimeFormat("en-CA", {
@@ -603,7 +588,7 @@ function hasReplyContext(tweet: Tweet) {
 		}
 
 		function renderLiveTweets(input: any[]) {
-			const tweets = orchestrateLiveTweets(input.filter((tweet) => tweet?.text && tweet?.url).slice(0, 300));
+			const tweets = orchestrateTweets(input.filter((tweet) => tweet?.text && tweet?.url).sort((a, b) => (Date.parse(b.timestamp ?? "") || 0) - (Date.parse(a.timestamp ?? "")  || 0)).slice(0, 300));
 			const ownUrls = new Set(tweets.map((tweet) => tweet.url));
 			const container = document.getElementById("tweets-container")!;
 			container.innerHTML = tweets.map((tweet, index) => {
@@ -623,9 +608,9 @@ function hasReplyContext(tweet: Tweet) {
 						${tweet.replyTo ? ` → ${escapeHtml(tweet.replyTo)}` : ""}
 					</p>` : "";
 				const media = Array.isArray(tweet.media) && tweet.media.length ? `
-					<div class="tweet-media">
-						${tweet.media.map((url: string) => `
-							<a href="${escapeHtml(tweet.url)}" target="_blank" rel="noopener">
+					<div class="tweet-media tweet-media-${Math.min(tweet.media.length, 4)}" data-tweet-url="${escapeHtml(tweet.url)}">
+						${tweet.media.slice(0, 4).map((url: string, mediaIndex: number) => `
+							<a class="tweet-media-item" href="${escapeHtml(fullSizeMediaUrl(url))}" data-full="${escapeHtml(fullSizeMediaUrl(url))}" data-index="${mediaIndex}" target="_blank" rel="noopener">
 								<img src="${escapeHtml(url)}" alt="" loading="lazy" class="tweet-img">
 							</a>`).join("")}
 					</div>` : "";
@@ -754,6 +739,51 @@ function hasReplyContext(tweet: Tweet) {
 			}
 		}
 
+		function openTweetLightbox(urls: string[], start: number) {
+			let index = start;
+			let box = document.getElementById("tweet-lightbox");
+			if (!box) {
+				box = document.createElement("div");
+				box.id = "tweet-lightbox";
+				box.className = "tweet-lightbox";
+				box.hidden = true;
+				box.innerHTML = '<img alt=""><button class="lb-close" type="button" aria-label="Close">×</button><button class="lb-prev" type="button" aria-label="Previous">‹</button><button class="lb-next" type="button" aria-label="Next">›</button>';
+				document.body.appendChild(box);
+			}
+			const lightbox = box;
+			const image = lightbox.querySelector("img")!;
+			const show = () => {
+				image.src = urls[index];
+				(lightbox.querySelector(".lb-prev") as HTMLElement).hidden = urls.length < 2;
+				(lightbox.querySelector(".lb-next") as HTMLElement).hidden = urls.length < 2;
+			};
+			const step = (delta: number) => {
+				index = (index + delta + urls.length) % urls.length;
+				show();
+			};
+			const abort = new AbortController();
+			const close = () => {
+				lightbox.hidden = true;
+				image.removeAttribute("src");
+				abort.abort();
+			};
+			lightbox.addEventListener("click", (event) => {
+				const target = event.target as Element;
+				if (target.closest(".lb-prev")) step(-1);
+				else if (target.closest(".lb-next")) step(1);
+				else if (target !== image) close();
+				else if (urls.length > 1) step(1);
+			}, { signal: abort.signal });
+			document.addEventListener("keydown", (event) => {
+				if (event.key === "Escape") close();
+				else if (event.key === "ArrowLeft") step(-1);
+				else if (event.key === "ArrowRight") step(1);
+			}, { signal: abort.signal });
+			document.addEventListener("astro:before-swap", close, { signal: abort.signal, once: true });
+			lightbox.hidden = false;
+			show();
+		}
+
 		loadPosts();
 		const tweetsContainer = document.getElementById("tweets-container")!;
 		bindTweetDeleteButtons(tweetsContainer);
@@ -779,7 +809,15 @@ function hasReplyContext(tweet: Tweet) {
 		});
 		document.getElementById("tweets-viewport")?.addEventListener("scroll", updateTweetScrollHint, { passive: true });
 		document.getElementById("tweets-container")?.addEventListener("click", (event) => {
-			const button = (event.target as Element).closest<HTMLButtonElement>(".tweet-delete");
+			const target = event.target as Element;
+			const thumb = target.closest<HTMLAnchorElement>(".tweet-media-item");
+			if (thumb && !(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
+				event.preventDefault();
+				const group = Array.from(thumb.closest(".tweet-media")!.querySelectorAll<HTMLAnchorElement>(".tweet-media-item"));
+				openTweetLightbox(group.map((link) => link.dataset.full ?? link.href), group.indexOf(thumb));
+				return;
+			}
+			const button = target.closest<HTMLButtonElement>(".tweet-delete");
 			if (button) deleteTweet(button);
 		});
 		document.getElementById("tweet-visibility-toggle")?.addEventListener("click", (event) => {
