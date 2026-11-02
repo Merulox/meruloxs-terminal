@@ -54,3 +54,22 @@ export function fullSizeMediaUrl(url) {
 		return url;
 	}
 }
+
+// Page number for each tweet (in display order). A page only breaks before a conversation root,
+// so a conversation is never split across pages (pages may run slightly over `size`).
+export function assignPages(tweets, size) {
+	const urls = new Set(tweets.map((tweet) => tweet.url));
+	const pages = [];
+	let page = 0;
+	let count = 0;
+	for (const tweet of tweets) {
+		const isRoot = !(tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl) && tweet.replyToUrl !== tweet.url);
+		if (isRoot && count >= size) {
+			page += 1;
+			count = 0;
+		}
+		pages.push(page);
+		count += 1;
+	}
+	return pages;
+}

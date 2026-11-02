@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { orchestrateTweets, fullSizeMediaUrl } from "../src/lib/orchestrate-tweets.mjs";
+import { orchestrateTweets, fullSizeMediaUrl, assignPages } from "../src/lib/orchestrate-tweets.mjs";
 
 const post = (id, iso, extra = {}) => ({ text: `t${id}`, url: `https://x.com/merulox/status/${id}`, timestamp: iso, ...extra });
 
@@ -37,4 +37,11 @@ test("display cap never separates a reply from its parent conversation", () => {
 	const urls = result.map((t) => t.url);
 	assert.equal(urls.includes(child.url), urls.includes(parent.url));
 	assert.ok(result.length >= 3);
+});
+
+test("pagination breaks only before conversation roots", () => {
+	const mk = (i, extra = {}) => ({ text: `t${i}`, url: `https://x.com/merulox/status/${i}`, ...extra });
+	const feed = [mk(1), mk(2), mk(3, { isReply: true, replyToUrl: mk(2).url }), mk(4, { isReply: true, replyToUrl: mk(3).url }), mk(5)];
+	assert.deepEqual(assignPages(feed, 3), [0, 0, 0, 0, 1]);
+	assert.deepEqual(assignPages(feed, 2), [0, 0, 0, 0, 1]);
 });

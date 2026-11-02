@@ -1,7 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import tweetData from "../data/tweets.json";
-import { orchestrateTweets, fullSizeMediaUrl } from "../lib/orchestrate-tweets.mjs";
+import { orchestrateTweets, fullSizeMediaUrl, assignPages } from "../lib/orchestrate-tweets.mjs";
 
 type ThreadPost = {
 	text: string;
@@ -27,6 +27,8 @@ const tweets = orchestrateTweets(((tweetData.tweets ?? []) as Tweet[])
 	.filter((tweet) => tweet.text && tweet.url), { limit: 300 });
 const ownTweetUrls = new Set(tweets.map((tweet) => tweet.url));
 const TWEET_PAGE_SIZE = 100;
+const tweetPages = assignPages(tweets, TWEET_PAGE_SIZE);
+const tweetPageCount = Math.max(1, (tweetPages.at(-1) ?? 0) + 1);
 
 function formatTweetTimestamp(tweet: Tweet) {
 	if (!tweet.timestamp) return tweet.date;
@@ -364,7 +366,8 @@ function hasReplyContext(tweet: Tweet) {
 										},
 									]}
 									data-tweet-index={index}
-									hidden={index >= TWEET_PAGE_SIZE}
+									data-page={tweetPages[index]}
+									hidden={tweetPages[index] !== 0}
 								>
 									{externalReplyThread(tweet).length > 0 && (
 										<div class="reply-thread">
@@ -412,9 +415,9 @@ function hasReplyContext(tweet: Tweet) {
 			</div>
 		</div>
 		<script id="static-tweets" type="application/json" set:html={JSON.stringify(tweets).replaceAll("<", "\\u003c")} />
-		<nav class="tweet-pagination" id="tweet-pagination" aria-label="X post pages" hidden={tweets.length <= TWEET_PAGE_SIZE}>
+		<nav class="tweet-pagination" id="tweet-pagination" aria-label="X post pages" hidden={tweetPageCount <= 1}>
 			<button class="tweet-page-button" id="tweet-prev" type="button" aria-label="Previous X posts" title="Previous page">←</button>
-			<span class="tweet-page-status" id="tweet-page-status">1 / {Math.max(1, Math.ceil(tweets.length / TWEET_PAGE_SIZE))}</span>
+			<span class="tweet-page-status" id="tweet-page-status">1 / {tweetPageCount}</span>
 			<button class="tweet-page-button" id="tweet-next" type="button" aria-label="Next X posts" title="Next page">→</button>
 		</nav>
 		<a
@@ -442,7 +445,7 @@ function hasReplyContext(tweet: Tweet) {
 	</section>
 
 	<script>
-		import { orchestrateTweets, fullSizeMediaUrl } from "../lib/orchestrate-tweets.mjs";
+		import { orchestrateTweets, fullSizeMediaUrl, assignPages } from "../lib/orchestrate-tweets.mjs";
 		let thinkingAbort: AbortController | null = null;
 		let tweetPollInterval: ReturnType<typeof window.setInterval> | null = null;
 
@@ -588,6 +591,7 @@ function hasReplyContext(tweet: Tweet) {
 			const tweets = orchestrateTweets(input.filter((tweet) => tweet?.text && tweet?.url), { limit: 300 });
 			const ownUrls = new Set(tweets.map((tweet) => tweet.url));
 			const container = document.getElementById("tweets-container")!;
+			const pages = assignPages(tweets, TWEET_PAGE_SIZE);
 			container.innerHTML = tweets.map((tweet, index) => {
 				const externalThread = (tweet.replyThread ?? []).filter((post: any) => !ownUrls.has(post.url));
 				const hasReplyContext = tweet.isReply === true && Boolean(tweet.replyToUrl);
@@ -612,7 +616,7 @@ function hasReplyContext(tweet: Tweet) {
 							</a>`).join("")}
 					</div>` : "";
 				return `
-					<article class="work-item tweet-item${hasReplyContext ? " is-reply" : ""}${externalThread.length ? " has-external-thread" : ""}" data-tweet-index="${index}">
+					<article class="work-item tweet-item${hasReplyContext ? " is-reply" : ""}${externalThread.length ? " has-external-thread" : ""}" data-tweet-index="${index}" data-page="${pages[index]}">
 						${thread}
 						<header class="item-header">
 							<div class="tweet-content">
@@ -652,11 +656,12 @@ function hasReplyContext(tweet: Tweet) {
 
 		function setupTweetPagination(container: HTMLElement) {
 			const items = Array.from(container.querySelectorAll<HTMLElement>(".tweet-item"));
-			const pageCount = Math.max(1, Math.ceil(items.length / TWEET_PAGE_SIZE));
+			const pageOf = (item: HTMLElement, index: number) => Number(item.dataset.page ?? Math.floor(index / TWEET_PAGE_SIZE));
+			const pageCount = Math.max(1, ...items.map((item, index) => pageOf(item, index) + 1));
 			currentTweetPage = Math.min(currentTweetPage, pageCount - 1);
 
 			for (const [index, item] of items.entries()) {
-				item.hidden = Math.floor(index / TWEET_PAGE_SIZE) !== currentTweetPage;
+				item.hidden = pageOf(item, index) !== currentTweetPage;
 			}
 
 			const pagination = document.getElementById("tweet-pagination")!;
