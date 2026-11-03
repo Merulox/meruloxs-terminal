@@ -350,6 +350,30 @@ export const archiveProjects: Project[] = [
 		tags: ["Python", "FastAPI", "PostgreSQL", "Next.js", "WebSocket"],
 	},
 	{
+		name: "Launch Lab",
+		tier: "!!",
+		state: "research",
+		date: "2026-10–now",
+		description:
+			"A read-only Solana launch research lab measuring whether early token, attention, and wallet signals remain useful after realistic delays and trading costs.",
+		role: "Built token and attention collectors, wallet-cohort tracking, append-only evidence stores, and a private research dashboard with source-health monitoring.",
+		impact:
+			"Separates observable launch activity from evidence of a usable trading signal before committing capital.",
+		archiveDescription:
+			"A lab for watching new Solana tokens, the attention around them, and the wallets involved — then asking whether any of it is useful once real delays and costs count.",
+		present:
+			"The private dashboard and collectors are built, and data collection is underway. It's a research tool, not a trading bot: it doesn't place orders, and a working pipeline isn't proof of a profitable strategy.",
+		vision:
+			"Find out whether any early launch signal survives the latency, fees, and liquidity I'd actually face — and keep the failed ideas as carefully as the promising ones.",
+		frontier:
+			"Build enough reliable data to test signals prospectively, without confusing historical discovery, wallet activity, or attention with an edge that survives costs.",
+		proof: [
+			{ label: "Private research dashboard (authentication required)", href: "https://launch.merulox.com" },
+			{ label: "Read-only collectors and wallet-cohort evidence" },
+		],
+		tags: ["Python", "SQLite", "Solana", "WebSocket", "Market research"],
+	},
+	{
 		name: "The Trader",
 		tier: "!!",
 		state: "research",
