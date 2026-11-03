@@ -45,3 +45,28 @@ test("pagination breaks only before conversation roots", () => {
 	assert.deepEqual(assignPages(feed, 3), [0, 0, 0, 0, 1]);
 	assert.deepEqual(assignPages(feed, 2), [0, 0, 0, 0, 1]);
 });
+
+test("saved outside-account intermediaries keep old conversations together across caps and pages", () => {
+	const root = post(1, "2026-06-01T00:00:00Z");
+	const intermediary = { ...post(2, "2026-06-02T00:00:00Z"), url: "https://x.com/other/status/2" };
+	const child = post(3, "2026-07-01T00:00:00Z", {
+		isReply: true, replyToUrl: intermediary.url, replyThread: [root, intermediary],
+	});
+	const unrelated = post(4, "2026-06-15T00:00:00Z");
+	const input = [child, root, unrelated];
+	const ordered = orchestrateTweets(input);
+	assert.deepEqual(ordered.map(t => t.text), ["t4", "t1", "t3"]);
+	assert.equal(ordered[2].replyToUrl, intermediary.url, "real direct parent is unchanged");
+	assert.deepEqual(assignPages(ordered, 2), [0, 0, 0]);
+	assert.equal(orchestrateTweets(input, { limit: 2 }).length, 3);
+	assert.equal(orchestrateTweets(input, { limit: 1 }).length, 1);
+});
+
+test("stale ancestor context cannot attach a reply to an unrelated conversation", () => {
+	const root = post(1, "2026-06-01T00:00:00Z");
+	const child = post(3, "2026-07-01T00:00:00Z", {
+		isReply: true, replyToUrl: "https://x.com/other/status/99",
+		replyThread: [root, post(2, "2026-06-02T00:00:00Z")],
+	});
+	assert.deepEqual(orchestrateTweets([root, child]).map(t => t.text), ["t3", "t1"]);
+});

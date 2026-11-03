@@ -546,6 +546,8 @@ async function mergeObservedTweets(scrapedTweets) {
 const X_SCREEN_NAME = "merulox";
 const REPLY_LOOKBACK_DAYS = 21;
 const MAX_REPLY_VISITS = 8;
+const MAX_HISTORY_SCROLLS = 40;
+const MAX_HISTORY_TWEETS = 1000;
 
 function snowflakeIso(id) {
 	try {
@@ -698,6 +700,28 @@ async function waitFor(predicate, timeoutMs, stepMs = 400) {
 	return predicate();
 }
 
+async function captureTimelineHistory(tabId) {
+	let unchanged = 0;
+	let rounds = 0;
+	while (rounds < MAX_HISTORY_SCROLLS && capture.timeline.size < MAX_HISTORY_TWEETS && unchanged < 3) {
+		const before = capture.timeline.size;
+		// Only the disposable inactive tab is scrolled. X makes its own paginated
+		// requests; never activate, reload, or navigate a user's existing tab.
+		await chrome.scripting.executeScript({
+			target: { tabId },
+			func: () => window.scrollTo(0, (document.scrollingElement ?? document.documentElement).scrollHeight),
+		});
+		await waitFor(() => capture.timeline.size > before, 4000);
+		unchanged = capture.timeline.size > before ? 0 : unchanged + 1;
+		rounds += 1;
+	}
+	await log.info("capture", "historical timeline scan finished", {
+		tweets: capture.timeline.size,
+		rounds,
+		stop: unchanged >= 3 ? "no-new-tweets" : "capture-limit",
+	});
+}
+
 // Opens X in a background tab (never activated, never touching your tabs), lets X's app load the
 // timeline and recent conversations, and returns what it received.
 async function captureFromBackgroundTab(previousReplies) {
@@ -711,6 +735,7 @@ async function captureFromBackgroundTab(previousReplies) {
 		await waitFor(() => capture.timelines > 0, 30_000);
 		if (!capture.timelines) throw new Error("X app made no timeline request in the background tab (not logged in, or page blocked)");
 		await new Promise((r) => setTimeout(r, 2500));
+		await captureTimelineHistory(tab.id);
 		await log.info("capture", "timeline captured", { tweets: capture.timeline.size });
 
 		const cutoff = Date.now() - REPLY_LOOKBACK_DAYS * 86_400_000;
@@ -854,7 +879,11 @@ async function performTweetPush(tweets) {
 	for (const tweet of tweets) {
 		const prior = cachedByUrl.get(tweet.url);
 		if (prior?.threadSource === "x-graphql" && tweet.threadSource !== "x-graphql") {
-			ready.push({ ...tweet, ...prior, text: tweet.text });
+			const thread = Object.fromEntries(
+				["threadResolved", "threadVersion", "threadSource", "isReply", "replyTo", "replyToUrl", "replyThread"]
+					.map((key) => [key, prior[key] ?? null]),
+			);
+			ready.push({ ...tweet, ...thread });
 			continue;
 		}
 		if (tweet.threadResolved && tweet.threadVersion === THREAD_RESOLVER_VERSION) {

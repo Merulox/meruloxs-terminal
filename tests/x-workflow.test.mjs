@@ -121,3 +121,187 @@ test("ingest canonicalizes stored /photo/1 URLs and repairs timestamps that disa
 		globalThis.fetch = originalFetch;
 	}
 });
+
+function tweetStore(tweets = []) {
+  let state = { tweets, tombstones: [], updatedAt: 1 };
+  const kv = {
+    async get() { return structuredClone(state); },
+    async put(_key, value) { state = JSON.parse(value); },
+  };
+  return {
+    get tweets() { return state.tweets; },
+    async ingest(tweet) {
+      const tweets = Array.isArray(tweet) ? tweet : [tweet];
+      const response = await onRequestPost(requestContext(kv, "POST", { tweets }));
+      assert.equal(response.status, 200);
+      return response.json();
+    },
+  };
+}
+
+const parentUrl = "https://x.com/parent/status/10";
+const resolvedReply = {
+  text: "reply",
+  url: urls.stale,
+  threadResolved: true,
+  threadVersion: 6,
+  isReply: true,
+  replyTo: "@parent",
+  replyToUrl: parentUrl,
+  replyThread: [{ text: "parent context", url: parentUrl }],
+};
+const standalone = { text: "standalone", url: urls.stale, threadResolved: true, threadVersion: 6 };
+
+test("manual corrected reply survives cached source-less v6 standalone pushes", async () => {
+  const store = tweetStore();
+  await store.ingest(standalone);
+  await store.ingest({ ...resolvedReply, threadSource: "user-confirmed" });
+  assert.equal(store.tweets[0].threadSource, "user-confirmed");
+  await store.ingest({ ...standalone, text: "fresh content from cached thread classification" });
+  assert.equal(store.tweets[0].isReply, true);
+  assert.equal(store.tweets[0].replyToUrl, parentUrl);
+  assert.equal(store.tweets[0].threadSource, "user-confirmed");
+  assert.deepEqual(store.tweets[0].replyThread, resolvedReply.replyThread);
+  assert.equal(store.tweets[0].text, "fresh content from cached thread classification");
+});
+
+test("complete legacy replies survive DOM standalone records at the same or newer version", async () => {
+  for (const threadVersion of [5, 6]) {
+    const store = tweetStore([{ ...resolvedReply, threadVersion }]);
+    await store.ingest(standalone);
+    assert.equal(store.tweets[0].isReply, true);
+    assert.equal(store.tweets[0].replyToUrl, parentUrl);
+    assert.equal(store.tweets[0].threadVersion, threadVersion);
+    assert.deepEqual(store.tweets[0].replyThread, resolvedReply.replyThread);
+  }
+});
+
+test("thread source enum survives normalization while unknown sources grant no authority", async () => {
+  for (const threadSource of ["reply-context", "x-graphql", "user-confirmed"]) {
+    const store = tweetStore();
+    await store.ingest({ ...resolvedReply, threadSource, replyToUrl: "https://twitter.com/parent/status/10/photo/1?x=1" });
+    assert.equal(store.tweets[0].threadSource, threadSource);
+    assert.equal(store.tweets[0].replyToUrl, parentUrl);
+  }
+  for (const threadSource of ["dom", "toString", "__proto__"]) {
+    const store = tweetStore([resolvedReply]);
+    await store.ingest({ ...standalone, threadSource });
+    assert.equal(store.tweets[0].threadSource, undefined);
+    assert.equal(store.tweets[0].replyToUrl, parentUrl);
+  }
+});
+
+test("equal or stronger explicit authoritative standalone corrections clear all reply fields", async () => {
+  const sources = [undefined, "reply-context", "x-graphql", "user-confirmed"];
+  for (let priorRank = 0; priorRank < sources.length; priorRank++) {
+    for (let incomingRank = Math.max(1, priorRank); incomingRank < sources.length; incomingRank++) {
+      const store = tweetStore([{ ...resolvedReply, threadSource: sources[priorRank] }]);
+      await store.ingest({ ...standalone, threadSource: sources[incomingRank] });
+      assert.equal(store.tweets[0].threadSource, sources[incomingRank]);
+      assert.equal(store.tweets[0].threadResolved, true);
+      for (const field of ["isReply", "replyTo", "replyToUrl", "replyThread"]) {
+        assert.equal(store.tweets[0][field], undefined, field);
+      }
+    }
+  }
+});
+
+test("weaker sources and older versions cannot overwrite stronger thread metadata", async () => {
+  const sources = [undefined, "reply-context", "x-graphql", "user-confirmed"];
+  for (let priorRank = 1; priorRank < sources.length; priorRank++) {
+    for (let incomingRank = 0; incomingRank < priorRank; incomingRank++) {
+      const prior = { ...resolvedReply, threadSource: sources[priorRank] };
+      for (const correction of [standalone, { ...resolvedReply, replyToUrl: "https://x.com/other/status/11" }]) {
+        const store = tweetStore([prior]);
+        await store.ingest({ ...correction, threadVersion: 7, threadSource: sources[incomingRank] });
+        assert.equal(store.tweets[0].threadSource, prior.threadSource);
+        assert.equal(store.tweets[0].threadVersion, 6);
+        assert.equal(store.tweets[0].replyToUrl, parentUrl);
+        assert.deepEqual(store.tweets[0].replyThread, resolvedReply.replyThread);
+      }
+    }
+  }
+  for (const threadSource of sources) {
+    const store = tweetStore([{ ...resolvedReply, threadSource }]);
+    await store.ingest({ ...resolvedReply, threadSource, threadVersion: 5, replyToUrl: "https://x.com/other/status/11" });
+    assert.equal(store.tweets[0].threadVersion, 6);
+    assert.equal(store.tweets[0].replyToUrl, parentUrl);
+  }
+});
+
+test("thread protection still refreshes text, media, timestamp, date and author on unresolved input", async () => {
+  const prior = { ...resolvedReply, threadSource: "user-confirmed", author: "old", timestamp: "2026-11-01T00:00:00.000Z", date: "2026-11-01" };
+  const store = tweetStore([prior]);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("", { status: 404 });
+  try {
+    const fresh = {
+      text: "new text",
+      url: urls.stale,
+      author: "new author",
+      timestamp: "2026-11-02T00:00:00.000Z",
+      date: "2026-11-02",
+      media: ["https://pbs.twimg.com/media/new?format=jpg"],
+    };
+    const result = await store.ingest(fresh);
+    assert.equal(result.pending, 0);
+    for (const field of ["text", "author", "timestamp", "date", "media"]) {
+      assert.deepEqual(store.tweets[0][field], fresh[field], field);
+    }
+    for (const field of ["threadResolved", "threadVersion", "threadSource", "isReply", "replyTo", "replyToUrl", "replyThread"]) {
+      assert.deepEqual(store.tweets[0][field], prior[field], field);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("matching-parent context survives but changed-parent corrections discard stale context and handle", async () => {
+  const store = tweetStore([{ ...resolvedReply, threadSource: "x-graphql" }]);
+  const reply = { text: "refresh", url: urls.stale, threadResolved: true, threadVersion: 6, threadSource: "x-graphql", isReply: true };
+  await store.ingest({ ...reply, replyToUrl: "https://twitter.com/parent/status/10/photo/1" });
+  assert.deepEqual(store.tweets[0].replyThread, resolvedReply.replyThread);
+  assert.equal(store.tweets[0].replyTo, "@parent");
+  await store.ingest({ ...reply, replyToUrl: "https://x.com/other/status/11" });
+  assert.equal(store.tweets[0].replyToUrl, "https://x.com/other/status/11");
+  assert.equal(store.tweets[0].replyThread, undefined);
+  assert.equal(store.tweets[0].replyTo, undefined);
+  const context = [{ text: "new parent", url: "https://x.com/third/status/12" }];
+  await store.ingest({ ...reply, replyToUrl: context[0].url, replyThread: context });
+  assert.deepEqual(store.tweets[0].replyThread, context);
+});
+
+test("incomplete legacy false-positive reply remains clearable by a v6 standalone", async () => {
+  const { replyToUrl, replyThread, ...incomplete } = resolvedReply;
+  const store = tweetStore([{ ...incomplete, threadVersion: 5 }]);
+  await store.ingest(standalone);
+  assert.equal(store.tweets[0].threadVersion, 6);
+  assert.equal(store.tweets[0].threadResolved, true);
+  assert.equal(store.tweets[0].isReply, undefined);
+  assert.equal(store.tweets[0].replyTo, undefined);
+});
+
+test("invalid parent URLs do not make unresolved replies publishable", async () => {
+  const store = tweetStore();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("", { status: 404 });
+  try {
+    const result = await store.ingest({ ...resolvedReply, replyToUrl: "https://evil.invalid/status/10" });
+    assert.equal(result.pending, 1);
+    assert.deepEqual(store.tweets, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("a later weak duplicate in one batch cannot undo an authoritative standalone correction", async () => {
+  const store = tweetStore([{ ...resolvedReply, threadSource: "user-confirmed" }]);
+  await store.ingest([
+    { ...standalone, threadSource: "user-confirmed" },
+    { ...standalone, text: "latest text" },
+  ]);
+  assert.equal(store.tweets[0].isReply, undefined);
+  assert.equal(store.tweets[0].replyToUrl, undefined);
+  assert.equal(store.tweets[0].threadSource, "user-confirmed");
+  assert.equal(store.tweets[0].text, "latest text");
+});

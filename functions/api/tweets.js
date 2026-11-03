@@ -3,6 +3,8 @@ const MAX_TWEETS = 1000;
 const MAX_TOMBSTONES = 2000;
 const MAX_BODY = 1_000_000;
 const SCHEMA_VERSION = 6;
+const THREAD_SOURCES = ["reply-context", "x-graphql", "user-confirmed"];
+const THREAD_FIELDS = ["threadResolved", "threadVersion", "threadSource", "isReply", "replyTo", "replyToUrl", "replyThread"];
 
 const headers = {
 	"Content-Type": "application/json",
@@ -87,6 +89,7 @@ function normalizePost(post) {
 	if (!text || !url) return null;
 
 	const timestamp = cleanString(post.timestamp, 40);
+	const replyToUrl = normalizeTweetUrl(post.replyToUrl);
 	const normalized = {
 		text,
 		url,
@@ -95,9 +98,10 @@ function normalizePost(post) {
 		...(cleanString(post.author, 100) ? { author: cleanString(post.author, 100) } : {}),
 		...(post.threadResolved === true ? { threadResolved: true } : {}),
 		...(Number.isInteger(post.threadVersion) ? { threadVersion: post.threadVersion } : {}),
+		...(THREAD_SOURCES.includes(post.threadSource) ? { threadSource: post.threadSource } : {}),
 		...(post.isReply === true ? { isReply: true } : {}),
 		...(cleanString(post.replyTo, 200) ? { replyTo: cleanString(post.replyTo, 200) } : {}),
-		...(cleanString(post.replyToUrl, 500) ? { replyToUrl: cleanString(post.replyToUrl, 500) } : {}),
+		...(replyToUrl ? { replyToUrl } : {}),
 	};
 
 	if (Array.isArray(post.media)) {
@@ -155,18 +159,41 @@ async function resolveThread(post) {
 	}
 }
 
+function mergePost(prior, incoming) {
+	const priorRank = THREAD_SOURCES.indexOf(prior.threadSource) + 1;
+	const incomingRank = THREAD_SOURCES.indexOf(incoming.threadSource) + 1;
+	const completeReply = prior.threadResolved === true && prior.isReply === true && Boolean(normalizeTweetUrl(prior.replyToUrl));
+	const preserveThread = prior.threadResolved === true && (
+		!isPublishable(incoming)
+		|| incomingRank < priorRank
+		|| (incoming.threadVersion ?? 0) < (prior.threadVersion ?? 0)
+		|| (completeReply && incoming.isReply !== true && incomingRank === 0)
+	);
+	const merged = { ...prior, ...incoming };
+	// Authority applies only to thread metadata, never to fresh post content.
+	for (const field of THREAD_FIELDS) delete merged[field];
+	const thread = preserveThread ? prior : incoming;
+	for (const field of THREAD_FIELDS) {
+		if (thread[field] !== undefined) merged[field] = thread[field];
+	}
+	if (merged.isReply === true) {
+		const parent = normalizeTweetUrl(merged.replyToUrl);
+		if (parent) merged.replyToUrl = parent;
+		const sameParent = parent && prior.isReply === true && parent === normalizeTweetUrl(prior.replyToUrl);
+		if (!preserveThread && sameParent) {
+			if (!merged.replyTo && prior.replyTo) merged.replyTo = prior.replyTo;
+			if (!merged.replyThread && prior.replyThread) merged.replyThread = prior.replyThread;
+		}
+	} else if (merged.threadResolved === true) {
+		for (const field of ["isReply", "replyTo", "replyToUrl", "replyThread"]) delete merged[field];
+	}
+	return merged;
+}
+
 function mergeTweets(existing, incoming) {
 	const byUrl = new Map(existing.map((tweet) => [tweet.url, tweet]));
 	for (const tweet of incoming) {
-		const prior = byUrl.get(tweet.url) ?? {};
-		const base = tweet.threadResolved === true && tweet.isReply !== true
-			? standalonePost(prior)
-			: prior;
-		byUrl.set(tweet.url, {
-			...base,
-			...tweet,
-			...(prior.threadResolved === true && tweet.threadResolved !== true ? prior : {}),
-		});
+		byUrl.set(tweet.url, mergePost(byUrl.get(tweet.url) ?? {}, tweet));
 	}
 	return Array.from(byUrl.values())
 		.sort((a, b) => Date.parse(b.timestamp ?? b.date ?? 0) - Date.parse(a.timestamp ?? a.date ?? 0))
@@ -220,7 +247,9 @@ export async function onRequestPost(context) {
 		const existingByUrl = new Map(existing.map((tweet) => [tweet.url, tweet]));
 		const authoritativeIncoming = resolvedIncoming.map((tweet) => {
 			const prior = existingByUrl.get(tweet.url);
-			return prior?.threadResolved === true && tweet.threadResolved !== true ? prior : tweet;
+			const merged = mergePost(prior ?? {}, tweet);
+			existingByUrl.set(tweet.url, merged);
+			return merged;
 		});
 		const publishable = authoritativeIncoming.filter((tweet) => isPublishable(tweet) && !deletedUrls.has(tweet.url));
 		publishableCount = publishable.length;

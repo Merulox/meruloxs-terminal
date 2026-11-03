@@ -1,8 +1,23 @@
-// Groups replies under their parent post (explicit replyToUrl only) and orders the feed.
+// Groups replies using explicit parent links and their saved ancestor chains.
 // Ordering is strictly by each conversation root's own timestamp, newest first, so a fresh
 // reply never drags an old post to the top. Inside a conversation, posts run oldest -> newest.
 
 const toTime = (tweet) => Date.parse(tweet.timestamp ?? "") || 0;
+
+function conversationParentUrl(tweet, urls) {
+	if (!tweet.isReply || !tweet.replyToUrl || tweet.replyToUrl === tweet.url) return null;
+	if (urls.has(tweet.replyToUrl)) return tweet.replyToUrl;
+	// An outside-account reply may exist only in saved context, not as a feed
+	// item. Attach to the nearest present ancestor without changing the real
+	// direct reply target. Ignore context from a different/stale parent.
+	const chain = tweet.replyThread;
+	if (!Array.isArray(chain) || chain.at(-1)?.url !== tweet.replyToUrl) return null;
+	for (let i = chain.length - 1; i >= 0; i -= 1) {
+		const url = chain[i]?.url;
+		if (url !== tweet.url && urls.has(url)) return url;
+	}
+	return null;
+}
 
 export function orchestrateTweets(input, { limit = Infinity } = {}) {
 	const replies = new Map();
@@ -11,8 +26,9 @@ export function orchestrateTweets(input, { limit = Infinity } = {}) {
 	const inputOrder = new Map(input.map((tweet, index) => [tweet.url, index]));
 
 	for (const tweet of input) {
-		if (tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl) && tweet.replyToUrl !== tweet.url) {
-			replies.set(tweet.replyToUrl, [...(replies.get(tweet.replyToUrl) ?? []), tweet]);
+		const parent = conversationParentUrl(tweet, urls);
+		if (parent) {
+			replies.set(parent, [...(replies.get(parent) ?? []), tweet]);
 		} else {
 			roots.push(tweet);
 		}
@@ -37,7 +53,7 @@ export function orchestrateTweets(input, { limit = Infinity } = {}) {
 	if (all.length <= limit) return all;
 	// Cap by whole conversations: never cut between a parent and its replies.
 	const shown = new Set(all.map((tweet) => tweet.url));
-	const isRoot = (tweet) => !(tweet.isReply && tweet.replyToUrl && shown.has(tweet.replyToUrl) && tweet.replyToUrl !== tweet.url);
+	const isRoot = (tweet) => !conversationParentUrl(tweet, shown);
 	let end = limit;
 	while (end < all.length && !isRoot(all[end])) end += 1;
 	return all.slice(0, end);
@@ -63,7 +79,7 @@ export function assignPages(tweets, size) {
 	let page = 0;
 	let count = 0;
 	for (const tweet of tweets) {
-		const isRoot = !(tweet.isReply && tweet.replyToUrl && urls.has(tweet.replyToUrl) && tweet.replyToUrl !== tweet.url);
+		const isRoot = !conversationParentUrl(tweet, urls);
 		if (isRoot && count >= size) {
 			page += 1;
 			count = 0;

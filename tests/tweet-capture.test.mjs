@@ -77,3 +77,51 @@ test('missing public metadata does not prove a post is standalone', async () => 
  const h = harness();
  assert.equal(await vm.runInContext(`resolveThreadViaApi('${url(child)}')`, h.context), null);
 });
+
+test('protected thread metadata does not overwrite fresh media or timestamps', async () => {
+ const h = harness();
+ await h.message({ action: 'xGraphql', op: 'UserTweets', json: timeline([graphTweet(child, parent)]) });
+ const fresh = { url: url(child), text: 'fresh', timestamp: '2026-11-02T16:37:43Z', date: '2026-11-02',
+  author: '@merulox', media: ['https://pbs.twimg.com/media/new.jpg'] };
+ await h.message({ action: 'pushTweets', tweets: [fresh] });
+ const actual = h.sent.at(-1).tweets[0];
+ assert.equal(actual.replyToUrl, url(parent));
+ assert.equal(actual.timestamp, fresh.timestamp);
+ assert.deepEqual(actual.media, fresh.media);
+});
+
+test('historical scan captures older batches only in its disposable tab and stops after three empty rounds', async () => {
+ const h = harness(); const targets = [];
+ h.context.chrome.scripting = { executeScript: async ({ target, func }) => {
+  targets.push(target.tabId);
+  const height = 12000 + targets.length * 6000;
+  let reachedBottom = false;
+  vm.runInNewContext(`(${func.toString()})()`, {
+   document: { scrollingElement: { scrollHeight: height } },
+   window: { scrollTo(x, y) { assert.equal(x, 0); assert.equal(y, height); reachedBottom = true; } },
+  });
+  assert.equal(reachedBottom, true, 'request the page bottom, not a few viewport steps');
+  if (targets.length <= 2) {
+   h.context.batch = timeline([graphTweet(String(BigInt(child) - BigInt(targets.length)), parent)]);
+   vm.runInContext('collectTimelineTweets(batch, capture.timeline, {})', h.context);
+  }
+ } };
+ vm.runInContext('waitFor = async predicate => predicate()', h.context);
+ await vm.runInContext('captureTimelineHistory(42)', h.context);
+ assert.deepEqual(targets, [42, 42, 42, 42, 42]);
+ assert.equal(vm.runInContext('capture.timeline.size', h.context), 2);
+ assert.equal(h.tabCalls.length, 0);
+});
+
+test('historical scan has a hard round limit even if every batch adds tweets', async () => {
+ const h = harness(); let rounds = 0;
+ h.context.chrome.scripting = { executeScript: async () => {
+  rounds += 1;
+  h.context.batch = timeline([graphTweet(String(BigInt(child) - BigInt(rounds)), parent)]);
+  vm.runInContext('collectTimelineTweets(batch, capture.timeline, {})', h.context);
+ } };
+ vm.runInContext('waitFor = async predicate => predicate()', h.context);
+ await vm.runInContext('captureTimelineHistory(42)', h.context);
+ assert.equal(rounds, 40);
+ assert.equal(h.tabCalls.length, 0);
+});
