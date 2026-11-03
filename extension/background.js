@@ -15,6 +15,7 @@ const LOG_KEY = "tweet_seeder_logs";
 const LOG_LIMIT = 60;
 let activeFetch = null;
 let activeMutation = Promise.resolve();
+let activeTweetPush = Promise.resolve();
 let activeDeleteProcess = null;
 
 // Shared ingest secret for the local receiver. Lives in config.local.js (gitignored)
@@ -327,7 +328,8 @@ async function resolveThreadViaApi(tweetUrl) {
   if (!response.ok) return null;
 
   const current = (await response.json()).tweet;
-  if (!current?.replying_to_status) {
+  if (!current?.id || String(current.id) !== statusId) return null;
+  if (!current.replying_to_status) {
     return {
       threadResolved: true,
       threadVersion: THREAD_RESOLVER_VERSION,
@@ -514,7 +516,8 @@ async function mergeObservedTweets(scrapedTweets) {
 	const observedTweets = stored[OBSERVED_KEY]?.tweets ?? [];
 	const merged = new Map();
 
-	for (const tweet of [...scrapedTweets, ...observedTweets]) {
+	// Passive observations first; authoritative API records override them.
+	for (const tweet of [...observedTweets, ...scrapedTweets]) {
 		if (!tweet?.url || !tweet?.text) continue;
 		const prior = merged.get(tweet.url);
 		merged.set(tweet.url, {
@@ -534,85 +537,241 @@ async function mergeObservedTweets(scrapedTweets) {
 	return {
 		tweets: Array.from(merged.values())
 			.sort((a, b) => timestamp(b) - timestamp(a))
-			.slice(0, 100),
+			.slice(0, 1000),
 		observedCount: observedTweets.length,
 		observedAt: stored[OBSERVED_KEY]?.updatedAt ?? null,
 	};
 }
 
-async function runFetchViaTab() {
-	// Always use a disposable hidden tab so collection never scrolls the user's tab.
-	const [previousActiveTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-	const tab = await chrome.tabs.create({ url: PROFILE_URL, active: false });
-	const tabId = tab.id;
-	await log.info("fetch", "opened profile tab", { url: PROFILE_URL });
-	await waitForTabLoad(tabId);
-	// Give React time to render the first timeline rows.
-	await new Promise((r) => setTimeout(r, 2500));
-	let probe = null;
+const X_SCREEN_NAME = "merulox";
+const REPLY_LOOKBACK_DAYS = 21;
+const MAX_REPLY_VISITS = 8;
 
+function snowflakeIso(id) {
 	try {
-		const initialProbe = await chrome.scripting.executeScript({
-			target: { tabId },
-			func: probeProfilePage,
-			args: ["merulox"],
-		});
-		probe = initialProbe?.[0]?.result ?? null;
-		await log.info("probe", "profile page state", probe);
+		return new Date(Number((BigInt(id) >> 22n) + 1288834974657n)).toISOString();
+	} catch {
+		return null;
+	}
+}
 
-		if (!probe?.articles && previousActiveTab?.id != null) {
-			await log.warn("probe", "hidden tab looks inert; reactivating profile tab", probe);
-			await chrome.tabs.update(tabId, { active: true });
-			await new Promise((r) => setTimeout(r, 2000));
-			const reactivatedProbe = await chrome.scripting.executeScript({
-				target: { tabId },
-				func: probeProfilePage,
-				args: ["merulox"],
-			});
-			probe = reactivatedProbe?.[0]?.result ?? probe;
-			await log.info("probe", "profile page after activation", probe);
+function tweetFromGraphql(result, { external = false } = {}) {
+	const node = result?.tweet ?? result;
+	const legacy = node?.legacy;
+	if (!legacy || !/^\d+$/.test(node?.rest_id ?? "")) return null;
+	const author = node.core?.user_results?.result?.core?.screen_name
+		?? node.core?.user_results?.result?.legacy?.screen_name;
+	if (!author) return null;
+	const isOwn = author.toLowerCase() === X_SCREEN_NAME;
+	if (isOwn === external) return null;
+	if (legacy.retweeted_status_result) return null;
+
+	let text = node.note_tweet?.note_tweet_results?.result?.text ?? legacy.full_text ?? "";
+	for (const u of legacy.entities?.urls ?? []) {
+		if (u.url && u.expanded_url) text = text.split(u.url).join(u.expanded_url);
+	}
+	const mediaEntities = legacy.extended_entities?.media ?? legacy.entities?.media ?? [];
+	for (const m of mediaEntities) if (m.url) text = text.split(m.url).join("");
+	text = text.trim();
+	// The status id encodes the true creation time, so it is the authority for ordering.
+	const timestamp = snowflakeIso(node.rest_id)
+		?? (legacy.created_at ? new Date(legacy.created_at).toISOString() : null);
+	if (!text || !timestamp) return null;
+
+	const media = mediaEntities
+		.filter((m) => m.type === "photo" && m.media_url_https)
+		.map((m) => {
+			const u = new URL(m.media_url_https);
+			u.searchParams.set("format", "jpg");
+			u.searchParams.set("name", "medium");
+			return u.toString();
+		});
+	const replyToScreen = legacy.in_reply_to_screen_name;
+	const replyToId = legacy.in_reply_to_status_id_str;
+	const base = {
+		text,
+		date: toEasternDate(timestamp),
+		timestamp,
+		url: `https://x.com/${author}/status/${node.rest_id}`,
+		author: `@${author}`,
+		threadSource: "x-graphql",
+		...(media.length ? { media } : {}),
+		...(!external ? { replyCount: legacy.reply_count ?? 0 } : {}),
+	};
+	if (replyToScreen && replyToId) {
+		return {
+			...base,
+			threadResolved: true,
+			threadVersion: THREAD_RESOLVER_VERSION,
+			isReply: true,
+			replyTo: `@${replyToScreen}`,
+			replyToUrl: `https://x.com/${replyToScreen}/status/${replyToId}`,
+		};
+	}
+	return { ...base, threadResolved: true, threadVersion: THREAD_RESOLVER_VERSION, isReply: false, replyTo: null, replyToUrl: null, replyThread: null };
+}
+
+function collectTimelineTweets(json, tweets, cursors) {
+	const instructions = json?.data?.user?.result?.timeline?.timeline?.instructions
+		?? json?.data?.user?.result?.timeline_v2?.timeline?.instructions
+		?? [];
+	const visit = (itemContent) => {
+		const tweet = tweetFromGraphql(itemContent?.tweet_results?.result);
+		if (tweet) tweets.set(tweet.url, tweet);
+	};
+	for (const instruction of instructions) {
+		for (const entry of instruction.entries ?? []) {
+			const content = entry.content;
+			if (content?.cursorType === "Bottom") cursors.bottom = content.value;
+			if (content?.itemContent) visit(content.itemContent);
+			for (const item of content?.items ?? []) visit(item.item?.itemContent);
+		}
+	}
+}
+
+// X rejects hand-built GraphQL calls (they lack the per-request client transaction id), so we let X's
+// own app make the calls in a disposable background tab and read its responses. x_intercept.js (page
+// world) forwards each timeline/conversation response; x_bridge.js relays it here.
+const capture = { active: false, timeline: new Map(), replies: new Map(), details: 0, timelines: 0 };
+
+function collectDetailReplies(json, ownIds) {
+	const instructions = json?.data?.threaded_conversation_with_injections_v2?.instructions ?? [];
+	const own = new Map();
+	const replies = new Map();
+	const visit = (itemContent) => {
+		const result = itemContent?.tweet_results?.result;
+		const node = result?.tweet ?? result;
+		const mine = tweetFromGraphql(result);
+		if (mine) {
+			own.set(mine.url, mine);
+			return;
+		}
+		const parentId = node?.legacy?.in_reply_to_status_id_str;
+		if (!parentId || !ownIds.has(parentId)) return;
+		const reply = tweetFromGraphql(result, { external: true });
+		if (reply) replies.set(reply.url, reply);
+	};
+	for (const instruction of instructions) {
+		for (const entry of instruction.entries ?? []) {
+			if (entry.content?.itemContent) visit(entry.content.itemContent);
+			for (const item of entry.content?.items ?? []) visit(item.item?.itemContent);
+		}
+	}
+	return { own, replies };
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+	if (msg?.action !== "xGraphql") return;
+	if (sender?.id !== chrome.runtime.id || sender.tab?.id == null
+		|| !/^https:\/\/x\.com\//.test(sender.url ?? "")) return;
+	try {
+		const timeline = capture.active ? capture.timeline : new Map();
+		const outside = capture.active ? capture.replies : new Map();
+		if (msg.op === "UserTweetsAndReplies" || msg.op === "UserTweets") {
+			collectTimelineTweets(msg.json, timeline, {});
+			if (capture.active) capture.timelines += 1;
+		} else if (msg.op === "TweetDetail") {
+			const ownIds = new Set([...timeline.keys()].map((url) => url.match(/\/status\/(\d+)/)?.[1]));
+			const { own, replies } = collectDetailReplies(msg.json, ownIds);
+			for (const [url, tweet] of own) timeline.set(url, { ...timeline.get(url), ...tweet });
+			for (const [url, reply] of replies) outside.set(url, reply);
+			if (capture.active) capture.details += 1;
+		}
+		if (!capture.active && timeline.size) {
+			// Ordinary browsing is a source of authoritative reply links too.
+			const tweets = [...timeline.values(), ...outside.values()];
+			for (const tweet of tweets) delete tweet.replyCount;
+			pushTweetsToReceiver(tweets).then(sendResponse, (error) => sendResponse({ ok: false, error: error.message }));
+			return true;
+		}
+	} catch (error) {
+		log.warn("capture", "could not parse X response", error);
+	}
+});
+
+async function waitFor(predicate, timeoutMs, stepMs = 400) {
+	const deadline = Date.now() + timeoutMs;
+	while (Date.now() < deadline) {
+		if (predicate()) return true;
+		await new Promise((r) => setTimeout(r, stepMs));
+	}
+	return predicate();
+}
+
+// Opens X in a background tab (never activated, never touching your tabs), lets X's app load the
+// timeline and recent conversations, and returns what it received.
+async function captureFromBackgroundTab(previousReplies) {
+	capture.active = true;
+	capture.timeline = new Map();
+	capture.replies = new Map();
+	capture.details = 0;
+	capture.timelines = 0;
+	const tab = await chrome.tabs.create({ url: PROFILE_URL, active: false });
+	try {
+		await waitFor(() => capture.timelines > 0, 30_000);
+		if (!capture.timelines) throw new Error("X app made no timeline request in the background tab (not logged in, or page blocked)");
+		await new Promise((r) => setTimeout(r, 2500));
+		await log.info("capture", "timeline captured", { tweets: capture.timeline.size });
+
+		const cutoff = Date.now() - REPLY_LOOKBACK_DAYS * 86_400_000;
+		const targets = [...capture.timeline.values()]
+			.filter((tweet) => (tweet.replyCount ?? 0) > 0 && Date.parse(tweet.timestamp) >= cutoff)
+			.sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+			.slice(0, MAX_REPLY_VISITS);
+		for (const target of targets) {
+			const before = capture.details;
+			await chrome.tabs.update(tab.id, { url: target.url });
+			await waitFor(() => capture.details > before, 12_000);
+			await new Promise((r) => setTimeout(r, 800));
+		}
+		// Keep earlier outside replies for posts that were not revisited this run.
+		const visited = new Set(targets.map((tweet) => tweet.url));
+		for (const prior of previousReplies) {
+			if (!visited.has(prior.replyToUrl) && !capture.replies.has(prior.url)) capture.replies.set(prior.url, prior);
+		}
+		await log.info("capture", "conversations captured", { visited: targets.length, replies: capture.replies.size });
+		return { tweets: [...capture.timeline.values()], replies: [...capture.replies.values()] };
+	} finally {
+		capture.active = false;
+		chrome.tabs.remove(tab.id).catch(() => {});
+	}
+}
+
+async function runFetchViaApi() {
+	try {
+		const cachedTweets = (await chrome.storage.local.get(CACHE_KEY))[CACHE_KEY]?.tweets ?? [];
+		const previousReplies = cachedTweets.filter((t) => t.isReply && t.author?.toLowerCase() !== `@${X_SCREEN_NAME}`);
+		const { tweets: apiTweets, replies: outsideReplies } = await captureFromBackgroundTab(previousReplies);
+		if (apiTweets.length === 0) throw new Error("X returned no tweets for @" + X_SCREEN_NAME);
+
+		const merged = await mergeObservedTweets([...cachedTweets, ...apiTweets, ...outsideReplies]);
+		const tweets = merged.tweets;
+
+		// Carry over parent-thread context already resolved in earlier runs; only look up new replies.
+		const cachedByUrl = new Map(cachedTweets.map((tweet) => [tweet.url, tweet]));
+		let lookups = 0;
+		for (const tweet of tweets) {
+			delete tweet.replyCount;
+			if (!tweet.isReply || tweet.replyThread || tweet.author?.toLowerCase() !== `@${X_SCREEN_NAME}`) continue;
+			const prior = cachedByUrl.get(tweet.url);
+			if (prior?.replyThread?.length) {
+				tweet.replyThread = prior.replyThread;
+				continue;
+			}
+			if (lookups >= 25) continue;
+			lookups += 1;
+			try {
+				const meta = await resolveThreadViaApi(tweet.url);
+				if (meta?.replyThread?.length) Object.assign(tweet, meta);
+			} catch {
+				// Unavailable parent: keep the direct reply context from GraphQL.
+			}
 		}
 
-		const results = await chrome.scripting.executeScript({
-			target: { tabId },
-			func: scrapeAndStore,
+		await chrome.storage.local.set({
+			[CACHE_KEY]: { tweets, fetchedAt: Date.now() },
+			[STATUS_KEY]: { ok: true, time: Date.now(), count: tweets.length, error: null, source: "api" },
 		});
-		const injectionResult = results?.[0] ?? null;
-		const scrapeResult = injectionResult?.result ?? {};
-		const scrapedTweets = Array.isArray(scrapeResult) ? scrapeResult : scrapeResult.tweets ?? [];
-		const reconciledDeletes = await reconcileMissingTweets(tabId, scrapedTweets);
-		const mergedTimeline = await mergeObservedTweets(scrapedTweets);
-		const deletedUrls = new Set(reconciledDeletes);
-		const timelineTweets = mergedTimeline.tweets.filter((tweet) => !deletedUrls.has(tweet.url));
-		await log.info("scrape", "completed DOM scrape", {
-			count: timelineTweets.length,
-			scrapedCount: scrapedTweets.length,
-			observedCount: mergedTimeline.observedCount,
-			observedAt: mergedTimeline.observedAt,
-			reconciledDeletes,
-			debug: scrapeResult.debug ?? null,
-			probe,
-			injectionKeys: injectionResult ? Object.keys(injectionResult) : [],
-			resultType: Array.isArray(injectionResult?.result) ? "array" : typeof injectionResult?.result,
-		});
-
-		if (timelineTweets.length === 0) {
-			await log.warn("scrape", "no tweets found in DOM", {
-				scrape: scrapeResult.debug ?? null,
-				probe,
-			});
-			throw new Error(`No tweets found in DOM — ${probe?.visibility ?? "unknown"} ${probe?.articles ?? 0} articles ${probe?.tweetTextEls ?? 0} text nodes`);
-		}
-		const tweets = await resolveThreads(tabId, timelineTweets);
-		await log.info("resolve", "thread resolution finished", {
-			count: tweets.length,
-			replies: tweets.filter((tweet) => tweet.isReply).length,
-		});
-
-    await chrome.storage.local.set({
-      [CACHE_KEY]: { tweets, fetchedAt: Date.now() },
-      [STATUS_KEY]: { ok: true, time: Date.now(), count: tweets.length, error: null, source: "dom" },
-    });
 
 		const pushed = await pushTweetsToReceiver(tweets);
 		if (!pushed.targets?.live?.ok) {
@@ -625,27 +784,18 @@ async function runFetchViaTab() {
 			await log.info("push", "live website and local archive updated", { count: tweets.length });
 		}
 		return { ok: true, tweets, pushed };
-  } catch (err) {
-    await log.error("fetch", "fetch failed", err);
-    await chrome.storage.local.set({
-      [STATUS_KEY]: { ok: false, time: Date.now(), count: 0, error: err.message, source: "dom" },
-    });
-    return { ok: false, error: err.message };
-  } finally {
-		if (previousActiveTab?.id != null && previousActiveTab.id !== tabId) {
-			try {
-				await chrome.tabs.update(previousActiveTab.id, { active: true });
-			} catch {
-				// Best effort restoration only.
-			}
-		}
-    chrome.tabs.remove(tabId);
-  }
+	} catch (err) {
+		await log.error("fetch", "fetch failed", err);
+		await chrome.storage.local.set({
+			[STATUS_KEY]: { ok: false, time: Date.now(), count: 0, error: err.message, source: "api" },
+		});
+		return { ok: false, error: err.message };
+	}
 }
 
 function fetchViaTab() {
   if (!activeFetch) {
-    activeFetch = runFetchViaTab().finally(() => {
+    activeFetch = runFetchViaApi().finally(() => {
       activeFetch = null;
     });
   }
@@ -684,7 +834,15 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 ensureAutoFetchAlarm();
 
-async function pushTweetsToReceiver(tweets) {
+function pushTweetsToReceiver(tweets) {
+	// Serialize the cache read/merge as well as the network write, so a delayed
+	// DOM push cannot overwrite reply metadata learned by a concurrent capture.
+	const run = activeTweetPush.then(() => performTweetPush(tweets));
+	activeTweetPush = run.catch(() => {});
+	return run;
+}
+
+async function performTweetPush(tweets) {
   const status = { time: Date.now(), count: tweets?.length ?? 0 };
   try {
     if (!LOG_INGEST_TOKEN) throw new Error("no ingest token — add config.local.js");
@@ -695,8 +853,17 @@ async function pushTweetsToReceiver(tweets) {
 	const ready = [];
 	for (const tweet of tweets) {
 		const prior = cachedByUrl.get(tweet.url);
+		if (prior?.threadSource === "x-graphql" && tweet.threadSource !== "x-graphql") {
+			ready.push({ ...tweet, ...prior, text: tweet.text });
+			continue;
+		}
 		if (tweet.threadResolved && tweet.threadVersion === THREAD_RESOLVER_VERSION) {
-			ready.push(tweet);
+			ready.push({
+				...tweet,
+				...(tweet.isReply && tweet.replyThread === undefined
+					&& prior?.replyToUrl === tweet.replyToUrl && prior?.replyThread?.length
+					? { replyThread: prior.replyThread } : {}),
+			});
 			continue;
 		}
 		if (prior?.threadResolved && prior.threadVersion === THREAD_RESOLVER_VERSION) {
@@ -728,7 +895,7 @@ async function pushTweetsToReceiver(tweets) {
 		[CACHE_KEY]: {
 			tweets: Array.from(new Map(
 				[...(cached[CACHE_KEY]?.tweets ?? []), ...ready].map((tweet) => [tweet.url, tweet]),
-			).values()).sort((a, b) => Date.parse(b.timestamp ?? 0) - Date.parse(a.timestamp ?? 0)).slice(0, 100),
+			).values()).sort((a, b) => Date.parse(b.timestamp ?? 0) - Date.parse(a.timestamp ?? 0)).slice(0, 1000),
 			fetchedAt: Date.now(),
 		},
 	});

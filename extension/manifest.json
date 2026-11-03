@@ -1,9 +1,15 @@
 {
   "manifest_version": 3,
   "name": "merulox tweet seeder",
-  "version": "2.6",
+  "version": "2.8",
   "description": "Seeds the writing page with fresh X posts, and feeds the build-log with ChatGPT history",
-  "permissions": ["alarms", "cookies", "storage", "scripting", "tabs"],
+  "permissions": [
+    "alarms",
+    "cookies",
+    "storage",
+    "scripting",
+    "tabs"
+  ],
   "host_permissions": [
     "https://x.com/*",
     "https://api.fxtwitter.com/*",
@@ -24,13 +30,41 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
-      "js": ["chatgpt_history.js"],
+      "matches": [
+        "https://x.com/*"
+      ],
+      "js": [
+        "x_intercept.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://x.com/*"
+      ],
+      "js": [
+        "x_bridge.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": [
+        "chatgpt_history.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://x.com/*"],
-      "js": ["x_profile.js"],
+      "matches": [
+        "https://x.com/*"
+      ],
+      "js": [
+        "x_profile.js"
+      ],
       "run_at": "document_idle"
     }
   ]
