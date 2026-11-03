@@ -35,7 +35,14 @@ const periodButtons = `
 		</div>
 	</div>
 
-	<section class="section mood-section">
+	<div id="moodboard-controls" hidden style="margin-bottom:18px">
+		<button id="moodboard-visibility-toggle" class="period-btn" type="button" aria-pressed="false" disabled>
+			Checking moodboard visibility…
+		</button>
+		<p id="moodboard-visibility-status" class="muted" role="status" aria-live="polite" style="font-size:11px;margin-top:8px"></p>
+	</div>
+
+	<section id="moodboard-section" class="section mood-section" hidden>
 		<h2 class="eyebrow">mood</h2>
 		<div class="mood-strip">
 			<div class="mood-track" id="mood-track"></div>
@@ -87,6 +94,7 @@ const periodButtons = `
 	</section>
 
 	<script>
+		import { initMoodboardVisibility } from "../lib/moodboard-visibility.mjs";
 		let musicAbort: AbortController | null = null;
 		function initMusic() {
 			musicAbort?.abort(); // cancel the previous run's rAF loop + listeners
@@ -98,6 +106,7 @@ const periodButtons = `
 			// page's elements — otherwise the unconditional `!`-asserted
 			// getElementById calls below would throw on every other route.
 			if (!document.getElementById("top-artists")) return;
+			document.addEventListener("astro:before-swap", () => musicAbort?.abort(), { once: true, signal });
 
 		const API_KEY = "9fdb2ae95fb0b95470334c260149c3cb";
 		const USER = "merulox";
@@ -164,11 +173,11 @@ const periodButtons = `
 			}
 		}
 
-		async function loadMood() {
+		async function loadMood(moodSignal: AbortSignal) {
 			const track = document.getElementById("mood-track");
 			if (!track) return;
 			async function fetchManifest(): Promise<any[]> {
-				const res = await fetch("/moodboard/manifest.json");
+				const res = await fetch("/moodboard/manifest.json", { signal: moodSignal });
 				if (!res.ok) throw new Error("no manifest");
 				return res.json();
 			}
@@ -176,6 +185,7 @@ const periodButtons = `
 			try {
 				items = await fetchManifest();
 			} catch {
+				if (moodSignal.aborted) return;
 				// Mobile networks are flakier than desktop — one retry before
 				// giving up. On final failure, leave the track alone instead of
 				// blanking it; an empty mood strip looks broken, a strip that
@@ -187,7 +197,7 @@ const periodButtons = `
 					return;
 				}
 			}
-			if (!items.length) return;
+			if (moodSignal.aborted || !track.isConnected || !items.length) return;
 			const shuffled = [...items].sort(() => Math.random() - 0.5);
 			const figHtml = (it: any) =>
 				// eager, not lazy: images sit inside a transform-animated track
@@ -200,7 +210,7 @@ const periodButtons = `
 			const figs = shuffled.map(figHtml).join("");
 			// duplicate once for a seamless looping marquee (skip when autoscroll is disabled)
 			track.innerHTML = reduceMotion ? figs : figs + figs;
-			if (!reduceMotion) startMoodAutoscroll(track, signal);
+			if (!reduceMotion) startMoodAutoscroll(track, moodSignal);
 		}
 
 		// JS-driven (not CSS @keyframes) so it can't fall victim to WebKit's
@@ -217,18 +227,15 @@ const periodButtons = `
 
 			if (canHover) {
 				const strip = track.closest(".mood-strip");
-				// `strip` is a fresh element queried from `track`, which itself
-				// comes from a fresh getElementById this run — no { signal }
-				// needed since it's destroyed with the old DOM subtree. The
-				// rAF loop below is the real leak risk (it recurses forever),
-				// so it checks `signal.aborted` instead.
+				// The strip survives visibility toggles; abort its hover listeners
+				// together with this animation before a later show starts another.
 				strip?.addEventListener("mouseenter", () => {
 					paused = true;
-				});
+				}, { signal });
 				strip?.addEventListener("mouseleave", () => {
 					paused = false;
 					start = null; // resume from current visual position, not a time-jump
-				});
+				}, { signal });
 			}
 
 			function frame(ts: number) {
@@ -386,7 +393,24 @@ const periodButtons = `
 		});
 
 		loadUserInfo();
-		loadMood();
+		let moodAbort: AbortController | null = null;
+		initMoodboardVisibility({
+			section: document.getElementById("moodboard-section")!,
+			controls: document.getElementById("moodboard-controls")!,
+			button: document.getElementById("moodboard-visibility-toggle")!,
+			status: document.getElementById("moodboard-visibility-status")!,
+			isDev: window.location.hostname === "dev.merulox.com",
+			signal,
+			onShow: () => {
+				moodAbort?.abort();
+				moodAbort = new AbortController();
+				void loadMood(moodAbort.signal);
+			},
+			onHide: () => {
+				moodAbort?.abort();
+				document.getElementById("mood-track")?.replaceChildren();
+			},
+		});
 		loadRecent();
 		loadTracks("7day");
 		loadArtists("7day");
