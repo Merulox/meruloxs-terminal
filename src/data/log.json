@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-02",
+  "generated": "2026-11-03",
   "entries": [
+    {
+      "date": "2026-11-02",
+      "kind": "ship",
+      "text": "Most of the day went into Boréal Numérique's demos. The missed-call text-back demo was finished end to end and its video was cut down to about 30 seconds. I also started an offline conversational intake assistant that follows up on a missed call to collect job details. It went through a round of red-team hardening (prompt injection, mid-conversation corrections, off-trade requests) and now runs in a public browser sandbox on the new /demos/ page of the Boréal site, labelled as still in testing."
+    },
     {
       "date": "2026-11-01",
       "kind": "ship",
