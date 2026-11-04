@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-03",
+  "generated": "2026-11-04",
   "entries": [
+    {
+      "date": "2026-11-03",
+      "kind": "ship",
+      "text": "Boréal Numérique's demos page now opens a live chat assistant right on the page, inside a phone frame, instead of sending visitors to a new tab. The public intake chat removes phone numbers and email addresses before saving transcripts, and only the Boréal site can embed it. Separately, I finished a CyberOps milestone covering the operator interface and real-browser security tests, after an independent review caught gaps that the original tests had missed. I also fixed reply threading on this site so older conversations reconnect properly."
+    },
     {
       "date": "2026-11-02",
       "kind": "ship",
