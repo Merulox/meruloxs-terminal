@@ -1,3 +1,5 @@
+import { outboundDestination } from "./outbound-destination.js";
+
 // Shared visit-tracking logic for functions/api/visit.js (collect) and
 // functions/api/visits.js (dev-only aggregate). Plain JS so it runs in Pages
 // Functions and under `node --test` without a build step.
@@ -108,6 +110,45 @@ export async function recordVisit(db, row) {
 		.run();
 }
 
+export function parseOutboundClick(request, bodyText, now = Date.now()) {
+	const url = new URL(request.url);
+	if (!TRACKED_HOSTS.has(url.hostname)) return { status: 204, reason: "untracked host" };
+	const origin = request.headers.get("Origin");
+	if (origin) {
+		let originHost = null;
+		try {
+			originHost = new URL(origin).hostname;
+		} catch {}
+		if (!TRACKED_HOSTS.has(originHost)) return { status: 403, reason: "foreign origin" };
+	}
+	if (BOT_UA.test(request.headers.get("User-Agent") ?? "")) return { status: 204, reason: "bot" };
+	if (typeof bodyText !== "string" || bodyText.length > MAX_BODY) return { status: 413, reason: "payload too large" };
+	let body;
+	try {
+		body = JSON.parse(bodyText);
+	} catch {
+		return { status: 400, reason: "invalid json" };
+	}
+	const source = cleanPath(body?.p);
+	const destination = outboundDestination(body?.d);
+	if (!source || !destination) return { status: 400, reason: "invalid click" };
+	return {
+		row: {
+			ts: Math.floor(now / 1000),
+			ip: normalizeIp(request.headers.get("CF-Connecting-IP")),
+			source,
+			destination,
+		},
+	};
+}
+
+export async function recordOutboundClick(db, row) {
+	await db
+		.prepare("INSERT INTO outbound_clicks (ts, ip, source_path, destination) VALUES (?, ?, ?, ?)")
+		.bind(row.ts, row.ip, row.source, row.destination)
+		.run();
+}
+
 export function rangeStart(range, now = Date.now()) {
 	if (!Object.hasOwn(RANGES, range)) return null;
 	const span = RANGES[range];
@@ -124,7 +165,7 @@ export async function summarize(db, since) {
 			.all()
 			.then((result) => result.results ?? []);
 
-	const [totals, points, countries, cities, ips, paths, referrers, daily] = await Promise.all([
+	const [totals, points, countries, cities, ips, paths, referrers, daily, outboundTotals, outboundDestinations] = await Promise.all([
 		all(`SELECT ${COUNTS}, COUNT(DISTINCT country) AS countries, COUNT(DISTINCT ip) AS ips, SUM(CASE WHEN source = 'cloudflare' THEN weight ELSE 0 END) AS imported, MIN(ts) AS first, MAX(ts) AS last FROM visits WHERE ts >= ?`),
 		all(`SELECT lat, lon, city, region, country, ${COUNTS} FROM visits WHERE ts >= ? AND lat IS NOT NULL AND lon IS NOT NULL GROUP BY lat, lon, city, region, country ORDER BY views DESC LIMIT 500`),
 		all(`SELECT country, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY country ORDER BY views DESC LIMIT 50`),
@@ -133,6 +174,8 @@ export async function summarize(db, since) {
 		all(`SELECT path, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY path ORDER BY views DESC LIMIT 50`),
 		all(`SELECT referrer, ${COUNTS} FROM visits WHERE ts >= ? AND referrer IS NOT NULL GROUP BY referrer ORDER BY views DESC LIMIT 50`),
 		all(`SELECT date(ts, 'unixepoch') AS day, ${COUNTS} FROM visits WHERE ts >= ? GROUP BY day ORDER BY day`),
+		all(`SELECT COUNT(*) AS clicks, COUNT(DISTINCT ip) AS ips FROM outbound_clicks WHERE ts >= ?`),
+		all(`SELECT destination, COUNT(*) AS clicks FROM outbound_clicks WHERE ts >= ? GROUP BY destination ORDER BY clicks DESC, destination LIMIT 50`),
 	]);
 
 	const total = totals[0] ?? {};
@@ -153,6 +196,11 @@ export async function summarize(db, since) {
 		paths,
 		referrers,
 		daily,
+		outbound: {
+			clicks: outboundTotals[0]?.clicks ?? 0,
+			ips: outboundTotals[0]?.ips ?? 0,
+			destinations: outboundDestinations,
+		},
 	};
 }
 
@@ -190,11 +238,12 @@ export function reverseName(ip) {
 
 export async function ipDetail(db, ip) {
 	const one = (sql) => db.prepare(sql).bind(ip).all().then((r) => r.results ?? []);
-	const [totals, paths, places, fingerprintRows] = await Promise.all([
+	const [totals, paths, places, fingerprintRows, outboundTotals] = await Promise.all([
 		one(`SELECT ${COUNTS}, COUNT(*) AS rows, MIN(ts) AS first, MAX(ts) AS last, COUNT(DISTINCT date(ts, 'unixepoch')) AS days, SUM(CASE WHEN source = 'cloudflare' THEN weight ELSE 0 END) AS imported FROM visits WHERE ip = ?`),
 		one(`SELECT path, ${COUNTS} FROM visits WHERE ip = ? GROUP BY path ORDER BY views DESC, path`),
 		one(`SELECT city, region, country, lat, lon, ${COUNTS} FROM visits WHERE ip = ? GROUP BY city, region, country ORDER BY views DESC`),
 		one(`SELECT ts, path, session_id AS sessionId, fingerprint_hash AS hash, attributes FROM fingerprints WHERE ip = ? ORDER BY ts DESC, id DESC LIMIT 10`),
+		one(`SELECT COUNT(*) AS clicks FROM outbound_clicks WHERE ip = ?`),
 	]);
 	const total = totals[0] ?? {};
 	const fingerprints = [];
@@ -219,6 +268,7 @@ export async function ipDetail(db, ip) {
 		paths,
 		places,
 		fingerprints,
+		outboundClicks: outboundTotals[0]?.clicks ?? 0,
 	};
 }
 
@@ -249,6 +299,21 @@ export async function historyPage(db, { since = 0, ip = null, page = 1, size = D
 					`SELECT ts, ip, path, entry, referrer, city, region, country, colo, source, weight FROM visits WHERE ${where} ORDER BY ts DESC, id DESC LIMIT ? OFFSET ?`,
 				)
 				.bind(...binds, size, (current - 1) * size)
+				.all()
+		).results ?? [];
+	return { rows, total, page: current, pages, size };
+}
+
+export async function outboundHistoryPage(db, { ip, page = 1, size = DEFAULT_PAGE_SIZE }) {
+	const [{ rows: total = 0 } = {}] =
+		(await db.prepare("SELECT COUNT(*) AS rows FROM outbound_clicks WHERE ip = ?").bind(ip).all()).results ?? [];
+	const pages = Math.max(1, Math.ceil(total / size));
+	const current = Math.min(page, pages);
+	const rows =
+		(
+			await db
+				.prepare("SELECT ts, source_path AS source, destination FROM outbound_clicks WHERE ip = ? ORDER BY ts DESC, id DESC LIMIT ? OFFSET ?")
+				.bind(ip, size, (current - 1) * size)
 				.all()
 		).results ?? [];
 	return { rows, total, page: current, pages, size };

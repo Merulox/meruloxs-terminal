@@ -2,6 +2,7 @@
 //   ?range=30d                              aggregates for the dashboard
 //   ?view=history&range=30d&page=1&size=50  paged raw rows, newest first
 //   ?view=history&ip=1.2.3.4&page=1&size=50 one IP's paged rows (all time)
+//   ?view=outbound&ip=1.2.3.4&page=1&size=50  one IP's outbound clicks (all time)
 //   ?ip=1.2.3.4                             one IP's totals, pages, places
 //   ?view=network&ip=1.2.3.4[&ipinfo=1]     reverse DNS; ASN/org from ipinfo.io only with ipinfo=1
 import {
@@ -9,6 +10,7 @@ import {
 	historyPage,
 	ipDetail,
 	normalizeIp,
+	outboundHistoryPage,
 	pageParams,
 	rangeStart,
 	reverseName,
@@ -92,6 +94,13 @@ export async function onRequestGet(context) {
 		const since = ip ? 0 : rangeStart(url.searchParams.get("range") ?? "30d");
 		if (since === null) return json({ error: "invalid range" }, 400);
 		return json({ ip, since, ...(await historyPage(env.VISITS_DB, { since, ip, ...paging })) });
+	}
+
+	if (view === "outbound") {
+		if (!ip) return json({ error: "ip required" }, 400);
+		const paging = pageParams(url.searchParams);
+		if (!paging) return json({ error: "invalid page or size" }, 400);
+		return json({ ip, ...(await outboundHistoryPage(env.VISITS_DB, { ip, ...paging })) });
 	}
 
 	if (view !== null) return json({ error: "invalid view" }, 400);

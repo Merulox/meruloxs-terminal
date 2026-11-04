@@ -1,41 +1,13 @@
 import { collectBrowserFingerprint } from "./fingerprint-client";
+import { installVisitLifecycle, privacyOptedOut, sendWithFallback } from "../lib/visits-client-runtime.js";
 
 // Injected into every page by the astro.config.mjs `merulox-visits` integration.
 // merulox.com: send one cookieless page-view beacon (geo is resolved at the edge).
 // dev.merulox.com: add the dev-only "visits" tab to the navigation.
-const DEV_HOST = "dev.merulox.com";
-const TRACKED_HOSTS = ["merulox.com", "www.merulox.com"];
-const OPT_OUT_KEY = "mx-notrack";
-const SESSION_KEY = "mx-visit";
 const FP_SESSION_KEY = "mx-fp-session";
 const FP_CACHE_KEY = "mx-fp-cache";
 
-function optedOut(): boolean {
-	const flag = new URLSearchParams(location.search).get("notrack");
-	try {
-		if (flag === "1") localStorage.setItem(OPT_OUT_KEY, "1");
-		if (flag === "0") localStorage.removeItem(OPT_OUT_KEY);
-		if (localStorage.getItem(OPT_OUT_KEY) === "1") return true;
-	} catch {}
-	const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
-	return nav.globalPrivacyControl === true || nav.doNotTrack === "1";
-}
 
-function sendBeacon() {
-	if (optedOut()) return;
-	let entry = 0;
-	try {
-		if (!sessionStorage.getItem(SESSION_KEY)) {
-			sessionStorage.setItem(SESSION_KEY, "1");
-			entry = 1;
-		}
-	} catch {}
-	const body = JSON.stringify({ p: location.pathname, r: document.referrer, e: entry });
-	const blob = new Blob([body], { type: "text/plain" });
-	if (!navigator.sendBeacon?.("/api/visit", blob)) {
-		fetch("/api/visit", { method: "POST", body, keepalive: true }).catch(() => {});
-	}
-}
 
 function fingerprintSession() {
 	try {
@@ -75,21 +47,18 @@ async function fingerprintSnapshot() {
 	return captured;
 }
 
-async function sendFingerprint() {
-	if (optedOut()) return;
+async function sendFingerprint(path: string) {
+	if (privacyOptedOut()) return;
 	const { attributes, hash } = await fingerprintSnapshot();
-	const body = JSON.stringify({
+	const body = {
 		v: 1,
-		p: location.pathname,
+		p: path,
 		sid: fingerprintSession(),
 		hash,
 		attributes,
-	});
-	if (new TextEncoder().encode(body).byteLength > 48_000) return;
-	const blob = new Blob([body], { type: "text/plain" });
-	if (!navigator.sendBeacon?.("/api/fingerprint", blob)) {
-		fetch("/api/fingerprint", { method: "POST", body, keepalive: true }).catch(() => {});
-	}
+	};
+	if (new TextEncoder().encode(JSON.stringify(body)).byteLength > 48_000) return;
+	sendWithFallback("/api/fingerprint", body);
 }
 
 function addDevTabs() {
@@ -128,8 +97,4 @@ function addDevTabs() {
 	}
 }
 
-if (location.hostname === DEV_HOST) addDevTabs();
-else if (TRACKED_HOSTS.includes(location.hostname)) {
-	sendBeacon();
-	void sendFingerprint();
-}
+installVisitLifecycle({ optedOut: privacyOptedOut, addDevTabs, sendFingerprint });

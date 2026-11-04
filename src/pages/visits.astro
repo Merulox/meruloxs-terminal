@@ -45,6 +45,7 @@ const ranges = [
 			<section><h2>top IPs</h2><ol class="vis-list" id="vis-ips"></ol></section>
 			<section><h2>pages</h2><ol class="vis-list" id="vis-paths"></ol></section>
 			<section><h2>referrers</h2><ol class="vis-list" id="vis-referrers"></ol></section>
+			<section><h2>outgoing clicks</h2><ol class="vis-list" id="vis-outbound"></ol></section>
 		</div>
 	</div>
 
@@ -108,6 +109,7 @@ const ranges = [
 			paths: (Row & { path: string })[];
 			referrers: (Row & { referrer: string })[];
 			daily: (Row & { day: string })[];
+			outbound: { clicks: number; ips: number; destinations: { destination: string; clicks: number }[] };
 		};
 
 		const SVG = "http://www.w3.org/2000/svg";
@@ -131,7 +133,8 @@ const ranges = [
 			city: string | null; region: string | null; country: string | null; colo: string | null;
 			source: string; weight: number;
 		};
-		type HistoryPage = { rows: HistoryRow[]; total: number; page: number; pages: number; size: number };
+		type HistoryPage<T = HistoryRow> = { rows: T[]; total: number; page: number; pages: number; size: number };
+		type OutboundRow = { ts: number; source: string; destination: string };
 
 		function renderList(id: string, rows: Row[], label: (row: any) => string) {
 			const list = $(id);
@@ -154,6 +157,32 @@ const ranges = [
 				count.className = "vis-count";
 				count.textContent = n(row.views);
 				count.title = `${n(row.views)} views · ${n(row.visits)} visits`;
+				item.append(name, count);
+				list.append(item);
+			}
+		}
+
+		function renderOutbound(rows: Summary["outbound"]["destinations"]) {
+			const list = $("vis-outbound");
+			list.replaceChildren();
+			if (!rows.length) {
+				const empty = document.createElement("li");
+				empty.className = "vis-empty";
+				empty.textContent = "none yet";
+				list.append(empty);
+				return;
+			}
+			const max = Math.max(...rows.map((row) => row.clicks));
+			for (const row of rows) {
+				const item = document.createElement("li");
+				item.style.setProperty("--share", `${(row.clicks / max) * 100}%`);
+				const name = document.createElement("span");
+				name.className = "vis-name";
+				name.textContent = row.destination;
+				const count = document.createElement("span");
+				count.className = "vis-count";
+				count.textContent = n(row.clicks);
+				count.title = `${n(row.clicks)} outgoing clicks`;
 				item.append(name, count);
 				list.append(item);
 			}
@@ -266,24 +295,24 @@ const ranges = [
 		type Pager = { reload: (page?: number) => Promise<void> };
 
 		// query(page, size) -> API URL. Navigation replaces rows; "load more" appends the next page.
-		function pagedHistory(options: {
+		function pagedHistory<T = HistoryRow>(options: {
 			body: HTMLElement;
 			empty: HTMLElement;
 			hosts: HTMLElement[];
 			query: (page: number, size: number) => string;
-			row: (row: HistoryRow) => HTMLTableRowElement;
+			row: (row: T) => HTMLTableRowElement;
 			alive?: () => boolean;
 		}): Pager {
 			let first = 1;
 			let last = 1;
-			let state: HistoryPage | null = null;
+			let state: HistoryPage<T> | null = null;
 			let request = 0;
 			let busy = false;
 
 			async function fetchPage(page: number, size: number) {
 				const response = await fetch(options.query(page, size), { cache: "no-store" });
 				if (!response.ok) throw new Error(String(response.status));
-				return (await response.json()) as HistoryPage;
+				return (await response.json()) as HistoryPage<T>;
 			}
 
 			function renderPager() {
@@ -358,7 +387,7 @@ const ranges = [
 				}
 			}
 
-			function paint(rows: HistoryRow[], append: boolean) {
+			function paint(rows: T[], append: boolean) {
 				if (!append) options.body.replaceChildren();
 				for (const row of rows) options.body.append(options.row(row));
 				options.empty.textContent = "none yet";
@@ -446,6 +475,7 @@ const ranges = [
 			paths: (Row & { path: string })[];
 			places: (Row & { city: string | null; region: string | null; country: string | null; lat: number | null; lon: number | null })[];
 			fingerprints: FingerprintSnapshot[];
+			outboundClicks: number;
 		};
 		type Network = {
 			ipinfo: "ok" | "unavailable" | "not queried";
@@ -710,6 +740,19 @@ const ranges = [
 				fingerprintHost.append(el("p", "none captured yet", "vis-empty"));
 			}
 
+			const outboundTable = el("table", undefined, "ip-history");
+			const outboundHead = el("thead");
+			const outboundHr = el("tr");
+			for (const h of ["time", "source page", "destination"]) outboundHr.append(el("th", h));
+			outboundHead.append(outboundHr);
+			const outboundBody = el("tbody");
+			outboundTable.append(outboundHead, outboundBody);
+			const outboundWrap = el("div", undefined, "vis-table-wrap");
+			outboundWrap.append(outboundTable);
+			const outboundEmpty = el("p", "none yet", "vis-empty");
+			outboundEmpty.hidden = true;
+			const outboundPagerTop = el("div", undefined, "pager-host");
+			const outboundPagerBottom = el("div", undefined, "pager-host");
 			panelBody.replaceChildren(
 				titleRow,
 				section(
@@ -722,6 +765,7 @@ const ranges = [
 						["first seen", t.first ? when(t.first) : null],
 						["last seen", t.last ? when(t.last) : null],
 						["↵", t.visits ? "marks a session entry page" : null],
+						["outgoing clicks", n(detail.outboundClicks)],
 						["seen from", detail.places.map((p) => `${place(p)} (${n(p.views)})`).join("; ")],
 					]),
 				),
@@ -729,6 +773,7 @@ const ranges = [
 				section("network", network),
 				section("pages", ...pathNodes),
 				section("history", pagerTop, empty, tableWrap, pagerBottom),
+				section("outgoing click history", outboundPagerTop, outboundEmpty, outboundWrap, outboundPagerBottom),
 				section("lookup", links),
 			);
 
@@ -738,6 +783,20 @@ const ranges = [
 				hosts: [pagerTop, pagerBottom],
 				query: (page, size) => `/api/visits?view=history&ip=${encodeURIComponent(detail.ip)}&page=${page}&size=${size}`,
 				row: ipHistoryRow,
+				alive: () => request === panelRequest,
+			}).reload(1);
+			pagedHistory<OutboundRow>({
+				body: outboundBody,
+				empty: outboundEmpty,
+				hosts: [outboundPagerTop, outboundPagerBottom],
+				query: (page, size) => `/api/visits?view=outbound&ip=${encodeURIComponent(detail.ip)}&page=${page}&size=${size}`,
+				row: (row) => {
+					const tr = document.createElement("tr");
+					cell(tr, when(row.ts), "nowrap");
+					cell(tr, row.source, "wrap");
+					cell(tr, row.destination, "wrap");
+					return tr;
+				},
 				alive: () => request === panelRequest,
 			}).reload(1);
 			loadNetwork(network, links, detail.ip, request);
@@ -816,7 +875,7 @@ const ranges = [
 			const data: Summary & { since: number } = await response.json();
 			const t = data.totals;
 			const since = t.first ? ` · first ${new Date(t.first * 1000).toISOString().slice(0, 10)}` : "";
-			summary.textContent = `${n(t.visits)} visits · ${n(t.views)} views · ${n(t.ips)} IPs · ${n(t.countries)} countries${since}${t.imported ? ` · ${n(t.imported)} views imported from Cloudflare logs` : ""}`;
+			summary.textContent = `${n(t.visits)} visits · ${n(t.views)} views · ${n(t.ips)} IPs · ${n(t.countries)} countries · ${n(data.outbound.clicks)} outgoing clicks${since}${t.imported ? ` · ${n(t.imported)} views imported from Cloudflare logs` : ""}`;
 			renderMap(data.points);
 			renderDaily(fillDays(data.daily, data.since, t.first));
 			renderList("vis-countries", data.countries, (row) => countryName(row.country));
@@ -824,6 +883,7 @@ const ranges = [
 			renderIps(data.ips);
 			renderList("vis-paths", data.paths, (row) => row.path);
 			renderList("vis-referrers", data.referrers, (row) => row.referrer);
+			renderOutbound(data.outbound.destinations);
 		}
 
 		const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-range]"));

@@ -144,7 +144,9 @@ test("dev nav injects cameras next to visits without changing production trackin
 	assert.ok(visitsIndex >= 0);
 	assert.ok(camerasIndex > visitsIndex);
 	assert.ok(camerasIndex - visitsIndex < 100, "dev tabs should remain adjacent");
-	assert.match(clientSource, /if \(location\.hostname === DEV_HOST\) addDevTabs\(\);\s*else if \(TRACKED_HOSTS\.includes\(location\.hostname\)\)/);
-	assert.match(clientSource, /const TRACKED_HOSTS = \["merulox\.com", "www\.merulox\.com"\];/);
+	assert.match(clientSource, /installVisitLifecycle\(\{ optedOut: privacyOptedOut, addDevTabs, sendFingerprint \}\)/);
+	const runtimeSource = readFileSync(new URL("../src/lib/visits-client-runtime.js", import.meta.url), "utf8");
+	assert.match(runtimeSource, /if \(location\.hostname === devHost\) \{\s*addDevTabs\(\);\s*return;/);
+	assert.match(runtimeSource, /new Set\(\["merulox\.com", "www\.merulox\.com"\]\)/);
 	assert.match(pageSource, /href="\/visits">visits<\/a>[\s\S]{0,120}href="\/cameras" aria-current="page">cameras<\/a>/);
 });

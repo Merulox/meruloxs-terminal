@@ -3,12 +3,13 @@ import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { onRequestPost } from "../functions/api/visit.js";
+import { onRequestPost as onOutboundPost } from "../functions/api/outbound-click.js";
 import { onRequestPost as onFingerprintPost } from "../functions/api/fingerprint.js";
 import { enrichIp, onRequestGet } from "../functions/api/visits.js";
 import { onRequest as visitsGate } from "../functions/visits/_middleware.js";
 import { cleanPath, normalizeIp, parseVisit, referrerHost, reverseName } from "../src/lib/visits.js";
 
-const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql", "0003_visits_source.sql", "0004_visits_ip_index.sql", "0005_fingerprints.sql"]
+const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql", "0003_visits_source.sql", "0004_visits_ip_index.sql", "0005_fingerprints.sql", "0006_outbound_clicks.sql"]
 	.map((file) => readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"))
 	.join("\n");
 
@@ -334,4 +335,52 @@ test("history paging: pages, sizes, clamping, range and IP filters", async () =>
 	}
 	const invalidView = await onRequestGet({ request: new Request("https://dev.merulox.com/api/visits?view=dump"), env, data: { devAuthenticated: true } });
 	assert.equal(invalidView.status, 400);
+});
+
+test("outbound endpoint validates, stores only CF IP, summarizes, and pages per IP behind auth", async () => {
+	const env = { VISITS_DB: d1() };
+	const click = (body, headers = {}, url = "https://merulox.com/api/outbound-click") =>
+		onOutboundPost({
+			request: beacon(url, body, { "CF-Connecting-IP": "203.0.113.8", "X-Forwarded-For": "192.0.2.99", ...headers }),
+			env,
+		});
+
+	assert.equal((await click({ p: "/links?private=1", d: "https://user:pass@example.com/a?token=secret#part" })).status, 204);
+	let row = env.VISITS_DB.raw.prepare("SELECT ip, source_path, destination FROM outbound_clicks").get();
+	assert.deepEqual({ ...row }, { ip: "203.0.113.8", source_path: "/links", destination: "https://example.com/a" });
+
+	assert.equal((await click({ p: "/", d: "https://merulox.com/private" })).status, 400);
+	assert.equal((await click({ p: "/", d: "javascript:alert(1)" })).status, 400);
+	assert.equal((await click({ p: "/", d: "https://evil.example/" }, { Origin: "https://evil.example" })).status, 403);
+	assert.equal((await click({ p: "/", d: "https://evil.example/" }, { "User-Agent": "Googlebot" })).status, 204);
+	assert.equal((await click({ p: "/", d: "https://evil.example/" }, { Origin: "https://dev.merulox.com" }, "https://dev.merulox.com/api/outbound-click")).status, 204);
+	assert.equal(env.VISITS_DB.raw.prepare("SELECT COUNT(*) AS n FROM outbound_clicks").get().n, 1);
+	assert.equal((await onOutboundPost({ request: beacon("https://merulox.com/api/outbound-click", { p: "/", d: "https://example.org/" }), env: {} })).status, 503);
+
+	const insert = env.VISITS_DB.raw.prepare("INSERT INTO outbound_clicks (ts, ip, source_path, destination) VALUES (?, ?, ?, ?)");
+	const now = Math.floor(Date.now() / 1000);
+	for (let i = 0; i < 29; i += 1) insert.run(now - i, "203.0.113.8", `/source-${i}`, i % 2 ? "https://example.com/a" : "https://other.example/");
+	insert.run(now, "198.51.100.1", "/", "https://third.example/");
+
+	const get = (query, data = { devAuthenticated: true }) =>
+		onRequestGet({ request: new Request(`https://dev.merulox.com/api/visits?${query}`), env, data });
+	assert.equal((await get("view=outbound&ip=203.0.113.8", {})).status, 401);
+	assert.equal((await get("view=outbound")).status, 400);
+	assert.equal((await get("view=outbound&ip=bad")).status, 400);
+	assert.equal((await get("view=outbound&ip=203.0.113.8&size=7")).status, 400);
+
+	const first = await (await get("view=outbound&ip=203.0.113.8&size=25")).json();
+	const second = await (await get("view=outbound&ip=203.0.113.8&size=25&page=2")).json();
+	assert.deepEqual([first.total, first.pages, first.rows.length, second.rows.length], [30, 2, 25, 5]);
+	assert.ok([...first.rows, ...second.rows].every((item) => item.source.startsWith("/") && !item.destination.includes("?")));
+
+	const summary = await (await get("range=7d")).json();
+	assert.equal(summary.totals.views, 0, "outbound events do not change existing visit counts");
+	assert.deepEqual({ clicks: summary.outbound.clicks, ips: summary.outbound.ips }, { clicks: 31, ips: 2 });
+	assert.deepEqual(summary.outbound.destinations.slice(0, 2), [
+		{ destination: "https://example.com/a", clicks: 15 },
+		{ destination: "https://other.example/", clicks: 15 },
+	]);
+	const detail = await (await get("ip=203.0.113.8")).json();
+	assert.equal(detail.outboundClicks, 30);
 });
