@@ -304,6 +304,32 @@ export async function historyPage(db, { since = 0, ip = null, page = 1, size = D
 	return { rows, total, page: current, pages, size };
 }
 
+// Mixed main history. Each table owns its IDs; kind is part of the stable tie key.
+// Outbound rows have no visit geo/referrer/count metadata, so never join it from visits.
+export async function activityHistoryPage(db, { since = 0, ip = null, page = 1, size = DEFAULT_PAGE_SIZE }) {
+	const where = ip ? "ip = ? AND ts >= ?" : "ts >= ?";
+	const binds = ip ? [ip, since] : [since];
+	const [{ rows: total = 0 } = {}] =
+		(await db.prepare(
+			`SELECT (SELECT COUNT(*) FROM visits WHERE ${where}) + (SELECT COUNT(*) FROM outbound_clicks WHERE ${where}) AS rows`,
+		).bind(...binds, ...binds).all()).results ?? [];
+	const pages = Math.max(1, Math.ceil(total / size));
+	const current = Math.min(page, pages);
+	const rows =
+		(
+			await db.prepare(
+				`SELECT id, 'page_view' AS event_kind, ts, ip, path, entry, referrer, city, region, country, colo, source, weight, NULL AS destination
+				 FROM visits WHERE ${where}
+				 UNION ALL
+				 SELECT id, 'outbound_click' AS event_kind, ts, ip, source_path AS path, NULL AS entry, NULL AS referrer,
+				 NULL AS city, NULL AS region, NULL AS country, NULL AS colo, NULL AS source, NULL AS weight, destination
+				 FROM outbound_clicks WHERE ${where}
+				 ORDER BY ts DESC, event_kind ASC, id DESC LIMIT ? OFFSET ?`,
+			).bind(...binds, ...binds, size, (current - 1) * size).all()
+		).results ?? [];
+	return { rows, total, page: current, pages, size };
+}
+
 export async function outboundHistoryPage(db, { ip, page = 1, size = DEFAULT_PAGE_SIZE }) {
 	const [{ rows: total = 0 } = {}] =
 		(await db.prepare("SELECT COUNT(*) AS rows FROM outbound_clicks WHERE ip = ?").bind(ip).all()).results ?? [];

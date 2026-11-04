@@ -55,7 +55,7 @@ const ranges = [
 		<p class="vis-empty" id="vis-recent-empty" hidden>none yet</p>
 		<div class="vis-table-wrap">
 			<table>
-				<thead><tr><th>time</th><th>ip</th><th>location</th><th>page</th><th>referrer</th><th class="num">views</th><th>source</th></tr></thead>
+				<thead><tr><th>time</th><th>event</th><th>ip</th><th>location</th><th>source page</th><th>destination</th><th>referrer</th><th class="num">views</th><th>source</th></tr></thead>
 				<tbody id="vis-recent"></tbody>
 			</table>
 		</div>
@@ -135,6 +135,10 @@ const ranges = [
 		};
 		type HistoryPage<T = HistoryRow> = { rows: T[]; total: number; page: number; pages: number; size: number };
 		type OutboundRow = { ts: number; source: string; destination: string };
+		type ActivityRow = Omit<HistoryRow, "entry" | "source" | "weight"> & {
+			id: number; event_kind: "page_view" | "outbound_click"; destination: string | null;
+			entry: number | null; source: string | null; weight: number | null;
+		};
 
 		function renderList(id: string, rows: Row[], label: (row: any) => string) {
 			const list = $(id);
@@ -440,24 +444,27 @@ const ranges = [
 			return { reload: (page = 1) => go(page) };
 		}
 
-		function recentRow(row: HistoryRow) {
+		function recentRow(row: ActivityRow) {
 			const tr = document.createElement("tr");
+			const outgoing = row.event_kind === "outbound_click";
 			cell(tr, when(row.ts), "nowrap");
+			cell(tr, outgoing ? "outgoing click" : "page view", "nowrap");
 			cell(tr, row.ip ? ipButton(row.ip) : "—", "nowrap");
-			cell(tr, place(row), "wrap");
+			cell(tr, outgoing ? "—" : place(row), "wrap");
 			cell(tr, row.path, "wrap");
-			cell(tr, row.referrer ?? "", "wrap");
-			cell(tr, row.weight > 1 ? `×${n(row.weight)}` : "1", "num");
-			cell(tr, sourceLabel(row.source), "nowrap muted");
+			cell(tr, el("span", row.destination ?? "—"), "wrap");
+			cell(tr, outgoing ? "—" : row.referrer ?? "", "wrap");
+			cell(tr, row.weight === null ? "—" : row.weight > 1 ? `×${n(row.weight)}` : "1", "num");
+			cell(tr, row.source === null ? "—" : sourceLabel(row.source), "nowrap muted");
 			return tr;
 		}
 
 		let currentRange = "30d";
-		const recent = pagedHistory({
+		const recent = pagedHistory<ActivityRow>({
 			body: $("vis-recent"),
 			empty: $("vis-recent-empty"),
 			hosts: [$("vis-recent-pager-top"), $("vis-recent-pager-bottom")],
-			query: (page, size) => `/api/visits?view=history&range=${encodeURIComponent(currentRange)}&page=${page}&size=${size}`,
+			query: (page, size) => `/api/visits?view=activity&range=${encodeURIComponent(currentRange)}&page=${page}&size=${size}`,
 			row: recentRow,
 		});
 

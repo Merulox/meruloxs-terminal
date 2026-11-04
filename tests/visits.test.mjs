@@ -7,7 +7,7 @@ import { onRequestPost as onOutboundPost } from "../functions/api/outbound-click
 import { onRequestPost as onFingerprintPost } from "../functions/api/fingerprint.js";
 import { enrichIp, onRequestGet } from "../functions/api/visits.js";
 import { onRequest as visitsGate } from "../functions/visits/_middleware.js";
-import { cleanPath, normalizeIp, parseVisit, referrerHost, reverseName } from "../src/lib/visits.js";
+import { activityHistoryPage, cleanPath, normalizeIp, parseVisit, referrerHost, reverseName } from "../src/lib/visits.js";
 
 const SCHEMA = ["0001_visits.sql", "0002_visits_ip.sql", "0003_visits_source.sql", "0004_visits_ip_index.sql", "0005_fingerprints.sql", "0006_outbound_clicks.sql"]
 	.map((file) => readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8"))
@@ -383,4 +383,197 @@ test("outbound endpoint validates, stores only CF IP, summarizes, and pages per 
 	]);
 	const detail = await (await get("ip=203.0.113.8")).json();
 	assert.equal(detail.outboundClicks, 30);
+});
+
+test("mixed activity retains visit metadata, uses actual outbound data, and leaves visit totals unchanged", async () => {
+	const env = { VISITS_DB: d1() };
+	const ip = "203.0.113.7";
+	const visit = env.VISITS_DB.raw.prepare(
+		"INSERT INTO visits (ts, ip, path, entry, referrer, city, region, country, colo, source, weight) VALUES (?, ?, ?, ?, 'example.org', 'Montreal', 'Quebec', 'CA', 'YUL', ?, ?)",
+	);
+	visit.run(100, ip, "/first", 1, "beacon", 1);
+	visit.run(300, ip, "/imported", 0, "cloudflare", 7);
+	visit.run(500, ip, "/latest", 1, "beacon", 1);
+	const get = async (query) => (await onRequestGet({
+		request: new Request(`https://dev.merulox.com/api/visits?${query}`), env, data: { devAuthenticated: true },
+	})).json();
+	const before = await get("range=all");
+	const click = env.VISITS_DB.raw.prepare("INSERT INTO outbound_clicks (ts, ip, source_path, destination) VALUES (?, ?, ?, ?)");
+	click.run(200, ip, "/links", "https://one.example/");
+	click.run(400, ip, "/projects", "https://two.example/");
+	click.run(600, null, "/anonymous", "https://three.example/");
+
+	const mixed = await get("view=activity&range=all");
+	assert.deepEqual([mixed.ip, mixed.since, mixed.total, mixed.page, mixed.pages, mixed.size], [null, 0, 6, 1, 1, 50]);
+	assert.deepEqual(mixed.rows.map((row) => [row.ts, row.event_kind, row.path]), [
+		[600, "outbound_click", "/anonymous"], [500, "page_view", "/latest"],
+		[400, "outbound_click", "/projects"], [300, "page_view", "/imported"],
+		[200, "outbound_click", "/links"], [100, "page_view", "/first"],
+	]);
+	assert.equal(mixed.rows[0].ip, null);
+	assert.deepEqual(mixed.rows.find((row) => row.path === "/imported"), {
+		id: 2, event_kind: "page_view", ts: 300, ip, path: "/imported", entry: 0,
+		referrer: "example.org", city: "Montreal", region: "Quebec", country: "CA", colo: "YUL",
+		source: "cloudflare", weight: 7, destination: null,
+	});
+	const outgoing = mixed.rows.find((row) => row.path === "/projects");
+	assert.equal(outgoing.ip, ip);
+	assert.equal(outgoing.destination, "https://two.example/");
+	for (const field of ["entry", "referrer", "city", "region", "country", "colo", "source", "weight"]) {
+		assert.equal(outgoing[field], null, `${field} is not borrowed from a visit with the same IP`);
+	}
+	const after = await get("range=all");
+	assert.deepEqual(after.totals, before.totals);
+	assert.deepEqual([after.totals.views, after.totals.visits, after.outbound.clicks], [9, 2, 3]);
+	const history = await get(`view=history&ip=${ip}`);
+	assert.equal(history.total, 3);
+	assert.ok(history.rows.every((row) => !Object.hasOwn(row, "event_kind") && !Object.hasOwn(row, "destination")));
+	const outbound = await get(`view=outbound&ip=${ip}`);
+	assert.deepEqual(outbound.rows, [
+		{ ts: 400, source: "/projects", destination: "https://two.example/" },
+		{ ts: 200, source: "/links", destination: "https://one.example/" },
+	]);
+});
+
+test("mixed activity orders timestamp ties by kind and table-local ID across every page", async () => {
+	const db = d1();
+	const visit = db.raw.prepare("INSERT INTO visits (ts, ip, path, entry) VALUES (?, '203.0.113.7', '/', 0)");
+	const click = db.raw.prepare("INSERT INTO outbound_clicks (ts, ip, source_path, destination) VALUES (?, '203.0.113.7', '/', 'https://example.org/')");
+	for (let i = 0; i < 36; i += 1) {
+		visit.run(1000);
+		click.run(1000);
+	}
+	visit.run(1001);
+	click.run(999);
+	const expected = [
+		"page_view:37",
+		...Array.from({ length: 36 }, (_, i) => `outbound_click:${36 - i}`),
+		...Array.from({ length: 36 }, (_, i) => `page_view:${36 - i}`),
+		"outbound_click:37",
+	];
+	for (const size of [25, 50, 100, 200]) {
+		const seen = [];
+		const pages = Math.ceil(expected.length / size);
+		for (let page = 1; page <= pages; page += 1) {
+			const result = await activityHistoryPage(db, { size, page });
+			assert.deepEqual([result.total, result.pages, result.page, result.size], [74, pages, page, size]);
+			seen.push(...result.rows.map((row) => `${row.event_kind}:${row.id}`));
+			assert.deepEqual(result, await activityHistoryPage(db, { size, page }), "unchanged dataset has repeatable page boundaries");
+		}
+		assert.deepEqual(seen, expected);
+		assert.equal(new Set(seen).size, 74, "overlapping table IDs neither skip nor duplicate events");
+		assert.equal((await activityHistoryPage(db, { size, page: 99 })).page, pages);
+	}
+	const boundary = await activityHistoryPage(db, { since: 1000, size: 200 });
+	assert.equal(boundary.total, 73);
+	assert.ok(boundary.rows.every((row) => row.ts >= 1000), "range is inclusive for both tables");
+});
+
+test("activity endpoint applies range and optional IP to both tables, validates paging, and handles empty data", async () => {
+	const env = { VISITS_DB: d1() };
+	const now = Math.floor(Date.now() / 1000);
+	const visit = env.VISITS_DB.raw.prepare("INSERT INTO visits (ts, ip, path, entry) VALUES (?, ?, '/', 0)");
+	const click = env.VISITS_DB.raw.prepare("INSERT INTO outbound_clicks (ts, ip, source_path, destination) VALUES (?, ?, '/links', 'https://example.org/')");
+	for (const ts of [now - 60, now - 86400 * 40]) {
+		visit.run(ts, "203.0.113.7");
+		click.run(ts, "203.0.113.7");
+	}
+	click.run(now - 30, "198.51.100.1");
+	const get = (query = "") => onRequestGet({
+		request: new Request(`https://dev.merulox.com/api/visits?view=activity&${query}`), env, data: { devAuthenticated: true },
+	});
+	const page = async (query) => (await get(query)).json();
+	assert.equal((await page("")).total, 3, "default range is 30d");
+	for (const range of ["24h", "7d", "30d"]) {
+		const result = await page(`range=${range}`);
+		assert.equal(result.total, 3);
+		assert.ok(result.rows.every((row) => row.ts >= result.since));
+	}
+	for (const range of ["90d", "all"]) assert.equal((await page(`range=${range}`)).total, 5);
+	const ip = await page("ip=203.0.113.7&range=30d");
+	assert.equal(ip.total, 2, "activity IP filter still honors range, unlike legacy all-time IP history");
+	assert.equal(ip.ip, "203.0.113.7");
+	assert.ok(ip.rows.every((row) => row.ip === ip.ip));
+	assert.deepEqual(ip.rows.map((row) => row.event_kind), ["outbound_click", "page_view"]);
+	assert.equal((await page("ip=203.0.113.7&range=all")).total, 4);
+	const empty = await page("ip=192.0.2.1&page=99&size=25");
+	assert.deepEqual([empty.total, empty.page, empty.pages, empty.size, empty.rows], [0, 1, 1, 25, []]);
+	for (const bad of ["range=1y", "range=", "ip=nope", "ip=", "size=7", "page=0", "page=-1", "page=1.5", "page=abc", "page=1000001"]) {
+		assert.equal((await get(bad)).status, 400, bad);
+	}
+	const blank = await activityHistoryPage(d1(), { page: 9 });
+	assert.deepEqual(blank, { rows: [], total: 0, page: 1, pages: 1, size: 50 });
+});
+
+test("activity endpoint requires dev host and authenticated dev session before database access", async () => {
+	const env = { VISITS_DB: { prepare() { throw new Error("unauthenticated database access"); } } };
+	const get = (host, data, headers = {}, bindings = env) => onRequestGet({
+		request: new Request(`https://${host}/api/visits?view=activity&range=all`, { headers }), env: bindings, data,
+	});
+	assert.equal((await get("merulox.com", { devAuthenticated: true })).status, 404);
+	assert.equal((await get("preview.pages.dev", { devAuthenticated: true })).status, 404);
+	for (const data of [undefined, {}, { devAuthenticated: false }, { devAuthenticated: "true" }]) {
+		assert.equal((await get("dev.merulox.com", data)).status, 401);
+	}
+	assert.equal((await get("dev.merulox.com", {}, { Authorization: "Bearer ingest" })).status, 401);
+	assert.equal((await get("dev.merulox.com", { devAuthenticated: true }, {}, {})).status, 503);
+});
+
+test("main history uses the mixed range-aware pager while per-IP APIs remain separate", () => {
+	const source = readFileSync(new URL("../src/pages/visits.astro", import.meta.url), "utf8");
+	const main = source.slice(source.indexOf('let currentRange = "30d"'), source.indexOf("// ── IP panel"));
+	assert.match(main, /pagedHistory<ActivityRow>/);
+	assert.match(main, /view=activity&range=\$\{encodeURIComponent\(currentRange\)\}&page=\$\{page\}&size=\$\{size\}/);
+	assert.match(main, /row: recentRow/);
+	assert.match(source, /currentRange = range;\s+recent\.reload\(1\)/);
+	assert.match(source, /state\.total/, "shared pager counts combined API rows");
+	assert.match(source, /view=history&ip=\$\{encodeURIComponent\(detail\.ip\)\}/);
+	assert.match(source, /view=outbound&ip=\$\{encodeURIComponent\(detail\.ip\)\}/);
+	const header = source.slice(source.indexOf('<section class="vis-recent">'), source.indexOf('<tbody id="vis-recent">'));
+	for (const label of ["time", "event", "ip", "location", "source page", "destination", "referrer", "views", "source"]) {
+		assert.ok(header.includes(`>${label}</th>`), label);
+	}
+});
+
+test("main activity rows render clickable IPs and destination as inert text with outbound metadata dashes", () => {
+	const source = readFileSync(new URL("../src/pages/visits.astro", import.meta.url), "utf8");
+	const functionSource = (name, args) => {
+		const match = source.match(new RegExp(`\\t\\tfunction ${name}[^\\n]*\\{\\n([\\s\\S]*?)\\n\\t\\t\\}`));
+		assert.ok(match, `${name} remains available to the renderer test`);
+		return `function ${name}(${args}) {\n${match[1]}\n}`;
+	};
+	const document = {
+		createElement(tagName) {
+			return {
+				tagName, children: [], dataset: {}, textContent: "",
+				append(...children) { this.children.push(...children); },
+				set innerHTML(_) { assert.fail("untrusted values must never be parsed as HTML"); },
+			};
+		},
+	};
+	const render = new Function("document", "when", "place", "n", "sourceLabel", [
+		functionSource("cell", 'tr, value, className = ""'),
+		functionSource("el", "tag, text, className"),
+		functionSource("ipButton", "ip"),
+		functionSource("recentRow", "row"),
+		"return recentRow;",
+	].join("\n"))(document, (ts) => `time:${ts}`, () => "Montreal, Quebec, Canada", String, (value) => value === "cloudflare" ? "cf log" : "beacon");
+	const payload = '<img src=x onerror="alert(1)">';
+	const row = {
+		event_kind: "outbound_click", ts: 600, ip: "203.0.113.7", path: "/links", destination: payload,
+		entry: null, referrer: null, city: null, region: null, country: null, colo: null, source: null, weight: null,
+	};
+	const text = (node) => typeof node === "string" ? node : node.textContent + node.children.map(text).join("");
+	const tr = render(row);
+	assert.deepEqual(tr.children.map(text), ["time:600", "outgoing click", row.ip, "—", "/links", payload, "—", "—", "—"]);
+	assert.equal(tr.children[2].children[0].tagName, "button");
+	assert.equal(tr.children[2].children[0].dataset.ip, row.ip);
+	assert.equal(tr.children[5].children[0].tagName, "span");
+	assert.equal(tr.children[5].children[0].textContent, payload);
+	assert.deepEqual(tr.children[5].children[0].children, []);
+	assert.equal(text(render({ ...row, ip: null }).children[2]), "—");
+	const view = render({
+		...row, event_kind: "page_view", path: "/projects", destination: null, referrer: "example.org", source: "cloudflare", weight: 7,
+	});
+	assert.deepEqual(view.children.map(text), ["time:600", "page view", row.ip, "Montreal, Quebec, Canada", "/projects", "—", "example.org", "×7", "cf log"]);
 });

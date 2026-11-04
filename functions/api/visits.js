@@ -1,5 +1,6 @@
 // Dev-only visits API (dev.merulox.com, behind the root middleware's Basic auth):
 //   ?range=30d                              aggregates for the dashboard
+//   ?view=activity&range=30d&page=1&size=50 mixed page views/outgoing clicks; optional &ip=1.2.3.4 uses the same range
 //   ?view=history&range=30d&page=1&size=50  paged raw rows, newest first
 //   ?view=history&ip=1.2.3.4&page=1&size=50 one IP's paged rows (all time)
 //   ?view=outbound&ip=1.2.3.4&page=1&size=50  one IP's outbound clicks (all time)
@@ -7,6 +8,7 @@
 //   ?view=network&ip=1.2.3.4[&ipinfo=1]     reverse DNS; ASN/org from ipinfo.io only with ipinfo=1
 import {
 	DEV_HOST,
+	activityHistoryPage,
 	historyPage,
 	ipDetail,
 	normalizeIp,
@@ -86,6 +88,14 @@ export async function onRequestGet(context) {
 	if (view === "network") {
 		if (!ip) return json({ error: "ip required" }, 400);
 		return json({ ip, network: await enrichIp(ip, { ipinfo: url.searchParams.get("ipinfo") === "1" }) });
+	}
+
+	if (view === "activity") {
+		const paging = pageParams(url.searchParams);
+		if (!paging) return json({ error: "invalid page or size" }, 400);
+		const since = rangeStart(url.searchParams.get("range") ?? "30d");
+		if (since === null) return json({ error: "invalid range" }, 400);
+		return json({ ip, since, ...(await activityHistoryPage(env.VISITS_DB, { since, ip, ...paging })) });
 	}
 
 	if (view === "history") {
