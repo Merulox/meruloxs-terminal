@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-04",
+  "generated": "2026-11-05",
   "entries": [
+    {
+      "date": "2026-11-04",
+      "kind": "ship",
+      "text": "Built out a workspace for the Boréal call center: callers now get their own stats page showing their funnel and closing rate, a settings tab for their ring-back number, a set of sales scripts, a lead notes section, and booking built into the lead view. Caller pay now works as a share of the commission on each signed sale instead of flat per-booking rates, and a handful of fixes tightened how conversations and bookings are counted. On meruloxs-terminal, I fixed visit tracking so tab switches inside the single-page app get recorded, and I started logging outbound link clicks, which now show up in the main visits history next to page views."
+    },
     {
       "date": "2026-11-03",
       "kind": "ship",
