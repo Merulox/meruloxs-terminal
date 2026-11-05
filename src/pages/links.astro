@@ -1,115 +1,14 @@
 ---
 import Layout from "../layouts/Layout.astro";
-
-type Link = {
-	label: string;
-	href: string;
-	dead?: boolean;
-	secondary?: {
-		label: string;
-		href: string;
-	};
-};
-
-type LinkGroup = {
-	label: string;
-	links: Link[];
-	addresses?: Array<{
-		label: string;
-		value: string;
-	}>;
-};
-
-const groups: LinkGroup[] = [
-	{
-		label: "dev",
-		links: [
-			{ label: "Github", href: "https://github.com/merulox" },
-			{ label: "Hugging Face", href: "https://huggingface.co/merulox" },
-			{ label: "Codeberg", href: "https://codeberg.org/merulox", dead: true },
-		],
-	},
-	{
-		label: "socials",
-		links: [
-			{ label: "Twitter", href: "https://twitter.com/merulox" },
-			{ label: "Substack", href: "https://substack.com/@merulox" },
-			{ label: "Guilded", href: "https://guilded.gg/u/merulox", dead: true },
-			{ label: "Pleroma", href: "https://bae.st/merulox", dead: true },
-		],
-	},
-	{
-		label: "crypto",
-		links: [
-			{
-				label: "Fomo profile",
-				href: "https://fomo.family/profile/merulox",
-				secondary: {
-					label: "Fomo referral",
-					href: "https://fomo.family/r/merulox",
-				},
-			},
-		],
-		addresses: [
-			{ label: "BTC", value: "bc1qg457y9xrhsmnyzc5k3t9m5zvgdv5phsdtca0gs" },
-			{ label: "SOL", value: "HrP6ZV3rcR8DfBHMJbuYPpeodKFUi98moV5B76hGTmFH" },
-			{ label: "ETH", value: "0xA60Bee206f958Fe7bd6bE83f2eC5161805321d87" },
-		],
-	},
-	{
-		label: "media",
-		links: [
-			{ label: "Lastfm", href: "https://www.last.fm/user/merulox" },
-			{ label: "MyAnimeList", href: "https://myanimelist.net/profile/merulox" },
-			{ label: "Anilist", href: "https://anilist.co/user/Merulox/" },
-			{ label: "VNDB", href: "https://vndb.org/u182651/ulist?vnlist=1" },
-			{ label: "Goodreads", href: "https://www.goodreads.com/user/show/158374147-merulox" },
-			{ label: "StoryGraph", href: "https://app.thestorygraph.com/profile/merulox" },
-			{ label: "Letterboxd", href: "https://letterboxd.com/Merulox/" },
-			{ label: "Spotify", href: "https://open.spotify.com/user/qdjljqisvx98ik2rgvp25lrgh" },
-			{ label: "Bandlab", href: "https://www.bandlab.com/merulox" },
-			{ label: "Youtube", href: "https://youtube.com/@merulox" },
-		],
-	},
-	{
-		label: "forums",
-		links: [
-			{ label: "Reddit", href: "https://reddit.com/u/merulox" },
-			{ label: "Lemmy", href: "https://lemmy.world/u/merulox" },
-			{ label: "Sharkey", href: "https://sakurajima.social/@merulox" },
-			{ label: "MangaDex", href: "https://forums.mangadex.org/members/merulox.622459/" },
-			{ label: "0x00sec", href: "https://forum.0x00sec.org/u/merulox/summary" },
-			{ label: "LessWrong", href: "https://www.lesswrong.com/users/merulox" },
-			{ label: "RobloxForum", href: "https://www.robloxforum.com/members/43998/", dead: true },
-		],
-	},
-	{
-		label: "misc",
-		links: [
-			{ label: "TryHackMe", href: "https://tryhackme.com/p/merulox" },
-			{ label: "Yggdrasil Radio", href: "https://yggdrasilradio.com/#/user/merulox/2644" },
-		],
-	},
-	{
-		label: "games",
-		links: [
-			{ label: "Monkeytype", href: "https://monkeytype.com/profile/Merulox" },
-			{ label: "Steam", href: "https://steamcommunity.com/id/merulox" },
-			{ label: "Roblox", href: "https://www.roblox.com/users/67556906/profile" },
-			{ label: "osu!", href: "https://osu.ppy.sh/users/17362768" },
-			{ label: "Chess.com", href: "https://www.chess.com/member/merulox" },
-		],
-	},
-];
 ---
 
 <style>
-	.contact-block {
+	#links-manager :global(.contact-block) {
 		display: grid;
 		gap: 4px;
 		margin-bottom: 18px;
 	}
-	.guestbook-button {
+	#links-manager :global(.guestbook-button) {
 		align-items: center;
 		border: 1px solid var(--line);
 		display: inline-flex;
@@ -118,39 +17,40 @@ const groups: LinkGroup[] = [
 		gap: 8px;
 		padding: 8px 12px;
 		text-decoration: none;
+		justify-self: start;
 	}
-	.guestbook-button::before {
+	#links-manager :global(.guestbook-button::before) {
 		content: "🪐";
 		font-size: 13px;
 		line-height: 1;
 	}
-	.guestbook-button:hover,
-	.guestbook-button:focus-visible {
+	#links-manager :global(.guestbook-button:hover),
+	#links-manager :global(.guestbook-button:focus-visible) {
 		border-color: var(--accent);
 		color: var(--accent);
 		outline: none;
 	}
-	.guestbook-button.kbd-cursor {
+	#links-manager :global(.guestbook-button.kbd-cursor) {
 		border-color: var(--accent);
 		box-shadow: inset 2px 0 0 var(--accent);
 		color: var(--accent);
 	}
-	.contact-line {
+	#links-manager :global(.contact-line) {
 		display: grid;
 		grid-template-columns: 74px minmax(0, 1fr);
 		gap: 12px;
 		font-size: 13px;
 	}
-	.contact-label {
+	#links-manager :global(.contact-label) {
 		color: var(--muted);
 		font-family: "SFMono-Regular", Consolas, monospace;
 		font-size: 11px;
 		text-transform: lowercase;
 	}
-	.crypto-addresses {
+	#links-manager :global(.crypto-addresses) {
 		margin: 14px 0 0;
 	}
-	.copy-address {
+	#links-manager :global(.copy-address) {
 		background: none;
 		border: 0;
 		color: inherit;
@@ -163,18 +63,18 @@ const groups: LinkGroup[] = [
 		padding: 0;
 		text-align: left;
 	}
-	.copy-address:hover,
-	.copy-address:focus-visible {
+	#links-manager :global(.copy-address:hover),
+	#links-manager :global(.copy-address:focus-visible) {
 		color: var(--accent);
 		outline: none;
 		text-decoration: underline;
 		text-decoration-style: dotted;
 		text-underline-offset: 3px;
 	}
-	.address-value {
+	#links-manager :global(.address-value) {
 		white-space: nowrap;
 	}
-	.copy-status {
+	#links-manager :global(.copy-status) {
 		border: 0;
 		clip: rect(0 0 0 0);
 		height: 1px;
@@ -185,18 +85,18 @@ const groups: LinkGroup[] = [
 		white-space: nowrap;
 		width: 1px;
 	}
-	.links-list {
+	#links-manager :global(.links-list) {
 		border-bottom: 1px solid var(--line);
 		display: grid;
 	}
-	.link-group + .link-group {
+	#links-manager :global(.link-group + .link-group) {
 		margin-top: 34px;
 	}
-	.links-list > a,
-	.split-link {
+	#links-manager :global(.links-list > a),
+	#links-manager :global(.split-link) {
 		border-top: 1px solid var(--line);
 	}
-	.links-list a {
+	#links-manager :global(.links-list a) {
 		align-items: baseline;
 		display: grid;
 		grid-template-columns: 16px minmax(0, 1fr) auto;
@@ -204,43 +104,43 @@ const groups: LinkGroup[] = [
 		padding: 12px 0;
 		text-decoration: none;
 	}
-	.split-link {
+	#links-manager :global(.split-link) {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
-	.split-link > a:first-child {
+	#links-manager :global(.split-link > a:first-child) {
 		padding-right: 12px;
 	}
-	.split-link > a + a {
+	#links-manager :global(.split-link > a + a) {
 		border-left: 1px solid var(--line);
 		padding-left: 12px;
 	}
-	.links-list a::before {
+	#links-manager :global(.links-list a::before) {
 		color: var(--accent);
 		content: ">";
 		font-family: "SFMono-Regular", Consolas, monospace;
 		font-size: 11px;
 	}
-	.link-host {
+	#links-manager :global(.link-host) {
 		color: var(--muted);
 		font-family: "SFMono-Regular", Consolas, monospace;
 		font-size: 11px;
 		white-space: nowrap;
 	}
-	.links-list a.dead {
+	#links-manager :global(.links-list a.dead) {
 		opacity: 0.45;
 	}
-	.links-list a:hover .link-label {
+	#links-manager :global(.links-list a:hover .link-label) {
 		color: var(--accent);
 	}
-	.links-list a.kbd-cursor {
+	#links-manager :global(.links-list a.kbd-cursor) {
 		background: rgba(78, 184, 196, 0.08);
 		box-shadow: inset 2px 0 0 var(--accent);
 	}
-	.links-list a.kbd-cursor .link-label {
+	#links-manager :global(.links-list a.kbd-cursor .link-label) {
 		color: var(--accent);
 	}
-	.links-empty {
+	#links-manager :global(.links-empty) {
 		border-top: 1px solid var(--line);
 		color: var(--muted);
 		font-family: "SFMono-Regular", Consolas, monospace;
@@ -248,24 +148,65 @@ const groups: LinkGroup[] = [
 		padding: 12px 0;
 	}
 	@media (max-width: 600px) {
-		.contact-line,
-		.links-list a {
+		#links-manager :global(.contact-line),
+		#links-manager :global(.links-list a) {
 			grid-template-columns: 16px minmax(0, 1fr);
 		}
-		.contact-label {
+		#links-manager :global(.contact-label) {
 			grid-column: 1 / -1;
 		}
-		.crypto-addresses .copy-address {
+		#links-manager :global(.crypto-addresses .copy-address) {
 			grid-column: 1 / -1;
 		}
-		.link-host {
+		#links-manager :global(.link-host) {
 			grid-column: 2;
 			overflow-wrap: anywhere;
 			white-space: normal;
 		}
-		.split-link .link-host {
+		#links-manager :global(.split-link .link-host) {
 			display: none;
 		}
+	}
+	#links-manager :global([hidden]) { display: none !important; }
+	#links-manager :global(.link-entry) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-width: 0; }
+	#links-manager :global(.links-list > .link-entry) { border-top: 1px solid var(--line); }
+	#links-manager :global(.split-link > .link-entry + .link-entry) { border-left: 1px solid var(--line); padding-left: 12px; }
+	#links-manager :global(.split-link > .link-entry:first-child) { padding-right: 12px; }
+	#links-manager :global(.contact-line.is-hidden > :not(.link-actions)),
+	#links-manager :global(.link-entry.is-hidden > .copy-address),
+	#links-manager :global(.is-hidden > a),
+	#links-manager :global(.is-hidden > .contact-line) { opacity: 0.45; }
+	#links-manager :global(.link-actions) { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+	#links-manager :global(.contact-line.link-entry) { grid-template-columns: 74px minmax(0, 1fr); }
+	#links-manager :global(.contact-line:has(> .link-actions)) { grid-template-columns: 74px minmax(0, 1fr) auto; }
+	#links-manager :global(.visibility-toggle),
+	#links-manager :global(.link-actions button),
+	#links-manager :global(.new-link),
+	#links-manager :global(.link-add-form button),
+	#links-manager > button { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 5px 8px; font: 11px "SFMono-Regular", Consolas, monospace; cursor: pointer; }
+	#links-manager :global(.visibility-toggle[aria-checked="true"]) { color: var(--accent); }
+	#links-manager :global(button:hover),
+	#links-manager :global(button:focus-visible),
+	#links-manager :global(button.kbd-cursor) { color: var(--accent); border-color: var(--accent); outline: 1px solid var(--accent); outline-offset: 2px; }
+	#links-manager :global(button:disabled) { cursor: wait; opacity: 0.55; }
+	#links-manager :global(.new-link) { display: block; margin-top: 14px; border-style: dashed; }
+	#links-manager :global(.link-add-form) { display: grid; gap: 12px; margin-top: 14px; padding: 16px; border: 1px solid var(--line); }
+	#links-manager :global(.link-add-form label) { display: grid; gap: 5px; font-size: 12px; color: var(--muted); }
+	#links-manager :global(.link-add-form input:not([type="checkbox"])) { box-sizing: border-box; width: 100%; min-width: 0; padding: 8px; background: transparent; color: inherit; border: 1px solid var(--line); font: inherit; }
+	#links-manager :global(.link-add-form input:focus-visible) { outline: 1px solid var(--accent); }
+	#links-manager :global(.link-add-form label:has(input[type="checkbox"])) { display: flex; align-items: center; }
+	#links-manager :global(.form-actions) { display: flex; gap: 8px; }
+	#links-manager [data-links-status] { color: var(--muted); font-size: 12px; }
+	#links-manager :global(.links-propagation-note) { color: var(--muted); font-size: 12px; }
+	#links-manager [data-links-status]:empty { display: none; }
+	#links-manager :global(.link-group) { margin-top: 24px; }
+	@media (max-width: 600px) {
+		#links-manager :global(.link-entry) { gap: 8px; }
+		#links-manager :global(.split-link .link-entry) { grid-template-columns: minmax(0, 1fr); }
+		#links-manager :global(.link-actions) { padding: 4px 0; }
+		#links-manager :global(.contact-line.link-entry),
+		#links-manager :global(.contact-line:has(> .link-actions)) { grid-template-columns: minmax(0, 1fr) auto; }
+		#links-manager :global(.contact-line:has(> .link-actions) > .copy-address) { grid-column: auto; }
 	}
 </style>
 
@@ -274,173 +215,25 @@ const groups: LinkGroup[] = [
 		<h1>Links</h1>
 		<span class="date">profiles and contact</span>
 	</div>
-
-	<section class="section">
-		<h2 class="eyebrow">contact</h2>
-		<div class="contact-block">
-			<p class="contact-line"><span class="contact-label">Matrix</span><span>@merulox:nitro.chat</span></p>
-			<p class="contact-line"><span class="contact-label">XMPP</span><span>merulox@xmpp.jp</span></p>
-			<p class="contact-line"><span class="contact-label">Discord</span><span>@merulox</span></p>
-			<p class="contact-line">
-				<span class="contact-label">email</span>
-				<a href="mailto:web@merulox.com">web@merulox.com</a>
-			</p>
-		</div>
-		<a class="guestbook-button" href="https://merulox.atabook.org" target="_blank" rel="noopener">guestbook</a>
-	</section>
-
-	<section class="section">
-		{groups.map((group) => (
-			<section class="link-group">
-				<h2 class="eyebrow">{group.label}</h2>
-				<nav class="links-list" aria-label={`${group.label} links`}>
-					{group.links.length > 0 ? (
-						group.links.map((link) => {
-							const host = new URL(link.href).hostname.replace(/^www\./, "");
-							if (link.secondary) {
-								const secondaryHost = new URL(link.secondary.href).hostname.replace(/^www\./, "");
-								return (
-									<div class="split-link" role="group" aria-label="Fomo.family links">
-										<a href={link.href} target="_blank" rel="noopener">
-											<span class="link-label">{link.label}</span>
-											<span class="link-host">{host}</span>
-										</a>
-										<a href={link.secondary.href} target="_blank" rel="noopener">
-											<span class="link-label">{link.secondary.label}</span>
-											<span class="link-host">{secondaryHost}</span>
-										</a>
-									</div>
-								);
-							}
-							return (
-								<a class={link.dead ? "dead" : undefined} href={link.href} target="_blank" rel="noopener">
-									<span class="link-label">{link.label}</span>
-									<span class="link-host">{host}</span>
-								</a>
-							);
-						})
-					) : (
-						<span class="links-empty">empty</span>
-					)}
-				</nav>
-				{group.addresses && (
-					<div class="crypto-addresses contact-block">
-						{group.addresses.map((address) => (
-							<p class="contact-line">
-								<span class="contact-label">{address.label}</span>
-								<button
-									class="copy-address"
-									type="button"
-									data-copy-address={address.value}
-									aria-label={`Copy ${address.label} address`}
-								>
-									<span class="address-value">{address.value}</span>
-									<span class="copy-status" aria-live="polite">copy</span>
-								</button>
-							</p>
-						))}
-					</div>
-				)}
-			</section>
-		))}
-	</section>
-
+	<div id="links-manager">
+		<p data-links-status role="status" aria-live="polite">Loading links…</p>
+		<button data-links-retry type="button" hidden>Retry loading links</button>
+		<div data-links-sections></div>
+		<noscript>Enable JavaScript to load the current public links.</noscript>
+	</div>
 	<script>
-		let linksCursorAbort: AbortController | null = null;
-		function initLinksCursor() {
-			linksCursorAbort?.abort();
-			linksCursorAbort = new AbortController();
-			const { signal } = linksCursorAbort;
-
-			const linkItems = Array.from(document.querySelectorAll<HTMLElement>(".guestbook-button, .links-list a, .copy-address"));
-			if (!linkItems.length) return;
-			const headerItems = Array.from(document.querySelectorAll<HTMLElement>(".site-name, .site-nav a"));
-			const CURSOR = "kbd-cursor";
-			let activeIndex = 0;
-
-			function paint(index: number) {
-				if (!linkItems.length) return;
-				activeIndex = Math.max(0, Math.min(index, linkItems.length - 1));
-				linkItems.forEach((item, itemIndex) => item.classList.toggle(CURSOR, itemIndex === activeIndex));
-			}
-
-			function clearLinks() {
-				linkItems.forEach((item) => item.classList.remove(CURSOR));
-			}
-
-			function focusLink(index: number) {
-				paint(index);
-				const target = linkItems[activeIndex];
-				target.focus({ preventScroll: true });
-				target.scrollIntoView({ block: "nearest" });
-			}
-
-			function focusHeader() {
-				const target =
-					headerItems.find((item) => item.getAttribute("aria-current") === "page") ??
-					headerItems[0];
-				if (!target) return;
-				window.scrollTo({ top: 0, behavior: "smooth" });
-				clearLinks();
-				target.focus({ preventScroll: true });
-			}
-
-			linkItems.forEach((item, index) => {
-				item.addEventListener("mouseenter", () => paint(index));
-				item.addEventListener("focus", () => paint(index));
-			});
-
-			const copyButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".copy-address"));
-			copyButtons.forEach((button) => {
-				button.addEventListener("click", async () => {
-					const address = button.dataset.copyAddress;
-					if (!address) return;
-					const status = button.querySelector<HTMLElement>(".copy-status");
-					try {
-						await navigator.clipboard.writeText(address);
-						if (status) status.textContent = "copied";
-						window.setTimeout(() => {
-							if (status) status.textContent = "copy";
-						}, 1600);
-					} catch {
-						if (status) status.textContent = "select";
-					}
-				});
-			});
-			headerItems.forEach((item) => {
-				item.addEventListener("focus", clearLinks);
-			});
-
-			document.addEventListener("keydown", (event) => {
-				if (event.ctrlKey || event.metaKey || event.altKey) return;
-				const target = event.target as HTMLElement;
-				if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
-				if (!linkItems.length) return;
-
-				if (event.key === "j" || event.key === "ArrowDown") {
-					event.preventDefault();
-					event.stopImmediatePropagation();
-					if (
-						headerItems.includes(document.activeElement as HTMLElement) ||
-						!linkItems.includes(document.activeElement as HTMLElement)
-					) focusLink(0);
-					else if (activeIndex < linkItems.length - 1) focusLink(activeIndex + 1);
-				} else if (event.key === "k" || event.key === "ArrowUp") {
-					event.preventDefault();
-					event.stopImmediatePropagation();
-					if (
-						headerItems.includes(document.activeElement as HTMLElement) ||
-						!linkItems.includes(document.activeElement as HTMLElement) ||
-						document.activeElement === linkItems[0]
-					) focusHeader();
-					else focusLink(activeIndex - 1);
-				} else if (event.key === "Enter" && linkItems.includes(document.activeElement as HTMLElement)) {
-					event.preventDefault();
-					event.stopImmediatePropagation();
-					(document.activeElement as HTMLElement).click();
-				}
-			}, { capture: true, signal });
+		import { mountLinksEditor } from "../lib/links-editor.mjs";
+		let cleanup: (() => void) | undefined;
+		function stopLinks() {
+			cleanup?.();
+			cleanup = undefined;
 		}
-		document.addEventListener("astro:page-load", initLinksCursor);
+		function initLinks() {
+			stopLinks();
+			const root = document.getElementById("links-manager");
+			if (root) cleanup = mountLinksEditor(root);
+		}
+		document.addEventListener("astro:before-swap", stopLinks);
+		document.addEventListener("astro:page-load", initLinks);
 	</script>
 </Layout>
