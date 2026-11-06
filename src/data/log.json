@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-05",
+  "generated": "2026-11-06",
   "entries": [
+    {
+      "date": "2026-11-05",
+      "kind": "ship",
+      "text": "Built a links editor on the dev side of the site. Each entry now has a public/hidden switch that sets whether it shows on the public site, and every section ends with a \"New link\" form for adding a name and URL with a starting visibility. Hidden entries can still be edited from the dev page, and switching a built-in link back to its default visibility removes the stored override. I ran a hide-and-restore test against the live public page, then deleted the test entry."
+    },
     {
       "date": "2026-11-04",
       "kind": "ship",
