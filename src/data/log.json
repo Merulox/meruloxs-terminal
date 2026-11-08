@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-06",
+  "generated": "2026-11-08",
   "entries": [
+    {
+      "date": "2026-11-07",
+      "kind": "ship",
+      "text": "Added an « Nos offres » tab to the Boréal Numérique calling tool. It lists every offer with its price range, how it works, how to explain it, common objections, and what never to promise, plus a cost calculator and built-in demos so callers understand what they're selling. I also extended the intake assistant so it follows up after someone fills out a web form, using what the form already collected and asking only for what's missing. The demo site now has a working in-page form demo and treats follow-up as one shared step for both calls and forms."
+    },
     {
       "date": "2026-11-05",
       "kind": "ship",
