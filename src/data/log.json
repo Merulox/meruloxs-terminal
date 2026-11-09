@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-08",
+  "generated": "2026-11-09",
   "entries": [
+    {
+      "date": "2026-11-08",
+      "kind": "ship",
+      "text": "Restyled the browser-demo buttons on the Boréal Numérique site so they stand out. The « Essayer dans le navigateur » buttons are now a moss green with a play icon, taken from an existing badge so they fit the site's palette. They read as separate from the phone-demo and install buttons beside them, and when a demo is open the button switches to an outlined state with a stop icon."
+    },
     {
       "date": "2026-11-07",
       "kind": "ship",
