@@ -1,3 +1,5 @@
+import { isMusicPath, notFound, publicMusicEnabled, stripMusicNav } from "../src/lib/music-switch.js";
+
 const DEV_HOST = "dev.merulox.com";
 const SITE_SWITCH_KEY = "site_enabled";
 
@@ -46,7 +48,15 @@ export async function onRequest(context) {
 	const { request, env } = context;
 	if (new URL(request.url).hostname !== DEV_HOST) {
 		if (!(await publicSiteEnabled(env))) return offlineResponse(request);
-		return context.next();
+		const url = new URL(request.url);
+		if (isMusicPath(url.pathname)) {
+			if (!(await publicMusicEnabled(env))) return notFound(request);
+			return context.next();
+		}
+		const response = await context.next();
+		if (!response.headers.get("Content-Type")?.toLowerCase().startsWith("text/html")) return response;
+		if (await publicMusicEnabled(env)) return response;
+		return stripMusicNav(response);
 	}
 	if (request.method === "OPTIONS") {
 		return context.next();

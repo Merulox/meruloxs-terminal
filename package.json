@@ -13,6 +13,7 @@
     "astro": "astro",
     "update:goodreads": "node scripts/update-goodreads.mjs",
     "test:x": "node --test tests/x-workflow.test.mjs tests/dev-auth.test.mjs tests/tweet-order.test.mjs tests/tweet-capture.test.mjs",
+    "test:music": "node --test tests/music-switch.test.mjs",
     "test:moodboard": "node --test tests/moodboard.test.mjs tests/moodboard-ui.test.mjs",
     "test:visits": "node --test tests/visits.test.mjs tests/visits-client.test.mjs tests/device.test.mjs",
     "test:cameras": "node --test tests/cameras.test.mjs",

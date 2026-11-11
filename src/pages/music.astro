@@ -35,6 +35,13 @@ const periodButtons = `
 		</div>
 	</div>
 
+	<div id="music-controls" hidden style="margin-bottom:18px">
+		<button id="music-visibility-toggle" class="period-btn" type="button" aria-pressed="false" disabled>
+			Checking music visibility…
+		</button>
+		<p id="music-visibility-status" class="muted" role="status" aria-live="polite" style="font-size:11px;margin-top:8px"></p>
+	</div>
+
 	<div id="moodboard-controls" hidden style="margin-bottom:18px">
 		<button id="moodboard-visibility-toggle" class="period-btn" type="button" aria-pressed="false" disabled>
 			Checking moodboard visibility…
@@ -95,6 +102,7 @@ const periodButtons = `
 
 	<script>
 		import { initMoodboardVisibility } from "../lib/moodboard-visibility.mjs";
+		import { initMusicVisibility } from "../lib/music-visibility.mjs";
 		let musicAbort: AbortController | null = null;
 		function initMusic() {
 			musicAbort?.abort(); // cancel the previous run's rAF loop + listeners
@@ -394,6 +402,13 @@ const periodButtons = `
 
 		loadUserInfo();
 		let moodAbort: AbortController | null = null;
+		initMusicVisibility({
+			controls: document.getElementById("music-controls")!,
+			button: document.getElementById("music-visibility-toggle")!,
+			status: document.getElementById("music-visibility-status")!,
+			isDev: window.location.hostname === "dev.merulox.com",
+			signal,
+		});
 		initMoodboardVisibility({
 			section: document.getElementById("moodboard-section")!,
 			controls: document.getElementById("moodboard-controls")!,
