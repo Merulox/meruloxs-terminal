@@ -141,12 +141,20 @@ export function uncacheVariant(response) {
 	return variant;
 }
 
+// Page-shaped paths only. Do not gate on the Accept header: Astro's ClientRouter fetches pages with
+// the default "*/*", and in-site clicks are the main way visitors reach (or leave) the music tab.
+export function mayBeHtmlPath(pathname) {
+	const path = String(pathname);
+	if (path.startsWith("/api/") || path.startsWith("/_astro/")) return false;
+	const last = path.slice(path.lastIndexOf("/") + 1);
+	return !last.includes(".") || last.toLowerCase().endsWith(".html");
+}
+
 // Applies the public music config to a request. `next(request)` fetches the asset.
-// The KV read is skipped for requests that cannot be HTML navigations.
+// The KV read is skipped for paths that cannot be HTML pages (assets, API routes).
 export async function applyPublicMusic(request, env, next) {
 	const url = new URL(request.url);
-	const wantsHtml = (request.headers.get("Accept") ?? "").includes("text/html");
-	if (!wantsHtml && !isMusicPath(url.pathname)) return next(request);
+	if (!mayBeHtmlPath(url.pathname) && !isMusicPath(url.pathname)) return next(request);
 
 	const config = await readMusicConfig(env);
 	const action = publicMusicAction(config, url.pathname);

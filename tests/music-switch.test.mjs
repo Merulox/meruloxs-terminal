@@ -4,7 +4,7 @@ import { onRequest } from "../functions/_middleware.js";
 import { onRequestGet, onRequestPatch } from "../functions/api/music.js";
 import { initMusicSettings } from "../src/lib/music-settings.mjs";
 import {
-	applyMusicPatch, applyPublicMusic, defaultMusicConfig, isMusicPath, normalizeMusicConfig,
+	applyMusicPatch, applyPublicMusic, defaultMusicConfig, isMusicPath, mayBeHtmlPath, normalizeMusicConfig,
 	parseMusicPatch, publicMusicAction, readMusicConfig,
 } from "../src/lib/music-switch.js";
 
@@ -21,11 +21,11 @@ const cfg = (config) => JSON.stringify(config);
 const config = (page = {}, sections = {}) => ({ ...defaultMusicConfig(), page: { ...defaultMusicConfig().page, ...page }, sections: { ...defaultMusicConfig().sections, ...sections } });
 
 const HTML = '<nav><a href="/projects">p</a><a href="/music">m</a></nav>';
-function ctx(url, store, { html = true, headers = {}, onNext } = {}) {
+function ctx(url, store, { html = true, headers = {}, onNext, accept = html ? "text/html" : "application/json" } = {}) {
 	return {
 		data: {},
 		env: { DEV_AUTH_USER: "m", DEV_AUTH_PASSWORD: "secret", LOG_KV_TOKEN: "ingest", SITE_CONTROL: store },
-		request: new Request(url, { headers: { Accept: html ? "text/html" : "application/json", ...headers } }),
+		request: new Request(url, { headers: { ...(accept ? { Accept: accept } : {}), ...headers } }),
 		next: async (req) => {
 			onNext?.(req);
 			return new Response(html ? HTML : "{}", { headers: { "Content-Type": html ? "text/html; charset=utf-8" : "application/json", ETag: '"abc"', "Last-Modified": "x" } });
@@ -247,9 +247,25 @@ test("UI: failed write reports the error and keeps the last known state", async 
 	u.abort.abort();
 });
 
-test("applyPublicMusic skips the KV read for non-navigation, non-music requests", async () => {
+test("mayBeHtmlPath is path-shaped, never Accept-shaped", () => {
+	for (const path of ["/", "/links/", "/links", "/thinking/", "/music/", "/index.html", "/employers/contact/"]) assert.equal(mayBeHtmlPath(path), true, path);
+	for (const path of ["/api/tweets", "/_astro/x.abc.js", "/favicon.svg", "/moodboard/manifest.json", "/fonts/a.woff2", "/audio/a.mp3"]) assert.equal(mayBeHtmlPath(path), false, path);
+});
+
+test("applyPublicMusic skips the KV read for assets and API routes", async () => {
 	const store = kv({ music_config: cfg(config({ enabled: false })) });
-	const res = await applyPublicMusic(new Request("https://merulox.com/style.css", { headers: { Accept: "text/css" } }), { SITE_CONTROL: store }, async () => new Response("css"));
-	assert.equal(res.status, 200);
+	for (const path of ["/style.css", "/_astro/a.js", "/api/tweets"]) {
+		const res = await applyPublicMusic(new Request(`https://merulox.com${path}`), { SITE_CONTROL: store }, async () => new Response("x"));
+		assert.equal(res.status, 200);
+	}
 	assert.equal(store.calls.length, 0);
+});
+
+test("ClientRouter-style navigations (Accept: */* or none) still get the music variants", rewriterTest, async () => {
+	const store = kv({ music_config: cfg(config({ enabled: false })) });
+	for (const accept of ["*/*", null]) {
+		const text = await (await onRequest(ctx("https://merulox.com/links/", store, { accept }))).text();
+		assert.equal(text.includes('href="/music"'), false, String(accept));
+	}
+	assert.equal((await onRequest(ctx("https://merulox.com/music/", store, { accept: "*/*" }))).status, 404);
 });
