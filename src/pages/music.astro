@@ -17,6 +17,12 @@ const periodButtons = `
 			margin-top: 42px;
 		}
 
+		.section-head {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+		}
+
 		.top-tracks-section .period-bar {
 			margin-top: 2px;
 			margin-bottom: 18px;
@@ -27,6 +33,7 @@ const periodButtons = `
 		}
 	</style>
 
+	<div id="music-root" data-music-root>
 	<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:34px">
 		<h1 style="margin-bottom:0">Music</h1>
 		<div style="text-align:right;line-height:1.4">
@@ -36,9 +43,16 @@ const periodButtons = `
 	</div>
 
 	<div id="music-controls" hidden style="margin-bottom:18px">
-		<button id="music-visibility-toggle" class="period-btn" type="button" aria-pressed="false" disabled>
+		<button id="music-page-toggle" class="period-btn" type="button" aria-pressed="true" disabled>
 			Checking music visibility…
 		</button>
+		<label class="muted" style="font-size:11px;margin-left:10px">
+			when the page is disabled:
+			<select id="music-when-disabled" disabled style="font:inherit;background:none;color:inherit;border:1px solid currentColor;border-radius:2px;padding:2px 4px">
+				<option value="hide-tab">hide the music tab</option>
+				<option value="notice">show “currently disabled” on the tab</option>
+			</select>
+		</label>
 		<p id="music-visibility-status" class="muted" role="status" aria-live="polite" style="font-size:11px;margin-top:8px"></p>
 	</div>
 
@@ -57,16 +71,20 @@ const periodButtons = `
 		</div>
 	</section>
 
-	<section class="section">
-		<h2 class="eyebrow">recently played</h2>
+	<section class="section" data-music-section="recent">
+		<div class="section-head">
+			<h2 class="eyebrow">recently played</h2>
+			<button class="period-btn" type="button" data-music-toggle="recent" hidden disabled>Disable on public site</button>
+		</div>
 		<div id="recent-tracks" class="track-scroll">
 			<p class="muted">Loading...</p>
 		</div>
 	</section>
 
-	<section id="top-artists-section" class="section">
+	<section id="top-artists-section" class="section" data-music-section="artists">
 		<div class="section-head">
 			<h2 id="artists-heading" class="eyebrow">top artists</h2>
+			<button class="period-btn" type="button" data-music-toggle="artists" hidden disabled>Disable on public site</button>
 		</div>
 		<div class="period-bar kbd-row" data-target="artists" data-scroll-target="#top-artists-section" data-scroll-preview="#top-albums-section" role="group" aria-label="Artist time range" set:html={periodButtons} />
 		<div id="top-artists" class="music-grid">
@@ -74,10 +92,11 @@ const periodButtons = `
 		</div>
 	</section>
 
-	<div id="top-albums-region" style="margin-top:34px">
+	<div id="top-albums-region" style="margin-top:34px" data-music-section="albums">
 		<section id="top-albums-section" class="section">
 			<div class="section-head">
 				<h2 id="albums-heading" class="eyebrow">top albums</h2>
+				<button class="period-btn" type="button" data-music-toggle="albums" hidden disabled>Disable on public site</button>
 			</div>
 			<div class="period-bar kbd-row" data-target="albums" data-scroll-target="#top-albums-region" data-scroll-preview="#top-tracks-section" role="group" aria-label="Album time range" set:html={periodButtons} />
 			<div id="top-albums" class="music-grid">
@@ -87,9 +106,10 @@ const periodButtons = `
 
 	</div>
 
-	<section id="top-tracks-section" class="section top-tracks-section">
+	<section id="top-tracks-section" class="section top-tracks-section" data-music-section="tracks">
 		<div class="section-head">
 			<h2 id="tracks-heading" class="eyebrow">top tracks</h2>
+			<button class="period-btn" type="button" data-music-toggle="tracks" hidden disabled>Disable on public site</button>
 		</div>
 		<div class="period-bar kbd-row" data-target="tracks" data-scroll-target="#top-tracks-section" role="group" aria-label="Track time range" set:html={periodButtons} />
 		<div id="top-tracks" class="track-scroll top-tracks-scroll">
@@ -99,10 +119,11 @@ const periodButtons = `
 			→ last.fm/user/merulox
 		</a>
 	</section>
+	</div>
 
 	<script>
 		import { initMoodboardVisibility } from "../lib/moodboard-visibility.mjs";
-		import { initMusicVisibility } from "../lib/music-visibility.mjs";
+		import { initMusicSettings } from "../lib/music-settings.mjs";
 		let musicAbort: AbortController | null = null;
 		function initMusic() {
 			musicAbort?.abort(); // cancel the previous run's rAF loop + listeners
@@ -113,7 +134,7 @@ const periodButtons = `
 			// navigated to a different page whose DOM doesn't have this
 			// page's elements — otherwise the unconditional `!`-asserted
 			// getElementById calls below would throw on every other route.
-			if (!document.getElementById("top-artists")) return;
+			if (!document.getElementById("music-root")) return;
 			document.addEventListener("astro:before-swap", () => musicAbort?.abort(), { once: true, signal });
 
 		const API_KEY = "9fdb2ae95fb0b95470334c260149c3cb";
@@ -280,7 +301,8 @@ const periodButtons = `
 		}
 
 		async function loadArtists(period: string) {
-			const el = document.getElementById("top-artists")!;
+			const el = document.getElementById("top-artists");
+			if (!el) return;
 			el.innerHTML = '<p class="muted">Loading...</p>';
 			try {
 				const res = await fetch(`${LFM}?method=user.gettopartists&user=${USER}&api_key=${API_KEY}&period=${period}&limit=16&format=json`);
@@ -305,7 +327,8 @@ const periodButtons = `
 		}
 
 		async function loadTracks(period: string) {
-			const el = document.getElementById("top-tracks")!;
+			const el = document.getElementById("top-tracks");
+			if (!el) return;
 			el.innerHTML = '<p class="muted">Loading...</p>';
 			try {
 				const res = await fetch(`${LFM}?method=user.gettoptracks&user=${USER}&api_key=${API_KEY}&period=${period}&limit=30&format=json`);
@@ -332,7 +355,8 @@ const periodButtons = `
 		}
 
 		async function loadAlbums(period: string) {
-			const el = document.getElementById("top-albums")!;
+			const el = document.getElementById("top-albums");
+			if (!el) return;
 			el.innerHTML = '<p class="muted">Loading...</p>';
 			try {
 				const res = await fetch(`${LFM}?method=user.gettopalbums&user=${USER}&api_key=${API_KEY}&period=${period}&limit=16&format=json`);
@@ -402,10 +426,16 @@ const periodButtons = `
 
 		loadUserInfo();
 		let moodAbort: AbortController | null = null;
-		initMusicVisibility({
+		const sectionButtons: Record<string, HTMLButtonElement> = {};
+		document.querySelectorAll<HTMLButtonElement>("[data-music-toggle]").forEach((button) => {
+			sectionButtons[button.dataset.musicToggle!] = button;
+		});
+		initMusicSettings({
 			controls: document.getElementById("music-controls")!,
-			button: document.getElementById("music-visibility-toggle")!,
+			pageButton: document.getElementById("music-page-toggle")!,
+			modeSelect: document.getElementById("music-when-disabled") as HTMLSelectElement,
 			status: document.getElementById("music-visibility-status")!,
+			sectionButtons,
 			isDev: window.location.hostname === "dev.merulox.com",
 			signal,
 		});
