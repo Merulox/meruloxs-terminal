@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-09",
+  "generated": "2026-11-11",
   "entries": [
+    {
+      "date": "2026-11-10",
+      "kind": "ship",
+      "text": "For Boréal, I built live demos for the offers that didn't have one yet: a local and AI-visibility audit, ad previews, social post drafts, review-request text, and online booking. Callers can now show them during calls. In Commander, I shipped a first version of an institutional layer with ledgers, gates and a weekly delta view, then fixed an authorization gap in how corrections are handled. CyberOps finished its first bounded trial on real data. It never claimed more certainty than it had, but it isn't useful yet."
+    },
     {
       "date": "2026-11-08",
       "kind": "ship",
