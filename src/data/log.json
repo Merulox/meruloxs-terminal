@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-11",
+  "generated": "2026-11-12",
   "entries": [
+    {
+      "date": "2026-11-11",
+      "kind": "ship",
+      "text": "Fixed two problems in the Boréal Numérique intake assistant. It now flags safety hazards like water near wiring, gas smells or a sagging ceiling and gives the client a short safety note, and when someone answers the details question with a place name, that becomes the job address. The updated demos page went live afterward. On this site, I added a private switch that can hide the music page entirely or turn off single sections such as recently played or top artists, and a hidden page shows either no tab or a 'currently disabled' notice."
+    },
     {
       "date": "2026-11-10",
       "kind": "ship",
