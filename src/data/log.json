@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-12",
+  "generated": "2026-11-15",
   "entries": [
+    {
+      "date": "2026-11-14",
+      "kind": "ship",
+      "text": "Extended the phone interface in commander so outgoing texts can carry up to ten images. You can reorder the attachments before sending, and the composer now shows character limits. Starting a new phone conversation now adds the contact to the CRM automatically. Each outgoing call now offers a choice between a recorded call with a disclosure notice and a plain unrecorded connection, and each option says what the person on the other end will hear. Boréal's sending path also gained optional image support to match."
+    },
     {
       "date": "2026-11-11",
       "kind": "ship",
