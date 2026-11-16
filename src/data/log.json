@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-15",
+  "generated": "2026-11-16",
   "entries": [
+    {
+      "date": "2026-11-15",
+      "kind": "ship",
+      "text": "Most of the day went into the public side of Boréal: a set of in-browser previews on the demos page, so a tradesperson can try missed-call follow-up, social posts drafted from a finished job, local ad mock-ups, online booking, and a client portal shown with made-up data. I also built a quote follow-up engine that sends reminders on a spaced schedule and stops as soon as the customer replies or opts out. The social post drafts can now only make claims that come from the contractor's own description. Alongside that, an AI-visibility checker went up that tests whether AI search recommends a business and runs a basic audit of its website and local presence."
+    },
     {
       "date": "2026-11-14",
       "kind": "ship",
