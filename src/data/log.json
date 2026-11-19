@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-16",
+  "generated": "2026-11-19",
   "entries": [
+    {
+      "date": "2026-11-18",
+      "kind": "ship",
+      "text": "In Commander, approving or rejecting a proposal now goes through the single actions layer. Both the Bridge and the Inbox send every write through it, with guards and an HTTP test to keep it that way. The fix was deployed after a rehearsed rollback. In CyberOps, duplicate security advisories are now grouped so each package and alias group gets one review, and the grouping was tightened over two review rounds."
+    },
     {
       "date": "2026-11-15",
       "kind": "ship",
