@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-19",
+  "generated": "2026-11-20",
   "entries": [
+    {
+      "date": "2026-11-19",
+      "kind": "learn",
+      "text": "Checked how the music page on merulox.com gets its listening data. It turned out nothing scrapes Last.fm's site; everything goes through their official public API. With Last.fm planning to put that API behind a paywall, I looked at options and decided against reverse-engineering or scraping their pages, since that would break often and go against their terms. The plan is to get the same listening data from a source I control."
+    },
     {
       "date": "2026-11-18",
       "kind": "ship",
