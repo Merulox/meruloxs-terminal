@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-20",
+  "generated": "2026-11-24",
   "entries": [
+    {
+      "date": "2026-11-23",
+      "kind": "ship",
+      "text": "Spent the day on visual fixes for mx-os, my personal operations dashboard. The side rail now has larger pixel-grid icons with labels underneath, and the labels and board headers no longer get clipped. All type now sits on the pixel sizes the Terminus font is drawn at, which fixed the jagged, too-small text. The Bridge view also gained a read-only conversation history panel next to the main stage, and windows are placed so they don't overlap it."
+    },
     {
       "date": "2026-11-19",
       "kind": "learn",
