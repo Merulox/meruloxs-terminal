@@ -1,6 +1,11 @@
 {
-  "generated": "2026-11-24",
+  "generated": "2026-11-26",
   "entries": [
+    {
+      "date": "2026-11-24",
+      "kind": "think",
+      "text": "Spent the day rethinking the clipping side of Signaler. The volume big clipping operations put out comes mostly from huge numbers of people, not from clever automation, so a new interface wasn't the answer. The plan is to keep Signaler's existing core and add a dedicated clip lane to it. Account setup is the part that stalled last time, so a couple of signups will be done by hand to get the lane unblocked before building it out."
+    },
     {
       "date": "2026-11-23",
       "kind": "ship",
